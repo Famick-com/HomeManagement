@@ -1,0 +1,587 @@
+{
+  "format": 1,
+  "restore": {
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement/tests/Famick.HomeManagement.Tests.Unit/Famick.HomeManagement.Tests.Unit.csproj": {}
+  },
+  "projects": {
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj",
+        "projectName": "Famick.HomeManagement.Core",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "AutoMapper": {
+              "target": "Package",
+              "version": "[12.0.1, )"
+            },
+            "AutoMapper.Extensions.Microsoft.DependencyInjection": {
+              "target": "Package",
+              "version": "[12.0.1, )"
+            },
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )"
+            },
+            "FluentValidation": {
+              "target": "Package",
+              "version": "[12.1.1, )"
+            },
+            "FluentValidation.DependencyInjectionExtensions": {
+              "target": "Package",
+              "version": "[12.1.1, )"
+            },
+            "Microsoft.Extensions.Configuration.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Microsoft.Extensions.Configuration.Binder": {
+              "target": "Package",
+              "version": "[8.0.2, )"
+            },
+            "Microsoft.IdentityModel.Tokens": {
+              "target": "Package",
+              "version": "[8.1.2, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.1.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj",
+        "projectName": "Famick.HomeManagement.Domain",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/Famick.HomeManagement.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/Famick.HomeManagement.Infrastructure.csproj",
+        "projectName": "Famick.HomeManagement.Infrastructure",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/Famick.HomeManagement.Infrastructure.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.AspNetCore.Http.Abstractions": {
+              "target": "Package",
+              "version": "[2.2.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj",
+        "projectName": "Famick.HomeManagement.Shared",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj",
+        "projectName": "Famick.HomeManagement.Web",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Core/Famick.HomeManagement.Core.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/Famick.HomeManagement.Infrastructure.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Infrastructure/Famick.HomeManagement.Infrastructure.csproj"
+              },
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "AutoMapper.Extensions.Microsoft.DependencyInjection": {
+              "target": "Package",
+              "version": "[12.0.1, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.osx-arm64",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/miketherien/Projects/git_projects/Famick/homemanagement/tests/Famick.HomeManagement.Tests.Unit/Famick.HomeManagement.Tests.Unit.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/tests/Famick.HomeManagement.Tests.Unit/Famick.HomeManagement.Tests.Unit.csproj",
+        "projectName": "Famick.HomeManagement.Tests.Unit",
+        "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/tests/Famick.HomeManagement.Tests.Unit/Famick.HomeManagement.Tests.Unit.csproj",
+        "packagesPath": "/Users/miketherien/.nuget/packages/",
+        "outputPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/tests/Famick.HomeManagement.Tests.Unit/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/miketherien/Projects/NuGet.Config",
+          "/Users/miketherien/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/Users/miketherien/Projects/MyPackages": {},
+          "/usr/local/share/dotnet/library-packs": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj": {
+                "projectPath": "/Users/miketherien/Projects/git_projects/Famick/homemanagement/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "FluentAssertions": {
+              "target": "Package",
+              "version": "[6.12.0, )"
+            },
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.6.0, )"
+            },
+            "Moq": {
+              "target": "Package",
+              "version": "[4.20.70, )"
+            },
+            "coverlet.collector": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.4.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.4.5, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

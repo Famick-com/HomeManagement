@@ -1,0 +1,7 @@
+{
+  "Famick.HomeManagement.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/Users\/miketherien\/Projects\/git_projects\/Famick\/homemanagement-shared\/src\/Famick.HomeManagement.Core",
+  "Famick.HomeManagement.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/Users\/miketherien\/Projects\/git_projects\/Famick\/homemanagement-shared\/src\/Famick.HomeManagement.Domain",
+  "Famick.HomeManagement.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/Users\/miketherien\/Projects\/git_projects\/Famick\/homemanagement-shared\/src\/Famick.HomeManagement.Infrastructure",
+  "Famick.HomeManagement.Shared, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/Users\/miketherien\/Projects\/git_projects\/Famick\/homemanagement-shared\/src\/Famick.HomeManagement.Shared",
+  "Famick.HomeManagement.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "\/Users\/miketherien\/Projects\/git_projects\/Famick\/homemanagement\/src\/Famick.HomeManagement.Web"
+}
