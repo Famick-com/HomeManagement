@@ -1,9 +1,11 @@
+using Famick.HomeManagement.UI.Localization;
 using Famick.HomeManagement.UI.Services;
 using Famick.HomeManagement.Web.Client;
 using Famick.HomeManagement.Web.Client.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor;
 using MudBlazor.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -18,6 +20,12 @@ builder.Services.AddScoped(sp => new HttpClient
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
+
+// Add localization services
+builder.Services.AddScoped<ILanguagePreferenceStorage, BrowserLanguagePreferenceStorage>();
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddScoped<ILocalizer, Localizer>();
+builder.Services.AddTransient<MudLocalizer, FamickMudLocalizer>();
 
 // Add authentication services
 builder.Services.AddScoped<ITokenStorage, BrowserTokenStorage>();

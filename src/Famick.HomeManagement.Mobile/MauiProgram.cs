@@ -1,7 +1,9 @@
 using Famick.HomeManagement.Mobile.Services;
+using Famick.HomeManagement.UI.Localization;
 using Famick.HomeManagement.UI.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
+using MudBlazor;
 using MudBlazor.Services;
 
 namespace Famick.HomeManagement.Mobile;
@@ -23,6 +25,12 @@ public static class MauiProgram
 
         // Add MudBlazor services
         builder.Services.AddMudServices();
+
+        // Add localization services
+        builder.Services.AddScoped<ILanguagePreferenceStorage, MauiLanguagePreferenceStorage>();
+        builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+        builder.Services.AddScoped<ILocalizer, Localizer>();
+        builder.Services.AddTransient<MudLocalizer, FamickMudLocalizer>();
 
         // Add API settings (configurable base URL)
         var apiSettings = new ApiSettings();
