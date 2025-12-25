@@ -184,6 +184,9 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// Blazor WASM hosting
+app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 // IP rate limiting - before routing
@@ -203,10 +206,9 @@ app.MapHealthChecks("/health");
 // Map API controllers
 app.MapControllers();
 
-// Map MVC controller routes
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+// Fallback to Blazor WASM for SPA routing
+// This must be after MapControllers so API routes take precedence
+app.MapFallbackToFile("index.html");
 
 try
 {
