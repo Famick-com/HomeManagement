@@ -25,13 +25,16 @@ public static class MauiProgram
         builder.Services.AddMudServices();
 
         // Add API settings (configurable base URL)
-        builder.Services.AddSingleton<ApiSettings>();
+        var apiSettings = new ApiSettings();
+        builder.Services.AddSingleton(apiSettings);
+        builder.Services.AddSingleton<IServerSettings>(apiSettings);
 
-        // Configure HttpClient with dynamic base URL
+        // Configure HttpClient with dynamic base URL and SSL bypass for debug
         builder.Services.AddScoped(sp =>
         {
             var apiSettings = sp.GetRequiredService<ApiSettings>();
-            return new HttpClient
+            var handler = new DynamicApiHttpHandler(apiSettings);
+            return new HttpClient(handler)
             {
                 BaseAddress = new Uri(apiSettings.BaseUrl)
             };

@@ -1,12 +1,14 @@
+using Famick.HomeManagement.UI.Services;
+
 namespace Famick.HomeManagement.Mobile.Services;
 
 /// <summary>
 /// Manages API settings including the configurable base URL.
 /// </summary>
-public class ApiSettings
+public class ApiSettings : IServerSettings
 {
     private const string BaseUrlKey = "api_base_url";
-    private const string DefaultBaseUrl = "https://localhost:7258";
+    private const string DefaultBaseUrl = "https://localhost:5001";
 
     /// <summary>
     /// Gets the configured API base URL.
