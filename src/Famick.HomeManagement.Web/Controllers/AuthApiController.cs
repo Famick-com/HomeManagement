@@ -30,6 +30,60 @@ public class AuthApiController : ControllerBase
     }
 
     /// <summary>
+    /// Register a new user account
+    /// </summary>
+    /// <param name="request">Registration details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Registration response with user ID and tokens</returns>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegisterResponse), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(409)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password) ||
+            string.IsNullOrWhiteSpace(request.FirstName) ||
+            string.IsNullOrWhiteSpace(request.LastName))
+        {
+            return BadRequest(new { error_message = "All fields are required" });
+        }
+
+        if (request.Password != request.ConfirmPassword)
+        {
+            return BadRequest(new { error_message = "Passwords do not match" });
+        }
+
+        if (request.Password.Length < 8)
+        {
+            return BadRequest(new { error_message = "Password must be at least 8 characters" });
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var deviceInfo = HttpContext.Request.Headers["User-Agent"].ToString();
+
+        try
+        {
+            var response = await _authService.RegisterAsync(request, ipAddress, deviceInfo, autoLogin: true, cancellationToken);
+            return StatusCode(201, response);
+        }
+        catch (DuplicateEntityException ex)
+        {
+            return Conflict(new { error_message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during registration");
+            return StatusCode(500, new { error_message = "Registration failed. Please try again." });
+        }
+    }
+
+    /// <summary>
     /// Login with email and password
     /// </summary>
     /// <param name="request">Login credentials</param>
