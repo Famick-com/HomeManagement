@@ -1,22 +1,13 @@
 -- Initialize database for self-hosted deployment
 -- This script runs automatically when the PostgreSQL container starts for the first time
+--
+-- NOTE: The Tenants table and initial data are created by EF Core migrations.
+-- This file is reserved for any additional database initialization that may be needed.
 
--- Create fixed tenant record for self-hosted instance
-INSERT INTO "Tenants" (
-    "Id",
-    "Name", 
-    "Subdomain",
-    "IsActive",
-    "CreatedAt",
-    "UpdatedAt"
-) VALUES (
-    '00000000-0000-0000-0000-000000000001'::uuid,
-    'Self-Hosted Instance',
-    'localhost',
-    true,
-    CURRENT_TIMESTAMP,
-    CURRENT_TIMESTAMP
-) ON CONFLICT ("Id") DO NOTHING;
+-- PostgreSQL extensions (if needed)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Note: Default admin user should be created via the registration endpoint
--- or using the setup script after first deployment
+-- The application will automatically:
+-- 1. Run EF Core migrations on startup
+-- 2. Create the fixed tenant for self-hosted mode
+-- 3. Allow user registration via the API
