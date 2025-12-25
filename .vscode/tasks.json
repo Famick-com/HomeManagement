@@ -1,0 +1,175 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/Famick.HomeManagement.Web/Famick.HomeManagement.Web.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Start Database (Dev)",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/start-db.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Start PostgreSQL database container for development"
+        },
+        {
+            "label": "Stop Database (Dev)",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/stop-db.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Stop PostgreSQL database container"
+        },
+        {
+            "label": "Start Production Stack",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/start-production.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Start full production stack (database + web server)"
+        },
+        {
+            "label": "Stop Production Stack",
+            "type": "shell",
+            "command": "${workspaceFolder}/scripts/stop-production.sh",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Stop full production stack"
+        },
+        {
+            "label": "Start Database and Build",
+            "dependsOn": [
+                "Start Database (Dev)",
+                "build"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Ensure database is running then build the project"
+        },
+        {
+            "label": "Run EF Migrations",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "ef",
+                "database",
+                "update",
+                "--project",
+                "${workspaceFolder}/../homemanagement-shared/src/Famick.HomeManagement.Infrastructure",
+                "--startup-project",
+                "${workspaceFolder}/src/Famick.HomeManagement.Web"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Apply Entity Framework Core migrations to the database"
+        },
+        {
+            "label": "Add EF Migration",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "ef",
+                "migrations",
+                "add",
+                "${input:migrationName}",
+                "--project",
+                "${workspaceFolder}/../homemanagement-shared/src/Famick.HomeManagement.Infrastructure",
+                "--startup-project",
+                "${workspaceFolder}/src/Famick.HomeManagement.Web"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "detail": "Create a new Entity Framework Core migration"
+        },
+        {
+            "label": "Run Tests",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "test",
+                "${workspaceFolder}/tests/Famick.HomeManagement.Tests.Unit/Famick.HomeManagement.Tests.Unit.csproj"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": "$msCompile",
+            "group": "test",
+            "detail": "Run unit tests"
+        },
+        {
+            "label": "Docker Logs (Dev DB)",
+            "type": "shell",
+            "command": "docker logs -f homemanagement-db-dev",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "isBackground": true,
+            "detail": "Stream logs from development database container"
+        },
+        {
+            "label": "Docker Logs (Production)",
+            "type": "shell",
+            "command": "docker compose -f ${workspaceFolder}/docker/docker-compose.yml logs -f",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+            "group": "none",
+            "isBackground": true,
+            "detail": "Stream logs from production stack"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "migrationName",
+            "type": "promptString",
+            "description": "Enter the name for the new migration",
+            "default": "NewMigration"
+        }
+    ]
+}
