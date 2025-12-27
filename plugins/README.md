@@ -2,6 +2,19 @@
 
 This folder contains product lookup plugins for the Home Management application.
 
+## Quick Start
+
+1. Copy `config.example.json` to `config.json`
+2. Add your API keys to `config.json`
+3. Restart the application
+
+```bash
+cp config.example.json config.json
+# Edit config.json with your API keys
+```
+
+> **Note:** `config.json` is gitignored to prevent committing API keys.
+
 ## Plugin Configuration
 
 Plugins are configured in `config.json`. Each plugin entry has the following properties:

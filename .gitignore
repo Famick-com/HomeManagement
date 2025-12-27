@@ -317,3 +317,6 @@ Temporary Items
 
 # Application logs
 logs/
+
+# Plugin configuration (contains API keys)
+plugins/config.json
