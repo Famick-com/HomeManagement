@@ -268,6 +268,164 @@ public class ProductsController : ApiControllerBase
 
     #endregion
 
+    #region Image Management
+
+    private static readonly string[] AllowedImageTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
+    private const long MaxImageSize = 5 * 1024 * 1024; // 5MB
+
+    /// <summary>
+    /// Uploads one or more images to a product
+    /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="files">Image files to upload</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of uploaded image details</returns>
+    [HttpPost("{id}/images")]
+    [ProducesResponseType(typeof(List<ProductImageDto>), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> UploadImages(
+        Guid id,
+        [FromForm] List<IFormFile> files,
+        CancellationToken cancellationToken)
+    {
+        if (files == null || files.Count == 0)
+        {
+            return BadRequest(new { error_message = "At least one image file is required" });
+        }
+
+        // Validate files
+        foreach (var file in files)
+        {
+            if (!AllowedImageTypes.Contains(file.ContentType.ToLowerInvariant()))
+            {
+                return BadRequest(new { error_message = $"File '{file.FileName}' is not a supported image type. Allowed: jpg, png, gif, webp" });
+            }
+
+            if (file.Length > MaxImageSize)
+            {
+                return BadRequest(new { error_message = $"File '{file.FileName}' exceeds the maximum size of 5MB" });
+            }
+        }
+
+        _logger.LogInformation("Uploading {Count} images to product {ProductId} for tenant {TenantId}",
+            files.Count, id, TenantId);
+
+        var uploadedImages = new List<ProductImageDto>();
+
+        foreach (var file in files)
+        {
+            await using var stream = file.OpenReadStream();
+            var image = await _productsService.AddImageAsync(
+                id,
+                stream,
+                file.FileName,
+                file.ContentType,
+                file.Length,
+                cancellationToken);
+
+            uploadedImages.Add(image);
+        }
+
+        return CreatedAtAction(nameof(GetImages), new { id }, uploadedImages);
+    }
+
+    /// <summary>
+    /// Gets all images for a product
+    /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of product images</returns>
+    [HttpGet("{id}/images")]
+    [ProducesResponseType(typeof(List<ProductImageDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetImages(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting images for product {ProductId} for tenant {TenantId}", id, TenantId);
+
+        var images = await _productsService.GetImagesAsync(id, cancellationToken);
+        return ApiResponse(images);
+    }
+
+    /// <summary>
+    /// Deletes an image from a product
+    /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="imageId">Image ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    [HttpDelete("{id}/images/{imageId}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> DeleteImage(
+        Guid id,
+        Guid imageId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Deleting image {ImageId} from product {ProductId} for tenant {TenantId}",
+            imageId, id, TenantId);
+
+        await _productsService.DeleteImageAsync(imageId, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Sets an image as the primary image for a product
+    /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="imageId">Image ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    [HttpPut("{id}/images/{imageId}/primary")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> SetPrimaryImage(
+        Guid id,
+        Guid imageId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Setting image {ImageId} as primary for product {ProductId} for tenant {TenantId}",
+            imageId, id, TenantId);
+
+        await _productsService.SetPrimaryImageAsync(imageId, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reorders images for a product
+    /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="imageIds">Ordered list of image IDs</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    [HttpPut("{id}/images/reorder")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> ReorderImages(
+        Guid id,
+        [FromBody] List<Guid> imageIds,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Reordering images for product {ProductId} for tenant {TenantId}", id, TenantId);
+
+        await _productsService.ReorderImagesAsync(id, imageIds, cancellationToken);
+        return NoContent();
+    }
+
+    #endregion
+
     #region Stock & Search Features
 
     /// <summary>

@@ -98,6 +98,18 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
+// Register file storage service (for product images)
+builder.Services.AddSingleton<IFileStorageService>(sp =>
+{
+    var env = sp.GetRequiredService<IWebHostEnvironment>();
+    var logger = sp.GetRequiredService<ILogger<LocalFileStorageService>>();
+    var baseUrl = builder.Configuration["BaseUrl"] ?? "";
+    // WebRootPath can be null if wwwroot doesn't exist, fall back to ContentRootPath/wwwroot
+    var webRootPath = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+    Directory.CreateDirectory(webRootPath); // Ensure it exists
+    return new LocalFileStorageService(webRootPath, baseUrl, logger);
+});
+
 // Register business services (from homemanagement-shared)
 builder.Services.AddScoped<IProductGroupService, ProductGroupService>();
 builder.Services.AddScoped<IShoppingLocationService, ShoppingLocationService>();
@@ -116,12 +128,15 @@ builder.Services.Configure<Famick.HomeManagement.Infrastructure.Plugins.PluginLo
     options.LoadPluginsOnStartup = true;
 });
 
-// Register HttpClient for USDA plugin
+// Register HttpClients for plugins
 builder.Services.AddHttpClient<Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
+builder.Services.AddHttpClient<Famick.HomeManagement.Infrastructure.Plugins.OpenFoodFacts.OpenFoodFactsPlugin>();
 
-// Register built-in plugins
+// Register built-in plugins (order matters for pipeline - first registered runs first)
 builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IProductLookupPlugin,
     Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
+builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IProductLookupPlugin,
+    Famick.HomeManagement.Infrastructure.Plugins.OpenFoodFacts.OpenFoodFactsPlugin>();
 
 // Register plugin loader and lookup service
 builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IPluginLoader,

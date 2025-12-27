@@ -320,3 +320,6 @@ logs/
 
 # Plugin configuration (contains API keys)
 src/Famick.HomeManagement.Web/plugins/config.json
+
+# Uploaded files (product images, etc.)
+src/Famick.HomeManagement.Web/wwwroot/uploads/

@@ -99,6 +99,8 @@ public class ProductLookupController : ApiControllerBase
             Barcode = request.Barcode,
             ServingSizeDescription = request.ServingSizeDescription,
             Ingredients = request.Ingredients,
+            ImageUrl = request.ImageUrl,
+            ThumbnailUrl = request.ThumbnailUrl,
             Nutrition = request.Nutrition != null ? new ProductLookupNutrition
             {
                 ServingSize = request.Nutrition.ServingSize,
@@ -216,6 +218,7 @@ public class ProductLookupController : ApiControllerBase
         nutrition.ServingSize = dto.ServingSize;
         nutrition.ServingUnit = dto.ServingUnit;
         nutrition.ServingSizeDescription = dto.ServingSizeDescription;
+        nutrition.ServingsPerContainer = dto.ServingsPerContainer;
         nutrition.Calories = dto.Calories;
         nutrition.TotalFat = dto.TotalFat;
         nutrition.SaturatedFat = dto.SaturatedFat;
@@ -293,6 +296,7 @@ public class ProductLookupController : ApiControllerBase
             ServingSize = entity.ServingSize,
             ServingUnit = entity.ServingUnit,
             ServingSizeDescription = entity.ServingSizeDescription,
+            ServingsPerContainer = entity.ServingsPerContainer,
             Calories = entity.Calories,
             TotalFat = entity.TotalFat,
             SaturatedFat = entity.SaturatedFat,
