@@ -106,6 +106,9 @@ builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IChoreService, ChoreService>();
 builder.Services.AddScoped<IProductsService, ProductsService>();
 
+// Register data seeder
+builder.Services.AddScoped<DataSeeder>();
+
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Famick.HomeManagement.Core.Mapping.ProductGroupMappingProfile).Assembly);
 
@@ -164,6 +167,17 @@ builder.Services.AddSwaggerGen(options =>
 
 // Build the application
 var app = builder.Build();
+
+// Seed default data for the fixed tenant
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
+    var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+    if (tenantProvider.TenantId.HasValue)
+    {
+        await seeder.SeedDefaultDataAsync(tenantProvider.TenantId.Value);
+    }
+}
 
 // Configure the HTTP request pipeline
 
