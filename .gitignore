@@ -319,4 +319,4 @@ Temporary Items
 logs/
 
 # Plugin configuration (contains API keys)
-plugins/config.json
+src/Famick.HomeManagement.Web/plugins/config.json
