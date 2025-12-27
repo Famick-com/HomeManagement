@@ -1,0 +1,15 @@
+{
+  "plugins": [
+    {
+      "id": "usda",
+      "enabled": true,
+      "builtin": true,
+      "displayName": "USDA FoodData Central",
+      "config": {
+        "apiKey": "",
+        "baseUrl": "https://api.nal.usda.gov/fdc/v1/",
+        "defaultMaxResults": 20
+      }
+    }
+  ]
+}

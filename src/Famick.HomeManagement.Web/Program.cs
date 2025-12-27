@@ -109,6 +109,26 @@ builder.Services.AddScoped<IProductsService, ProductsService>();
 // Register data seeder
 builder.Services.AddScoped<DataSeeder>();
 
+// Configure plugin system
+builder.Services.Configure<Famick.HomeManagement.Infrastructure.Plugins.PluginLoaderOptions>(options =>
+{
+    options.PluginsPath = Path.Combine(builder.Environment.ContentRootPath, "plugins");
+    options.LoadPluginsOnStartup = true;
+});
+
+// Register HttpClient for USDA plugin
+builder.Services.AddHttpClient<Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
+
+// Register built-in plugins
+builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IProductLookupPlugin,
+    Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
+
+// Register plugin loader and lookup service
+builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IPluginLoader,
+    Famick.HomeManagement.Infrastructure.Plugins.PluginLoader>();
+builder.Services.AddScoped<IProductLookupService,
+    Famick.HomeManagement.Infrastructure.Services.ProductLookupService>();
+
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Famick.HomeManagement.Core.Mapping.ProductGroupMappingProfile).Assembly);
 
@@ -178,6 +198,10 @@ using (var scope = app.Services.CreateScope())
         await seeder.SeedDefaultDataAsync(tenantProvider.TenantId.Value);
     }
 }
+
+// Load plugins on startup
+var pluginLoader = app.Services.GetRequiredService<Famick.HomeManagement.Core.Interfaces.Plugins.IPluginLoader>();
+await pluginLoader.LoadPluginsAsync();
 
 // Configure the HTTP request pipeline
 

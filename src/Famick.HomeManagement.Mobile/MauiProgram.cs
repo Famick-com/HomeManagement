@@ -1,3 +1,4 @@
+using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Mobile.Services;
 using Famick.HomeManagement.UI.Localization;
 using Famick.HomeManagement.UI.Services;
@@ -55,6 +56,9 @@ public static class MauiProgram
         builder.Services.AddScoped<IApiClient, HttpApiClient>();
 
         builder.Services.AddAuthorizationCore();
+
+        // Add barcode scanner service (MAUI implementation with camera)
+        builder.Services.AddScoped<IBarcodeScannerService, MauiBarcodeScannerService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
