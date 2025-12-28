@@ -8,7 +8,25 @@ namespace Famick.HomeManagement.Mobile.Services;
 public class ApiSettings : IServerSettings
 {
     private const string BaseUrlKey = "api_base_url";
-    private const string DefaultBaseUrl = "https://localhost:5001";
+
+    /// <summary>
+    /// Gets the default base URL based on platform.
+    /// iOS Simulator: localhost works (shares Mac network stack)
+    /// Android Emulator: 10.0.2.2 is special alias to host machine
+    /// </summary>
+    private static string DefaultBaseUrl
+    {
+        get
+        {
+#if ANDROID
+            // Android emulator uses 10.0.2.2 to reach host's localhost
+            return "https://10.0.2.2:5001";
+#else
+            // iOS simulator and other platforms can use localhost
+            return "https://localhost:5001";
+#endif
+        }
+    }
 
     /// <summary>
     /// Gets the configured API base URL.

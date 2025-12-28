@@ -60,6 +60,9 @@ public static class MauiProgram
         // Add barcode scanner service (MAUI implementation with camera)
         builder.Services.AddScoped<IBarcodeScannerService, MauiBarcodeScannerService>();
 
+        // Add inventory session service
+        builder.Services.AddScoped<IInventorySessionService, MauiInventorySessionService>();
+
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();

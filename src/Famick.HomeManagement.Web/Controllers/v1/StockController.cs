@@ -1,0 +1,262 @@
+using Famick.HomeManagement.Core.DTOs.Stock;
+using Famick.HomeManagement.Core.Exceptions;
+using Famick.HomeManagement.Core.Interfaces;
+using Famick.HomeManagement.Web.Controllers;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Famick.HomeManagement.Web.Controllers.v1;
+
+/// <summary>
+/// API controller for managing stock entries (inventory)
+/// </summary>
+[ApiController]
+[Route("api/v1/stock")]
+[Authorize]
+public class StockController : ApiControllerBase
+{
+    private readonly IStockService _stockService;
+
+    public StockController(
+        IStockService stockService,
+        ITenantProvider tenantProvider,
+        ILogger<StockController> logger)
+        : base(tenantProvider, logger)
+    {
+        _stockService = stockService;
+    }
+
+    /// <summary>
+    /// Lists all stock entries with optional filtering
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(typeof(List<StockEntryDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> List(
+        [FromQuery] StockFilterRequest? filter,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Listing stock entries for tenant {TenantId}", TenantId);
+
+        var entries = await _stockService.ListAsync(filter, cancellationToken);
+        return ApiResponse(entries);
+    }
+
+    /// <summary>
+    /// Gets a specific stock entry by ID
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(StockEntryDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock entry {StockId} for tenant {TenantId}", id, TenantId);
+
+        var entry = await _stockService.GetByIdAsync(id, cancellationToken);
+
+        if (entry == null)
+        {
+            return NotFoundResponse($"Stock entry with ID {id} not found");
+        }
+
+        return ApiResponse(entry);
+    }
+
+    /// <summary>
+    /// Gets all stock entries for a specific product
+    /// </summary>
+    [HttpGet("by-product/{productId}")]
+    [ProducesResponseType(typeof(List<StockEntryDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetByProduct(
+        Guid productId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock entries for product {ProductId}, tenant {TenantId}", productId, TenantId);
+
+        var entries = await _stockService.GetByProductAsync(productId, cancellationToken);
+        return ApiResponse(entries);
+    }
+
+    /// <summary>
+    /// Gets all stock entries at a specific location
+    /// </summary>
+    [HttpGet("by-location/{locationId}")]
+    [ProducesResponseType(typeof(List<StockEntryDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetByLocation(
+        Guid locationId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock entries at location {LocationId}, tenant {TenantId}", locationId, TenantId);
+
+        var entries = await _stockService.GetByLocationAsync(locationId, cancellationToken);
+        return ApiResponse(entries);
+    }
+
+    /// <summary>
+    /// Gets stock entries for a product at a specific location
+    /// </summary>
+    [HttpGet("by-product/{productId}/location/{locationId}")]
+    [ProducesResponseType(typeof(List<StockEntryDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetByProductAndLocation(
+        Guid productId,
+        Guid locationId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock entries for product {ProductId} at location {LocationId}, tenant {TenantId}",
+            productId, locationId, TenantId);
+
+        var entries = await _stockService.GetByProductAndLocationAsync(productId, locationId, cancellationToken);
+        return ApiResponse(entries);
+    }
+
+    /// <summary>
+    /// Adds a new stock entry
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(StockEntryDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> AddStock(
+        [FromBody] AddStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Adding stock for product {ProductId}, tenant {TenantId}", request.ProductId, TenantId);
+
+        try
+        {
+            var entry = await _stockService.AddStockAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = entry.Id }, entry);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Adjusts a stock entry's amount or details
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(StockEntryDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> AdjustStock(
+        Guid id,
+        [FromBody] AdjustStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Adjusting stock entry {StockId}, tenant {TenantId}", id, TenantId);
+
+        try
+        {
+            var entry = await _stockService.AdjustStockAsync(id, request, cancellationToken);
+            return ApiResponse(entry);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Marks a stock entry as opened
+    /// </summary>
+    [HttpPost("{id}/open")]
+    [ProducesResponseType(typeof(StockEntryDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> OpenProduct(
+        Guid id,
+        [FromBody] OpenProductRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Opening stock entry {StockId}, tenant {TenantId}", id, TenantId);
+
+        try
+        {
+            var entry = await _stockService.OpenProductAsync(id, request, cancellationToken);
+            return ApiResponse(entry);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ErrorResponse(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Consumes (uses/removes) stock from an entry
+    /// </summary>
+    [HttpPost("{id}/consume")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> ConsumeStock(
+        Guid id,
+        [FromBody] ConsumeStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Consuming stock entry {StockId}, tenant {TenantId}", id, TenantId);
+
+        try
+        {
+            await _stockService.ConsumeStockAsync(id, request, cancellationToken);
+            return EmptyApiResponse();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+        catch (InsufficientStockException ex)
+        {
+            return ErrorResponse($"Insufficient stock. Required: {ex.Required}, Available: {ex.Available}");
+        }
+    }
+
+    /// <summary>
+    /// Deletes a stock entry
+    /// </summary>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Deleting stock entry {StockId}, tenant {TenantId}", id, TenantId);
+
+        try
+        {
+            await _stockService.DeleteAsync(id, cancellationToken);
+            return EmptyApiResponse();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
+}

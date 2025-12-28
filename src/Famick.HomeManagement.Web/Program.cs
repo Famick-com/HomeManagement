@@ -65,7 +65,8 @@ if (fixedTenantId == Guid.Empty)
 {
     fixedTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 }
-builder.Services.AddScoped<ITenantProvider>(sp => new FixedTenantProvider(fixedTenantId));
+builder.Services.AddScoped<ITenantProvider>(sp =>
+    new FixedTenantProvider(fixedTenantId, sp.GetRequiredService<IHttpContextAccessor>()));
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -78,6 +79,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    // Prevent automatic claim type mapping (keeps "sub" as-is instead of mapping to long URI)
+    options.MapInboundClaims = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -87,7 +90,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = "sub"  // Use "sub" claim as the user identifier
     };
 });
 
@@ -117,6 +121,7 @@ builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IChoreService, ChoreService>();
 builder.Services.AddScoped<IProductsService, ProductsService>();
+builder.Services.AddScoped<IStockService, StockService>();
 
 // Register data seeder
 builder.Services.AddScoped<DataSeeder>();

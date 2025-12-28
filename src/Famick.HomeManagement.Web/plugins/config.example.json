@@ -10,6 +10,15 @@
         "baseUrl": "https://api.nal.usda.gov/fdc/v1/",
         "defaultMaxResults": 20
       }
+    },
+    {
+      "id": "openfoodfacts",
+      "enabled": true,
+      "builtin": true,
+      "displayName": "Open Food Facts",
+      "config": {
+        "baseUrl": "https://world.openfoodfacts.org"
+      }
     }
   ]
 }

@@ -39,4 +39,7 @@ builder.Services.AddAuthorizationCore();
 // Add barcode scanner service (web stub - camera not available in browser)
 builder.Services.AddScoped<IBarcodeScannerService, WebBarcodeScannerService>();
 
+// Add inventory session service
+builder.Services.AddScoped<IInventorySessionService, BrowserInventorySessionService>();
+
 await builder.Build().RunAsync();
