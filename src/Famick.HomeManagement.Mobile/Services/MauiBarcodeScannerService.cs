@@ -1,10 +1,11 @@
 using Famick.HomeManagement.Core.Interfaces;
+using Famick.HomeManagement.Mobile.Pages;
 
 namespace Famick.HomeManagement.Mobile.Services;
 
 /// <summary>
 /// MAUI implementation of barcode scanner using the device camera.
-/// TODO: Install ZXing.Net.MAUI package and implement full camera-based scanning.
+/// Uses ZXing.Net.MAUI for camera-based barcode detection.
 /// </summary>
 public class MauiBarcodeScannerService : IBarcodeScannerService
 {
@@ -16,25 +17,38 @@ public class MauiBarcodeScannerService : IBarcodeScannerService
 
     /// <summary>
     /// Scans a barcode using the device camera.
-    /// TODO: Implement using ZXing.Net.MAUI CameraBarcodeReaderView.
+    /// Opens a modal scanner page and returns when a barcode is detected or cancelled.
     /// </summary>
     public async Task<string?> ScanBarcodeAsync(CancellationToken ct = default)
     {
-        // TODO: Implement barcode scanning with ZXing.Net.MAUI
-        // 1. Navigate to BarcodeScannerPage
-        // 2. Wait for barcode detection
-        // 3. Return scanned value
+        // Check camera permission first
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+            if (status != PermissionStatus.Granted)
+            {
+                // Permission denied
+                return null;
+            }
+        }
 
-        // For now, return null (not implemented)
-        await Task.CompletedTask;
-        return null;
+        // Get the current page to navigate from
+        var currentPage = Application.Current?.Windows.FirstOrDefault()?.Page;
+        if (currentPage == null)
+        {
+            return null;
+        }
 
-        /*
-        Implementation outline:
-
+        // Create and show the scanner page
         var scannerPage = new BarcodeScannerPage();
-        var result = await scannerPage.ScanAsync(ct);
+        var scanTask = scannerPage.ScanAsync(ct);
+
+        await currentPage.Navigation.PushModalAsync(scannerPage);
+
+        // Wait for result
+        var result = await scanTask;
+
         return result;
-        */
     }
 }
