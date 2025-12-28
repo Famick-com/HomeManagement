@@ -36,7 +36,7 @@
 
         <!-- Bottom panel with cancel button -->
         <StackLayout Grid.Row="1"
-                     BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+                     BackgroundColor="{AppThemeBinding Light=White, Dark=Black}"
                      Padding="20">
             <Label
                 x:Name="InstructionLabel"
