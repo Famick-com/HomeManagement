@@ -28,16 +28,22 @@ public class MauiBarcodeScannerService : IBarcodeScannerService
             status = await Permissions.RequestAsync<Permissions.Camera>();
             if (status != PermissionStatus.Granted)
             {
-                // Permission denied
-                return null;
+                throw new InvalidOperationException("Camera permission denied");
             }
         }
 
         // Get the current page to navigate from
         var currentPage = Application.Current?.Windows.FirstOrDefault()?.Page;
+
+        // If wrapped in NavigationPage, get the navigation from it
+        if (currentPage is NavigationPage navPage)
+        {
+            currentPage = navPage.CurrentPage ?? navPage;
+        }
+
         if (currentPage == null)
         {
-            return null;
+            throw new InvalidOperationException("Could not find current page for navigation");
         }
 
         // Create and show the scanner page

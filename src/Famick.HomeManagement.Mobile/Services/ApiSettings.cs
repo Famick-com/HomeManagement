@@ -12,6 +12,7 @@ public class ApiSettings : IServerSettings
     /// <summary>
     /// Gets the default base URL based on platform.
     /// iOS Simulator: localhost works (shares Mac network stack)
+    /// iOS Device: needs Mac's actual IP address
     /// Android Emulator: 10.0.2.2 is special alias to host machine
     /// </summary>
     private static string DefaultBaseUrl
@@ -22,7 +23,17 @@ public class ApiSettings : IServerSettings
             // Android emulator uses 10.0.2.2 to reach host's localhost
             return "https://10.0.2.2:5001";
 #else
-            // iOS simulator and other platforms can use localhost
+            // Check if running on a real device vs simulator
+            // On device, we need the Mac's IP address and HTTP (not HTTPS)
+            // since the device won't trust the dev certificate
+            if (DeviceInfo.DeviceType == DeviceType.Physical)
+            {
+                // TODO: Replace with your Mac's IP address for device testing
+                // Find it with: ipconfig getifaddr en0
+                // Using HTTP port 5002 to avoid SSL certificate issues
+                return "http://10.18.16.105:5002";
+            }
+            // iOS simulator can use localhost (shares Mac network stack)
             return "https://localhost:5001";
 #endif
         }

@@ -9,6 +9,14 @@ public partial class App : Application
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		return new Window(new MainPage()) { Title = "Famick.HomeManagement.Mobile" };
+		// Wrap MainPage in NavigationPage to enable modal navigation (required for barcode scanner)
+		var mainPage = new MainPage();
+		NavigationPage.SetHasNavigationBar(mainPage, false);
+		var navPage = new NavigationPage(mainPage);
+
+		return new Window(navPage)
+		{
+			Title = "Famick.HomeManagement.Mobile"
+		};
 	}
 }
