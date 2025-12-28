@@ -37,6 +37,12 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+        <!-- Java SDK for Android builds (Homebrew OpenJDK 17) -->
+        <JavaSdkDirectory Condition="$([MSBuild]::IsOSPlatform('osx')) AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home</JavaSdkDirectory>
+
+        <!-- Embed assemblies for emulator/manual APK installs (disable Fast Deployment) -->
+        <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
     </PropertyGroup>
 
     <ItemGroup>

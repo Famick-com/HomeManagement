@@ -26,12 +26,25 @@ public class DynamicApiHttpHandler : HttpClientHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        // If the request has a relative URI, combine it with the current base URL
-        if (request.RequestUri != null && !request.RequestUri.IsAbsoluteUri)
+        // Always rewrite the URL using current ApiSettings.BaseUrl
+        // This handles both relative URIs and absolute URIs that need to be redirected
+        if (request.RequestUri != null)
         {
             var baseUrl = _apiSettings.BaseUrl.TrimEnd('/');
-            var relativeUrl = request.RequestUri.OriginalString.TrimStart('/');
-            request.RequestUri = new Uri($"{baseUrl}/{relativeUrl}");
+
+            // Extract the path from the request URI
+            string path;
+            if (request.RequestUri.IsAbsoluteUri)
+            {
+                // For absolute URIs, extract just the path and query
+                path = request.RequestUri.PathAndQuery.TrimStart('/');
+            }
+            else
+            {
+                path = request.RequestUri.OriginalString.TrimStart('/');
+            }
+
+            request.RequestUri = new Uri($"{baseUrl}/{path}");
         }
 
         return await base.SendAsync(request, cancellationToken);

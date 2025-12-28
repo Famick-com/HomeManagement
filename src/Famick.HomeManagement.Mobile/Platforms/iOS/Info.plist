@@ -32,6 +32,9 @@
     <dict>
         <key>NSAllowsLocalNetworking</key>
         <true/>
+        <!-- Allow HTTP for local development - remove in production -->
+        <key>NSAllowsArbitraryLoadsInWebContent</key>
+        <true/>
         <key>NSExceptionDomains</key>
         <dict>
             <key>localhost</key>
@@ -42,6 +45,9 @@
                 <true/>
             </dict>
         </dict>
+        <!-- For development: allow HTTP to any local network IP -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
     </dict>
 </dict>
 </plist>

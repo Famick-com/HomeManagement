@@ -27,9 +27,9 @@ public static class MauiProgram
         // Add MudBlazor services
         builder.Services.AddMudServices();
 
-        // Add localization services
+        // Add localization services (MAUI-specific implementation)
         builder.Services.AddScoped<ILanguagePreferenceStorage, MauiLanguagePreferenceStorage>();
-        builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+        builder.Services.AddScoped<ILocalizationService, MauiLocalizationService>();
         builder.Services.AddScoped<ILocalizer, Localizer>();
         builder.Services.AddTransient<MudLocalizer, FamickMudLocalizer>();
 
