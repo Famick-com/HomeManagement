@@ -259,4 +259,109 @@ public class StockController : ApiControllerBase
             return NotFoundResponse(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Gets aggregate statistics for stock overview
+    /// </summary>
+    [HttpGet("statistics")]
+    [ProducesResponseType(typeof(StockStatisticsDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetStatistics(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock statistics for tenant {TenantId}", TenantId);
+
+        var statistics = await _stockService.GetStatisticsAsync(cancellationToken);
+        return ApiResponse(statistics);
+    }
+
+    /// <summary>
+    /// Gets stock overview grouped by product
+    /// </summary>
+    [HttpGet("overview")]
+    [ProducesResponseType(typeof(List<StockOverviewItemDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetOverview(
+        [FromQuery] StockOverviewFilterRequest? filter,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock overview for tenant {TenantId}", TenantId);
+
+        var items = await _stockService.GetOverviewAsync(filter, cancellationToken);
+        return ApiResponse(items);
+    }
+
+    /// <summary>
+    /// Gets stock log entries (journal)
+    /// </summary>
+    [HttpGet("log")]
+    [ProducesResponseType(typeof(List<StockLogDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetLog(
+        [FromQuery] int? limit,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting stock log for tenant {TenantId}", TenantId);
+
+        var logs = await _stockService.GetLogAsync(limit, cancellationToken);
+        return ApiResponse(logs);
+    }
+
+    /// <summary>
+    /// Quick consume action - consumes from oldest entry (FEFO)
+    /// </summary>
+    [HttpPost("quick-consume")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> QuickConsume(
+        [FromBody] QuickConsumeRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Quick consuming product {ProductId}, tenant {TenantId}", request.ProductId, TenantId);
+
+        try
+        {
+            await _stockService.QuickConsumeAsync(request, cancellationToken);
+            return EmptyApiResponse();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+        catch (InsufficientStockException ex)
+        {
+            return ErrorResponse($"Insufficient stock. Required: {ex.Required}, Available: {ex.Available}");
+        }
+    }
+
+    /// <summary>
+    /// Quick add action - adds stock using product's default location
+    /// </summary>
+    [HttpPost("quick-add/{productId}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> QuickAdd(
+        Guid productId,
+        [FromQuery] decimal amount = 1,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Quick adding {Amount} to product {ProductId}, tenant {TenantId}", amount, productId, TenantId);
+
+        try
+        {
+            await _stockService.QuickAddAsync(productId, amount, cancellationToken);
+            return EmptyApiResponse();
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
 }
