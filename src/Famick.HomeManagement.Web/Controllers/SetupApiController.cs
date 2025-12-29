@@ -45,4 +45,29 @@ public class SetupApiController : ControllerBase
             return StatusCode(500, new { error_message = "Failed to check setup status" });
         }
     }
+
+    /// <summary>
+    /// Diagnostic endpoint to check request info (for debugging proxy issues)
+    /// </summary>
+    [HttpGet("diagnostics")]
+    [AllowAnonymous]
+    [ProducesResponseType(200)]
+    public IActionResult GetDiagnostics()
+    {
+        var headers = Request.Headers
+            .Where(h => h.Key.StartsWith("X-", StringComparison.OrdinalIgnoreCase) ||
+                        h.Key.Equals("Host", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(h => h.Key, h => h.Value.ToString());
+
+        return Ok(new
+        {
+            remoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            remotePort = HttpContext.Connection.RemotePort,
+            scheme = Request.Scheme,
+            host = Request.Host.ToString(),
+            pathBase = Request.PathBase.ToString(),
+            isHttps = Request.IsHttps,
+            forwardedHeaders = headers
+        });
+    }
 }

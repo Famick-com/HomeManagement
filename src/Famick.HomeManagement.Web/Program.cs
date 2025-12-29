@@ -7,12 +7,22 @@ using Famick.HomeManagement.Web.Middleware;
 using Famick.HomeManagement.Web.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Net;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add optional configuration from mounted volume (for Docker deployments)
+// This allows users to override settings without rebuilding the image
+var configPath = Path.Combine(builder.Environment.ContentRootPath, "config", "appsettings.json");
+if (File.Exists(configPath))
+{
+    builder.Configuration.AddJsonFile(configPath, optional: true, reloadOnChange: true);
+}
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -41,6 +51,56 @@ builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection(
 builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
+// Configure forwarded headers for reverse proxy (nginx, etc.)
+var trustedProxies = builder.Configuration.GetSection("ReverseProxy:TrustedProxies").Get<string[]>();
+var trustedNetworks = builder.Configuration.GetSection("ReverseProxy:TrustedNetworks").Get<string[]>();
+
+Log.Information("Reverse Proxy Configuration - TrustedProxies: {Proxies}, TrustedNetworks: {Networks}",
+    trustedProxies != null ? string.Join(", ", trustedProxies) : "(none - trust all)",
+    trustedNetworks != null ? string.Join(", ", trustedNetworks) : "(none)");
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+
+    if (trustedProxies?.Length > 0 || trustedNetworks?.Length > 0)
+    {
+        // Use explicitly configured proxies/networks
+        if (trustedProxies != null)
+        {
+            foreach (var proxy in trustedProxies)
+            {
+                if (IPAddress.TryParse(proxy, out var ip))
+                    options.KnownProxies.Add(ip);
+            }
+        }
+
+        if (trustedNetworks != null)
+        {
+            foreach (var network in trustedNetworks)
+            {
+                var parts = network.Split('/');
+                if (parts.Length == 2 &&
+                    IPAddress.TryParse(parts[0], out var ip) &&
+                    int.TryParse(parts[1], out var prefix))
+                {
+#pragma warning disable ASPDEPR005 // KnownNetworks is obsolete
+                    options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(ip, prefix));
+#pragma warning restore ASPDEPR005
+                }
+            }
+        }
+    }
+    else
+    {
+        // Default: trust all proxies (for simple Docker setups)
+#pragma warning disable ASPDEPR005 // KnownNetworks is obsolete
+        options.KnownNetworks.Clear();
+#pragma warning restore ASPDEPR005
+        options.KnownProxies.Clear();
+    }
+});
 
 // Configure database context
 builder.Services.AddDbContext<HomeManagementDbContext>((serviceProvider, options) =>
@@ -241,7 +301,10 @@ await pluginLoader.LoadPluginsAsync();
 
 // Configure the HTTP request pipeline
 
-// Global exception handling - must be first to catch all exceptions
+// Forwarded headers must be first for correct IP/protocol detection behind reverse proxy
+app.UseForwardedHeaders();
+
+// Global exception handling - must be early to catch all exceptions
 app.UseExceptionHandling();
 
 if (app.Environment.IsDevelopment())
