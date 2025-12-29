@@ -208,6 +208,21 @@ builder.Services.AddSwaggerGen(options =>
 // Build the application
 var app = builder.Build();
 
+// Apply pending migrations on startup (configurable, default: true for self-hosted)
+var autoMigrate = builder.Configuration.GetValue<bool>("Database:AutoMigrate", true);
+if (autoMigrate)
+{
+    using var migrationScope = app.Services.CreateScope();
+    var dbContext = migrationScope.ServiceProvider.GetRequiredService<HomeManagementDbContext>();
+    var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+    if (pendingMigrations.Any())
+    {
+        Log.Information("Applying {Count} pending database migration(s)...", pendingMigrations.Count());
+        await dbContext.Database.MigrateAsync();
+        Log.Information("Database migrations applied successfully");
+    }
+}
+
 // Seed default data for the fixed tenant
 using (var scope = app.Services.CreateScope())
 {
