@@ -24,18 +24,25 @@
         </Found>
         <NotFound>
             <PageTitle>Not Found</PageTitle>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <MudContainer MaxWidth="MaxWidth.Small" Class="pa-8 text-center">
-                    <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Warning" Class="mb-4" />
-                    <MudText Typo="Typo.h4" Class="mb-4">Page Not Found</MudText>
-                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
-                        Sorry, the page you're looking for doesn't exist.
-                    </MudText>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">
-                        Go to Dashboard
-                    </MudButton>
-                </MudContainer>
-            </LayoutView>
+            <AuthorizeView>
+                <Authorized>
+                    <LayoutView Layout="@typeof(MainLayout)">
+                        <MudContainer MaxWidth="MaxWidth.Small" Class="pa-8 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" Color="Color.Warning" Class="mb-4" />
+                            <MudText Typo="Typo.h4" Class="mb-4">Page Not Found</MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
+                                Sorry, the page you're looking for doesn't exist.
+                            </MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">
+                                Go to Dashboard
+                            </MudButton>
+                        </MudContainer>
+                    </LayoutView>
+                </Authorized>
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeView>
         </NotFound>
     </Router>
 </CascadingAuthenticationState>

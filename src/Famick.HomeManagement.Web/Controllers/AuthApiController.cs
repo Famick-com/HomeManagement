@@ -16,15 +16,18 @@ namespace Famick.HomeManagement.Web.Controllers;
 public class AuthApiController : ControllerBase
 {
     private readonly IAuthenticationService _authService;
+    private readonly ISetupService _setupService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly ILogger<AuthApiController> _logger;
 
     public AuthApiController(
         IAuthenticationService authService,
+        ISetupService setupService,
         IValidator<LoginRequest> loginValidator,
         ILogger<AuthApiController> logger)
     {
         _authService = authService;
+        _setupService = setupService;
         _loginValidator = loginValidator;
         _logger = logger;
     }
@@ -39,12 +42,21 @@ public class AuthApiController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(RegisterResponse), 201)]
     [ProducesResponseType(400)]
+    [ProducesResponseType(403)]
     [ProducesResponseType(409)]
     [ProducesResponseType(500)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterRequest request,
         CancellationToken cancellationToken)
     {
+        // Check if registration is allowed (only when no users exist)
+        var hasUsers = await _setupService.HasUsersAsync(cancellationToken);
+        if (hasUsers)
+        {
+            _logger.LogWarning("Registration attempt blocked - users already exist");
+            return StatusCode(403, new { error_message = "Registration is closed. The system has already been set up." });
+        }
+
         // Basic validation
         if (string.IsNullOrWhiteSpace(request.Email) ||
             string.IsNullOrWhiteSpace(request.Password) ||

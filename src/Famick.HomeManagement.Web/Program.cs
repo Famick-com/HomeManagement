@@ -101,6 +101,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<ISetupService, SetupService>();
 
 // Register file storage service (for product images)
 builder.Services.AddSingleton<IFileStorageService>(sp =>
