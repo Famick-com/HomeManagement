@@ -13,6 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Net;
 using System.Text;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -175,6 +177,9 @@ builder.Services.AddSingleton<IFileStorageService>(sp =>
     return new LocalFileStorageService(webRootPath, baseUrl, logger);
 });
 
+// Register version service
+builder.Services.AddSingleton<IVersionService, VersionService>();
+
 // Register business services (from homemanagement-shared)
 builder.Services.AddScoped<IProductGroupService, ProductGroupService>();
 builder.Services.AddScoped<IShoppingLocationService, ShoppingLocationService>();
@@ -336,8 +341,28 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map health check endpoint
-app.MapHealthChecks("/health");
+// Map health check endpoint with version info
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        var versionService = context.RequestServices.GetRequiredService<IVersionService>();
+        context.Response.ContentType = "application/json";
+        var result = new
+        {
+            status = report.Status.ToString(),
+            version = versionService.Version,
+            informationalVersion = versionService.InformationalVersion,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        };
+        await context.Response.WriteAsJsonAsync(result);
+    }
+});
 
 // Map API controllers
 app.MapControllers();

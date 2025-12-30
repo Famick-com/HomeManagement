@@ -25,8 +25,10 @@
         <!-- App Identifier -->
         <ApplicationId>com.famick.homemanagement</ApplicationId>
 
-        <!-- Versions -->
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <!-- Versions - derived from MinVer git tags -->
+        <!-- ApplicationDisplayVersion uses the semantic version from git tags (e.g., 1.0.0) -->
+        <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+        <!-- ApplicationVersion is the build number - increment for each release -->
         <ApplicationVersion>1</ApplicationVersion>
 
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
