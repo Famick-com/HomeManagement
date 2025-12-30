@@ -323,3 +323,4 @@ src/Famick.HomeManagement.Web/plugins/config.json
 
 # Uploaded files (product images, etc.)
 src/Famick.HomeManagement.Web/wwwroot/uploads/
+docs/session_checkpoint.md
