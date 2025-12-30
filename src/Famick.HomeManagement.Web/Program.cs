@@ -1,20 +1,20 @@
 using AspNetCoreRateLimit;
 using Famick.HomeManagement.Core.Interfaces;
-using Famick.HomeManagement.Core.Services;
-using Famick.HomeManagement.Infrastructure.Data;
-using Famick.HomeManagement.Infrastructure.Services;
 using Famick.HomeManagement.Web.Middleware;
 using Famick.HomeManagement.Web.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Famick.HomeManagement.Infrastructure;
+using Famick.HomeManagement.Infrastructure.Services;
+using Famick.HomeManagement.Core;
+using Famick.HomeManagement.Core.Services;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,19 +104,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     }
 });
 
-// Configure database context
-builder.Services.AddDbContext<HomeManagementDbContext>((serviceProvider, options) =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.MigrationsAssembly("Famick.HomeManagement.Infrastructure");
-        npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(10),
-            errorCodesToAdd: null);
-    });
-});
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddCore(builder.Configuration);
 
 // Register HttpContextAccessor for tenant resolution from HTTP context
 builder.Services.AddHttpContextAccessor();
@@ -159,12 +148,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register authentication services
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<ISetupService, SetupService>();
-
 // Register file storage service (for product images)
 builder.Services.AddSingleton<IFileStorageService>(sp =>
 {
@@ -177,43 +160,6 @@ builder.Services.AddSingleton<IFileStorageService>(sp =>
     return new LocalFileStorageService(webRootPath, baseUrl, logger);
 });
 
-// Register version service
-builder.Services.AddSingleton<IVersionService, VersionService>();
-
-// Register business services (from homemanagement-shared)
-builder.Services.AddScoped<IProductGroupService, ProductGroupService>();
-builder.Services.AddScoped<IShoppingLocationService, ShoppingLocationService>();
-builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
-builder.Services.AddScoped<IRecipeService, RecipeService>();
-builder.Services.AddScoped<IChoreService, ChoreService>();
-builder.Services.AddScoped<IProductsService, ProductsService>();
-builder.Services.AddScoped<IStockService, StockService>();
-
-// Register data seeder
-builder.Services.AddScoped<DataSeeder>();
-
-// Configure plugin system
-builder.Services.Configure<Famick.HomeManagement.Infrastructure.Plugins.PluginLoaderOptions>(options =>
-{
-    options.PluginsPath = Path.Combine(builder.Environment.ContentRootPath, "plugins");
-    options.LoadPluginsOnStartup = true;
-});
-
-// Register HttpClients for plugins
-builder.Services.AddHttpClient<Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
-builder.Services.AddHttpClient<Famick.HomeManagement.Infrastructure.Plugins.OpenFoodFacts.OpenFoodFactsPlugin>();
-
-// Register built-in plugins (order matters for pipeline - first registered runs first)
-builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IProductLookupPlugin,
-    Famick.HomeManagement.Infrastructure.Plugins.Usda.UsdaFoodDataPlugin>();
-builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IProductLookupPlugin,
-    Famick.HomeManagement.Infrastructure.Plugins.OpenFoodFacts.OpenFoodFactsPlugin>();
-
-// Register plugin loader and lookup service
-builder.Services.AddSingleton<Famick.HomeManagement.Core.Interfaces.Plugins.IPluginLoader,
-    Famick.HomeManagement.Infrastructure.Plugins.PluginLoader>();
-builder.Services.AddScoped<IProductLookupService,
-    Famick.HomeManagement.Infrastructure.Services.ProductLookupService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Famick.HomeManagement.Core.Mapping.ProductGroupMappingProfile).Assembly);
@@ -271,38 +217,13 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
+builder.Services.AddHttpClient();
+
 // Build the application
 var app = builder.Build();
 
-// Apply pending migrations on startup (configurable, default: true for self-hosted)
-var autoMigrate = builder.Configuration.GetValue<bool>("Database:AutoMigrate", true);
-if (autoMigrate)
-{
-    using var migrationScope = app.Services.CreateScope();
-    var dbContext = migrationScope.ServiceProvider.GetRequiredService<HomeManagementDbContext>();
-    var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
-    if (pendingMigrations.Any())
-    {
-        Log.Information("Applying {Count} pending database migration(s)...", pendingMigrations.Count());
-        await dbContext.Database.MigrateAsync();
-        Log.Information("Database migrations applied successfully");
-    }
-}
+await app.ConfigureInfrastructure(builder.Configuration);
 
-// Seed default data for the fixed tenant
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
-    var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-    if (tenantProvider.TenantId.HasValue)
-    {
-        await seeder.SeedDefaultDataAsync(tenantProvider.TenantId.Value);
-    }
-}
-
-// Load plugins on startup
-var pluginLoader = app.Services.GetRequiredService<Famick.HomeManagement.Core.Interfaces.Plugins.IPluginLoader>();
-await pluginLoader.LoadPluginsAsync();
 
 // Configure the HTTP request pipeline
 

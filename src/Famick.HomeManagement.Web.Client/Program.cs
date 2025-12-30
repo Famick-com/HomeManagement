@@ -1,4 +1,6 @@
+using Famick.HomeManagement.Core;
 using Famick.HomeManagement.Core.Interfaces;
+using Famick.HomeManagement.Core.Services;
 using Famick.HomeManagement.UI.Localization;
 using Famick.HomeManagement.UI.Services;
 using Famick.HomeManagement.Web.Client;
@@ -41,5 +43,7 @@ builder.Services.AddScoped<IBarcodeScannerService, WebBarcodeScannerService>();
 
 // Add inventory session service
 builder.Services.AddScoped<IInventorySessionService, BrowserInventorySessionService>();
+
+builder.Services.AddCore(builder.Configuration);
 
 await builder.Build().RunAsync();
