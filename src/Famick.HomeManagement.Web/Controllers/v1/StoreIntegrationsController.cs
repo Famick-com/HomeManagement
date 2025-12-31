@@ -139,7 +139,21 @@ public class StoreIntegrationsController : ApiControllerBase
         }
 
         // Parse the state to get shopping location ID
-        if (!Guid.TryParse(request.State, out var shoppingLocationId))
+        // State format: base64("{shoppingLocationId}|{randomGuid}")
+        Guid shoppingLocationId;
+        try
+        {
+            var decodedState = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(request.State));
+            var parts = decodedState.Split('|');
+            if (parts.Length < 1 || !Guid.TryParse(parts[0], out shoppingLocationId))
+            {
+                return ValidationErrorResponse(new Dictionary<string, string[]>
+                {
+                    { "state", new[] { "Invalid state parameter" } }
+                });
+            }
+        }
+        catch (FormatException)
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
