@@ -197,7 +197,9 @@ public class StoreIntegrationsController : ApiControllerBase
     {
         try
         {
-            await _storeIntegrationService.DisconnectIntegrationAsync(shoppingLocationId, ct);
+            // With shared tokens, "disconnect" now just unlinks the store from the integration.
+            // OAuth tokens are managed at the plugin level via DisconnectPluginAsync.
+            await _storeIntegrationService.UnlinkStoreLocationAsync(shoppingLocationId, ct);
             return NoContent();
         }
         catch (InvalidOperationException ex)
@@ -205,6 +207,21 @@ public class StoreIntegrationsController : ApiControllerBase
             _logger.LogWarning(ex, "Failed to disconnect integration for shopping location {Id}", shoppingLocationId);
             return NotFoundResponse("Shopping location not found");
         }
+    }
+
+    /// <summary>
+    /// Disconnect OAuth for a plugin (affects all stores using this plugin)
+    /// </summary>
+    /// <param name="pluginId">Plugin identifier</param>
+    /// <param name="ct">Cancellation token</param>
+    [HttpPost("plugins/{pluginId}/disconnect")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DisconnectPlugin(
+        string pluginId,
+        CancellationToken ct)
+    {
+        await _storeIntegrationService.DisconnectPluginAsync(pluginId, ct);
+        return NoContent();
     }
 
     #endregion
