@@ -40,7 +40,7 @@ public class ProductLookupController : ApiControllerBase
     /// Auto-detects if query is a barcode (8-14 digits) or product name.
     /// </summary>
     [HttpPost("lookup")]
-    [ProducesResponseType(typeof(List<ProductLookupResult>), 200)]
+    [ProducesResponseType(typeof(ProductLookupResponse), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> Search(
@@ -59,7 +59,38 @@ public class ProductLookupController : ApiControllerBase
             request.MaxResults,
             cancellationToken);
 
-        return ApiResponse(results);
+        // Convert ProductLookupResult to ProductLookupResultDto
+        var response = new ProductLookupResponse
+        {
+            Results = results.Select(r => ConvertToDto(r)).ToList()
+        };
+
+        return ApiResponse(response);
+    }
+
+    private static ProductLookupResultDto ConvertToDto(ProductLookupResult r)
+    {
+        // Get all contributing sources as comma-separated display names
+        var sourceNames = string.Join(", ", r.DataSources.Keys);
+        var primarySource = r.DataSources.FirstOrDefault();
+
+        return new ProductLookupResultDto
+        {
+            SourceType = "ProductPlugin",
+            PluginId = primarySource.Key ?? string.Empty,
+            PluginDisplayName = sourceNames, // Show all contributing sources
+            ExternalId = primarySource.Value ?? string.Empty,
+            Name = r.Name,
+            Brand = r.BrandName,
+            Barcode = r.Barcode,
+            Category = r.Categories.FirstOrDefault(),
+            ImageUrl = r.ImageUrl?.ImageUrl,
+            ThumbnailUrl = r.ThumbnailUrl?.ImageUrl,
+            Nutrition = r.Nutrition,
+            Ingredients = r.Ingredients,
+            ServingSizeDescription = r.ServingSizeDescription,
+            BrandOwner = r.BrandOwner
+        };
     }
 
     /// <summary>
@@ -75,34 +106,44 @@ public class ProductLookupController : ApiControllerBase
         [FromBody] ApplyLookupResultRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.ExternalId))
+        if (!request.DataSources.Any())
         {
-            return BadRequest(new { error_message = "ExternalId is required" });
+            return BadRequest(new { error_message = "DataSources is required" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.DataSource))
+        foreach(var dataSource in request.DataSources)
         {
-            return BadRequest(new { error_message = "DataSource is required" });
+            if (string.IsNullOrEmpty(dataSource.Key))
+            {
+                return BadRequest(new { error_message = "Datasource key is required"});
+            }
         }
 
-        _logger.LogInformation("Applying lookup result {ExternalId} from {DataSource} to product {ProductId}",
-            request.ExternalId, request.DataSource, id);
+        _logger.LogInformation("Applying lookup result to product {ProductId}"
+            , id);
+
+        // Get the primary data source name for image attribution
+        var primarySourceName = request.DataSources.Keys.FirstOrDefault() ?? "Unknown";
 
         // Convert request to ProductLookupResult
         var lookupResult = new ProductLookupResult
         {
-            ExternalId = request.ExternalId,
-            DataSource = request.DataSource,
+            DataSources = request.DataSources,
             Name = request.Name ?? string.Empty,
             BrandName = request.BrandName,
             BrandOwner = request.BrandOwner,
             Barcode = request.Barcode,
             ServingSizeDescription = request.ServingSizeDescription,
             Ingredients = request.Ingredients,
-            ImageUrl = request.ImageUrl,
-            ThumbnailUrl = request.ThumbnailUrl,
+            ImageUrl = !string.IsNullOrEmpty(request.ImageUrl)
+                ? new ResultImage { ImageUrl = request.ImageUrl, PluginId = primarySourceName }
+                : null,
+            ThumbnailUrl = !string.IsNullOrEmpty(request.ThumbnailUrl)
+                ? new ResultImage { ImageUrl = request.ThumbnailUrl, PluginId = primarySourceName }
+                : null,
             Nutrition = request.Nutrition != null ? new ProductLookupNutrition
             {
+                Source = request.Nutrition.DataSource,
                 ServingSize = request.Nutrition.ServingSize,
                 ServingUnit = request.Nutrition.ServingUnit,
                 Calories = request.Nutrition.Calories,
