@@ -249,7 +249,19 @@ else
 
 // Blazor WASM hosting
 app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Disable caching for locale JSON files to ensure updates are picked up
+        if (ctx.File.Name.EndsWith(".json") &&
+            ctx.Context.Request.Path.StartsWithSegments("/_content") &&
+            ctx.Context.Request.Path.Value?.Contains("/locales/") == true)
+        {
+            ctx.Context.Response.Headers.CacheControl = "no-cache, no-store";
+        }
+    }
+});
 
 // IP rate limiting - before routing
 app.UseIpRateLimiting();
