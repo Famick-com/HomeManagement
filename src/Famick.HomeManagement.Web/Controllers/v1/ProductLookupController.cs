@@ -52,11 +52,13 @@ public class ProductLookupController : ApiControllerBase
             return BadRequest(new { error_message = "Query is required" });
         }
 
-        _logger.LogInformation("Product lookup search: {Query}", request.Query);
+        _logger.LogInformation("Product lookup search: {Query}, Mode: {SearchMode}",
+            request.Query, request.SearchMode);
 
         var results = await _lookupService.SearchAsync(
             request.Query,
             request.MaxResults,
+            request.SearchMode,
             cancellationToken);
 
         // Convert ProductLookupResult to ProductLookupResultDto
