@@ -39,11 +39,20 @@ services:
       - JwtSettings__Audience=https://localhost
       - JwtSettings__AccessTokenExpirationMinutes=15
       - JwtSettings__RefreshTokenExpirationDays=7
+      # Email settings - configure for password reset emails
+      - EmailSettings__SmtpHost=${SMTP_HOST:-}
+      - EmailSettings__SmtpPort=${SMTP_PORT:-587}
+      - EmailSettings__SmtpUsername=${SMTP_USERNAME:-}
+      - EmailSettings__SmtpPassword=${SMTP_PASSWORD:-}
+      - EmailSettings__EnableSsl=${SMTP_ENABLE_SSL:-true}
+      - EmailSettings__FromEmail=${SMTP_FROM_EMAIL:-noreply@localhost}
+      - EmailSettings__FromName=${SMTP_FROM_NAME:-Famick Home Management}
     ports:
       - "5000:80"
       - "5001:443"
     volumes:
       - ./certs:/https:ro
+      - ./config:/app/config:ro  # Optional: mount custom appsettings.json for email/other settings
     depends_on:
       postgres:
         condition: service_healthy

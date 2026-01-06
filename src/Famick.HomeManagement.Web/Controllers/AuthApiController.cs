@@ -17,18 +17,27 @@ public class AuthApiController : ControllerBase
 {
     private readonly IAuthenticationService _authService;
     private readonly ISetupService _setupService;
+    private readonly IPasswordResetService _passwordResetService;
     private readonly IValidator<LoginRequest> _loginValidator;
+    private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
     private readonly ILogger<AuthApiController> _logger;
 
     public AuthApiController(
         IAuthenticationService authService,
         ISetupService setupService,
+        IPasswordResetService passwordResetService,
         IValidator<LoginRequest> loginValidator,
+        IValidator<ForgotPasswordRequest> forgotPasswordValidator,
+        IValidator<ResetPasswordRequest> resetPasswordValidator,
         ILogger<AuthApiController> logger)
     {
         _authService = authService;
         _setupService = setupService;
+        _passwordResetService = passwordResetService;
         _loginValidator = loginValidator;
+        _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
         _logger = logger;
     }
 
@@ -250,6 +259,102 @@ public class AuthApiController : ControllerBase
             _logger.LogError(ex, "Error during logout-all for user {UserId}", userId);
             return StatusCode(500, new { error_message = "Logout failed" });
         }
+    }
+
+    /// <summary>
+    /// Request a password reset email
+    /// </summary>
+    /// <param name="request">Email address for password reset</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success response (always returns success to prevent email enumeration)</returns>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ForgotPasswordResponse), 200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _forgotPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                error_message = "Validation failed",
+                errors = validationResult.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
+            });
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+        var response = await _passwordResetService.RequestPasswordResetAsync(
+            request, ipAddress, baseUrl, cancellationToken);
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Validate a password reset token
+    /// </summary>
+    /// <param name="token">The reset token to validate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Validation result with email if valid</returns>
+    [HttpGet("validate-reset-token")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ValidateResetTokenResponse), 200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> ValidateResetToken(
+        [FromQuery] string token,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return BadRequest(new { error_message = "Token is required" });
+        }
+
+        var response = await _passwordResetService.ValidateResetTokenAsync(token, cancellationToken);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Reset password using a valid token
+    /// </summary>
+    /// <param name="request">Reset password request with token and new password</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result indicating success or failure</returns>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ResetPasswordResponse), 200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _resetPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                error_message = "Validation failed",
+                errors = validationResult.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
+            });
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        var response = await _passwordResetService.ResetPasswordAsync(request, ipAddress, cancellationToken);
+
+        if (!response.Success)
+        {
+            return BadRequest(new { error_message = response.Message });
+        }
+
+        return Ok(response);
     }
 
     /// <summary>
