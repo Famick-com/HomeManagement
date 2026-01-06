@@ -36,6 +36,9 @@ builder.Services.AddScoped<ApiAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
 builder.Services.AddScoped<IApiClient, HttpApiClient>();
 
+// Add user permissions service for role-based UI restrictions
+builder.Services.AddScoped<IUserPermissions, UserPermissions>();
+
 // Configure authorization policies (must match server-side policies)
 builder.Services.AddAuthorizationCore(options =>
 {
