@@ -86,6 +86,7 @@ public class ProductGroupsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created product group</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductGroupDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -124,6 +125,7 @@ public class ProductGroupsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated product group</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductGroupDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -158,6 +160,7 @@ public class ProductGroupsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

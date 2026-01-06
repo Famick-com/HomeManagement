@@ -107,6 +107,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// <param name="redirectUri">Original redirect URI used in authorization</param>
     /// <param name="ct">Cancellation token</param>
     [HttpPost("oauth/callback/{pluginId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(OAuthCallbackResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> HandleOAuthCallback(
@@ -189,6 +190,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// <param name="shoppingLocationId">Shopping location ID</param>
     /// <param name="ct">Cancellation token</param>
     [HttpPost("shoppinglocations/{shoppingLocationId:guid}/disconnect")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DisconnectIntegration(
@@ -215,6 +217,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// <param name="pluginId">Plugin identifier</param>
     /// <param name="ct">Cancellation token</param>
     [HttpPost("plugins/{pluginId}/disconnect")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DisconnectPlugin(
         string pluginId,
@@ -270,6 +273,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// Link a shopping location to an external store
     /// </summary>
     [HttpPost("shoppinglocations/{shoppingLocationId:guid}/link")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -319,6 +323,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// Unlink a shopping location from its external store
     /// </summary>
     [HttpDelete("shoppinglocations/{shoppingLocationId:guid}/link")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnlinkStoreLocation(
@@ -381,6 +386,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// Link a product to a store product
     /// </summary>
     [HttpPost("products/{productId:guid}/stores/{shoppingLocationId:guid}/link")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductStoreMetadataDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -475,6 +481,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// Refresh product price/availability from the store API
     /// </summary>
     [HttpPost("products/{productId:guid}/stores/{shoppingLocationId:guid}/refresh")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductStoreMetadataDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RefreshProductMetadata(
@@ -508,6 +515,7 @@ public class StoreIntegrationsController : ApiControllerBase
     /// Unlink a product from a store
     /// </summary>
     [HttpDelete("products/{productId:guid}/stores/{shoppingLocationId:guid}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> UnlinkProductFromStore(
         Guid productId,

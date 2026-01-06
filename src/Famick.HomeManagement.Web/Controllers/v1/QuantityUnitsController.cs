@@ -89,6 +89,7 @@ public class QuantityUnitsController : ApiControllerBase
     /// Creates a new quantity unit
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(QuantityUnitDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -137,6 +138,7 @@ public class QuantityUnitsController : ApiControllerBase
     /// Updates an existing quantity unit
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(QuantityUnitDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -189,6 +191,7 @@ public class QuantityUnitsController : ApiControllerBase
     /// Deletes a quantity unit
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

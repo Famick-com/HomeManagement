@@ -36,7 +36,13 @@ builder.Services.AddScoped<ApiAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
 builder.Services.AddScoped<IApiClient, HttpApiClient>();
 
-builder.Services.AddAuthorizationCore();
+// Configure authorization policies (must match server-side policies)
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireEditor", policy => policy.RequireRole("Admin", "Editor"));
+    options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
+});
 
 // Add barcode scanner service (web stub - camera not available in browser)
 builder.Services.AddScoped<IBarcodeScannerService, WebBarcodeScannerService>();

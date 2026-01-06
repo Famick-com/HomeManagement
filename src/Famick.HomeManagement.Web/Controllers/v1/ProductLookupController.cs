@@ -99,6 +99,7 @@ public class ProductLookupController : ApiControllerBase
     /// Apply a lookup result to an existing product
     /// </summary>
     [HttpPost("{id}/apply-lookup")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductNutritionDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -224,6 +225,7 @@ public class ProductLookupController : ApiControllerBase
     /// Update nutrition data for a product
     /// </summary>
     [HttpPut("{id}/nutrition")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductNutritionDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -316,6 +318,7 @@ public class ProductLookupController : ApiControllerBase
     /// Reload plugins from configuration
     /// </summary>
     [HttpPost("~/api/v1/plugins/reload")]
+    [Authorize(Policy = "RequireAdmin")]
     [ProducesResponseType(typeof(List<PluginInfo>), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> ReloadPlugins(CancellationToken cancellationToken)

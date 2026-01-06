@@ -40,6 +40,10 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Copy admin-cli script for easy CLI access
+COPY homemanagement/docker/admin-cli /usr/local/bin/admin-cli
+RUN chmod +x /usr/local/bin/admin-cli
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:80/health || exit 1

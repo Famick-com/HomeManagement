@@ -90,6 +90,7 @@ public class LocationsController : ApiControllerBase
     /// Creates a new location
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(LocationDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -133,6 +134,7 @@ public class LocationsController : ApiControllerBase
     /// Updates an existing location
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(LocationDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -180,6 +182,7 @@ public class LocationsController : ApiControllerBase
     /// Deletes a location
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

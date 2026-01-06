@@ -98,6 +98,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created recipe</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(RecipeDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -136,6 +137,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated recipe</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(RecipeDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -170,6 +172,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -197,6 +200,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created recipe position</returns>
     [HttpPost("{id}/positions")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(RecipePositionDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -237,6 +241,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated recipe position</returns>
     [HttpPut("{id}/positions/{positionId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(RecipePositionDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -273,6 +278,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/positions/{positionId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -301,6 +307,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/nested/{childRecipeId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -327,6 +334,7 @@ public class RecipesController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/nested/{childRecipeId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

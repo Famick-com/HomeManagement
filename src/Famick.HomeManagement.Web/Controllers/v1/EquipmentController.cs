@@ -100,6 +100,7 @@ public class EquipmentController : ApiControllerBase
     /// Creates a new equipment item
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -126,6 +127,7 @@ public class EquipmentController : ApiControllerBase
     /// Updates an existing equipment item
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -154,6 +156,7 @@ public class EquipmentController : ApiControllerBase
     /// Deletes an equipment item
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -204,6 +207,7 @@ public class EquipmentController : ApiControllerBase
     /// Creates a new equipment category
     /// </summary>
     [HttpPost("categories")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentCategoryDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -231,6 +235,7 @@ public class EquipmentController : ApiControllerBase
     /// Updates an existing equipment category
     /// </summary>
     [HttpPut("categories/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentCategoryDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -260,6 +265,7 @@ public class EquipmentController : ApiControllerBase
     /// Deletes an equipment category
     /// </summary>
     [HttpDelete("categories/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -296,6 +302,7 @@ public class EquipmentController : ApiControllerBase
     /// Uploads a document to equipment
     /// </summary>
     [HttpPost("{id}/documents")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDocumentDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -351,6 +358,7 @@ public class EquipmentController : ApiControllerBase
     /// Updates document metadata
     /// </summary>
     [HttpPut("documents/{documentId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDocumentDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -371,6 +379,7 @@ public class EquipmentController : ApiControllerBase
     /// Deletes a document
     /// </summary>
     [HttpDelete("documents/{documentId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -387,6 +396,7 @@ public class EquipmentController : ApiControllerBase
     /// Reorders documents for an equipment item
     /// </summary>
     [HttpPut("{id}/documents/reorder")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -425,6 +435,7 @@ public class EquipmentController : ApiControllerBase
     /// Creates a new document tag
     /// </summary>
     [HttpPost("document-tags")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDocumentTagDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -452,6 +463,7 @@ public class EquipmentController : ApiControllerBase
     /// Updates an existing document tag
     /// </summary>
     [HttpPut("document-tags/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(EquipmentDocumentTagDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -481,6 +493,7 @@ public class EquipmentController : ApiControllerBase
     /// Deletes a document tag
     /// </summary>
     [HttpDelete("document-tags/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

@@ -94,6 +94,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created chore</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ChoreDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -132,6 +133,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated chore</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ChoreDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -166,6 +168,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -192,6 +195,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created chore log entry</returns>
     [HttpPost("{id}/execute")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ChoreLogDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -231,6 +235,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/skip")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -265,6 +270,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/logs/{logId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -376,6 +382,7 @@ public class ChoresController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/assign")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

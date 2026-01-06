@@ -124,6 +124,7 @@ public class StockController : ApiControllerBase
     /// Adds a new stock entry
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(StockEntryDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -150,6 +151,7 @@ public class StockController : ApiControllerBase
     /// Adjusts a stock entry's amount or details
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(StockEntryDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -177,6 +179,7 @@ public class StockController : ApiControllerBase
     /// Marks a stock entry as opened
     /// </summary>
     [HttpPost("{id}/open")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(StockEntryDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -208,6 +211,7 @@ public class StockController : ApiControllerBase
     /// Consumes (uses/removes) stock from an entry
     /// </summary>
     [HttpPost("{id}/consume")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -239,6 +243,7 @@ public class StockController : ApiControllerBase
     /// Deletes a stock entry
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -313,6 +318,7 @@ public class StockController : ApiControllerBase
     /// Quick consume action - consumes from oldest entry (FEFO)
     /// </summary>
     [HttpPost("quick-consume")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -343,6 +349,7 @@ public class StockController : ApiControllerBase
     /// Quick add action - adds stock using product's default location
     /// </summary>
     [HttpPost("quick-add/{productId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

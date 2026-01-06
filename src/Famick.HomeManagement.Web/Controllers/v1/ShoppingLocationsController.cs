@@ -87,6 +87,7 @@ public class ShoppingLocationsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created shopping location</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingLocationDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -125,6 +126,7 @@ public class ShoppingLocationsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated shopping location</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingLocationDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -159,6 +161,7 @@ public class ShoppingLocationsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

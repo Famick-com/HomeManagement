@@ -93,6 +93,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created shopping list</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingListDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -131,6 +132,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated shopping list</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingListDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -165,6 +167,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -191,6 +194,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created shopping list item</returns>
     [HttpPost("{id}/items")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingListItemDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -231,6 +235,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated shopping list item</returns>
     [HttpPut("{id}/items/{itemId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ShoppingListItemDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -267,6 +272,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/items/{itemId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -292,6 +298,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/items/{itemId}/purchase")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -317,6 +324,7 @@ public class ShoppingListsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPost("{id}/clear-purchased")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

@@ -80,6 +80,7 @@ public class HomeController : ApiControllerBase
     /// Completes the initial home setup wizard
     /// </summary>
     [HttpPost("setup")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(HomeDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -109,6 +110,7 @@ public class HomeController : ApiControllerBase
     /// Updates the home information
     /// </summary>
     [HttpPut]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(HomeDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -142,6 +144,7 @@ public class HomeController : ApiControllerBase
     /// Adds a new utility to the home
     /// </summary>
     [HttpPost("utilities")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(HomeUtilityDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -172,6 +175,7 @@ public class HomeController : ApiControllerBase
     /// Updates an existing utility
     /// </summary>
     [HttpPut("utilities/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(HomeUtilityDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -202,6 +206,7 @@ public class HomeController : ApiControllerBase
     /// Deletes a utility from the home
     /// </summary>
     [HttpDelete("utilities/{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]

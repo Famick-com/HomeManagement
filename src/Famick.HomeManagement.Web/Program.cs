@@ -2,6 +2,7 @@ using AspNetCoreRateLimit;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Web.Middleware;
 using Famick.HomeManagement.Web.Services;
+using Famick.HomeManagement.Web.Cli;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -15,6 +16,12 @@ using Famick.HomeManagement.Infrastructure.Services;
 using Famick.HomeManagement.Core;
 using Famick.HomeManagement.Core.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+
+// Handle CLI commands before starting web host
+if (args.Length >= 1 && args[0] == "admin-cli")
+{
+    return await AdminCli.RunAsync(args[1..]);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -146,7 +153,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+// Configure authorization policies for role-based access
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireEditor", policy => policy.RequireRole("Admin", "Editor"));
+    options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
+});
 
 // Register file storage service (for product images)
 builder.Services.AddSingleton<IFileStorageService>(sp =>
@@ -308,10 +321,12 @@ try
 {
     Log.Information("Starting Famick Home Management application");
     app.Run();
+    return 0;
 }
 catch (Exception ex)
 {
     Log.Fatal(ex, "Application start-up failed");
+    return 1;
 }
 finally
 {

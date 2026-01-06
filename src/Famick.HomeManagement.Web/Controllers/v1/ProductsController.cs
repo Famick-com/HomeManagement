@@ -88,6 +88,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created product</returns>
     [HttpPost]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -126,6 +127,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated product</returns>
     [HttpPut("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -160,6 +162,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -187,6 +190,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created barcode</returns>
     [HttpPost("{id}/barcodes")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(ProductBarcodeDto), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -223,6 +227,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/barcodes/{barcodeId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -281,6 +286,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of uploaded image details</returns>
     [HttpPost("{id}/images")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(typeof(List<ProductImageDto>), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -361,6 +367,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpDelete("{id}/images/{imageId}")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -385,6 +392,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPut("{id}/images/{imageId}/primary")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
@@ -409,6 +417,7 @@ public class ProductsController : ApiControllerBase
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content on success</returns>
     [HttpPut("{id}/images/reorder")]
+    [Authorize(Policy = "RequireEditor")]
     [ProducesResponseType(204)]
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
