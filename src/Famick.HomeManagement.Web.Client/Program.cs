@@ -32,9 +32,9 @@ builder.Services.AddTransient<MudLocalizer, FamickMudLocalizer>();
 
 // Add authentication services
 builder.Services.AddScoped<ITokenStorage, BrowserTokenStorage>();
+builder.Services.AddScoped<IApiClient, HttpApiClient>();
 builder.Services.AddScoped<ApiAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
-builder.Services.AddScoped<IApiClient, HttpApiClient>();
 
 // Add user permissions service for role-based UI restrictions
 builder.Services.AddScoped<IUserPermissions, UserPermissions>();

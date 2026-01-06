@@ -53,9 +53,9 @@ public static class MauiProgram
 
         // Add authentication services
         builder.Services.AddScoped<ITokenStorage, MauiTokenStorage>();
+        builder.Services.AddScoped<IApiClient, HttpApiClient>();
         builder.Services.AddScoped<ApiAuthStateProvider>();
         builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
-        builder.Services.AddScoped<IApiClient, HttpApiClient>();
 
         builder.Services.AddAuthorizationCore();
 
