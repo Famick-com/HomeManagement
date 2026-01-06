@@ -51,8 +51,12 @@ services:
       - "5000:80"
       - "5001:443"
     volumes:
-      - ./certs:/https:ro
-      - ./config:/app/config:ro  # Optional: mount custom appsettings.json for email/other settings
+      - ./certs:/certs:ro
+      - ./config:/app/config:ro
+      - ./plugins:/app/plugins
+      - .logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./keys:/root/.aspnet/DataProtection-Keys      
     depends_on:
       postgres:
         condition: service_healthy
@@ -87,4 +91,6 @@ volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  uploads_data:
     driver: local

@@ -15,6 +15,8 @@ namespace Famick.HomeManagement.Web.Controllers.v1;
 public class EquipmentController : ApiControllerBase
 {
     private readonly IEquipmentService _equipmentService;
+    private readonly IFileStorageService _fileStorage;
+    private readonly IFileAccessTokenService _tokenService;
 
     private static readonly string[] AllowedDocumentTypes = new[]
     {
@@ -34,11 +36,15 @@ public class EquipmentController : ApiControllerBase
 
     public EquipmentController(
         IEquipmentService equipmentService,
+        IFileStorageService fileStorage,
+        IFileAccessTokenService tokenService,
         ITenantProvider tenantProvider,
         ILogger<EquipmentController> logger)
         : base(tenantProvider, logger)
     {
         _equipmentService = equipmentService;
+        _fileStorage = fileStorage;
+        _tokenService = tokenService;
     }
 
     #region Equipment CRUD
@@ -296,6 +302,48 @@ public class EquipmentController : ApiControllerBase
         var documents = await _equipmentService.GetDocumentsAsync(id, ct);
 
         return ApiResponse(documents);
+    }
+
+    /// <summary>
+    /// Downloads an equipment document (secure file access with tenant validation).
+    /// Accepts either Authorization header OR a valid access token in query string.
+    /// </summary>
+    [HttpGet("documents/{documentId}/download")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FileResult), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DownloadDocument(Guid documentId, [FromQuery] string? token, CancellationToken ct)
+    {
+        _logger.LogInformation("Downloading document {DocumentId}", documentId);
+
+        // First, get the document to validate it exists and get tenant info
+        var document = await _equipmentService.GetDocumentByIdAsync(documentId, ct);
+        if (document == null)
+        {
+            return NotFoundResponse("Document not found");
+        }
+
+        // Check authorization: either authenticated user OR valid token
+        var isAuthenticated = User.Identity?.IsAuthenticated == true;
+        var hasValidToken = !string.IsNullOrEmpty(token) &&
+            _tokenService.ValidateToken(token, "equipment-document", documentId, TenantId);
+
+        if (!isAuthenticated && !hasValidToken)
+        {
+            return Unauthorized();
+        }
+
+        var filePath = _fileStorage.GetEquipmentDocumentPath(document.EquipmentId, document.FileName);
+        if (!System.IO.File.Exists(filePath))
+        {
+            _logger.LogWarning("Document file not found on disk: {FilePath}", filePath);
+            return NotFoundResponse("Document file not found");
+        }
+
+        // Return without filename to display inline (Content-Disposition: inline)
+        // instead of triggering download (Content-Disposition: attachment)
+        return PhysicalFile(filePath, document.ContentType);
     }
 
     /// <summary>

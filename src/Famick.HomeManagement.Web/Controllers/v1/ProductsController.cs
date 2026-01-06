@@ -16,11 +16,15 @@ namespace Famick.HomeManagement.Web.Controllers.v1;
 public class ProductsController : ApiControllerBase
 {
     private readonly IProductsService _productsService;
+    private readonly IFileStorageService _fileStorage;
+    private readonly IFileAccessTokenService _tokenService;
     private readonly IValidator<CreateProductRequest> _createValidator;
     private readonly IValidator<UpdateProductRequest> _updateValidator;
 
     public ProductsController(
         IProductsService productsService,
+        IFileStorageService fileStorage,
+        IFileAccessTokenService tokenService,
         IValidator<CreateProductRequest> createValidator,
         IValidator<UpdateProductRequest> updateValidator,
         ITenantProvider tenantProvider,
@@ -28,6 +32,8 @@ public class ProductsController : ApiControllerBase
         : base(tenantProvider, logger)
     {
         _productsService = productsService;
+        _fileStorage = fileStorage;
+        _tokenService = tokenService;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
     }
@@ -357,6 +363,57 @@ public class ProductsController : ApiControllerBase
 
         var images = await _productsService.GetImagesAsync(id, cancellationToken);
         return ApiResponse(images);
+    }
+
+    /// <summary>
+    /// Downloads a product image (secure file access with tenant validation).
+    /// Accepts either Authorization header OR a valid access token in query string.
+    /// </summary>
+    /// <param name="productId">Product ID</param>
+    /// <param name="imageId">Image ID</param>
+    /// <param name="token">Optional access token for browser-initiated requests</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The image file</returns>
+    [HttpGet("{productId}/images/{imageId}/download")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FileResult), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DownloadImage(
+        Guid productId,
+        Guid imageId,
+        [FromQuery] string? token,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Downloading image {ImageId} for product {ProductId}", imageId, productId);
+
+        // First, get the image to validate it exists
+        var image = await _productsService.GetImageByIdAsync(productId, imageId, cancellationToken);
+        if (image == null)
+        {
+            return NotFoundResponse("Image not found");
+        }
+
+        // Check authorization: either authenticated user OR valid token
+        var isAuthenticated = User.Identity?.IsAuthenticated == true;
+        var hasValidToken = !string.IsNullOrEmpty(token) &&
+            _tokenService.ValidateToken(token, "product-image", imageId, TenantId);
+
+        if (!isAuthenticated && !hasValidToken)
+        {
+            return Unauthorized();
+        }
+
+        var filePath = _fileStorage.GetProductImagePath(productId, image.FileName);
+        if (!System.IO.File.Exists(filePath))
+        {
+            _logger.LogWarning("Image file not found on disk: {FilePath}", filePath);
+            return NotFoundResponse("Image file not found");
+        }
+
+        // Return without filename to display inline (Content-Disposition: inline)
+        // instead of triggering download (Content-Disposition: attachment)
+        return PhysicalFile(filePath, image.ContentType);
     }
 
     /// <summary>

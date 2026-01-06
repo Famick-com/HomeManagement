@@ -161,18 +161,26 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
 });
 
-// Register file storage service (for product images)
+// Register file storage service (for product images and equipment documents)
+// Files are stored outside wwwroot to prevent direct access - served through authenticated API endpoints
 builder.Services.AddSingleton<IFileStorageService>(sp =>
 {
     var env = sp.GetRequiredService<IWebHostEnvironment>();
     var logger = sp.GetRequiredService<ILogger<LocalFileStorageService>>();
     var baseUrl = builder.Configuration["BaseUrl"] ?? "";
-    // WebRootPath can be null if wwwroot doesn't exist, fall back to ContentRootPath/wwwroot
-    var webRootPath = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
-    Directory.CreateDirectory(webRootPath); // Ensure it exists
-    return new LocalFileStorageService(webRootPath, baseUrl, logger);
+    // Use ContentRootPath, not WebRootPath - files are served through API, not static files
+    return new LocalFileStorageService(env.ContentRootPath, baseUrl, logger);
 });
 
+// Register file access token service (for secure URL tokens on browser-initiated file requests)
+builder.Services.AddSingleton<IFileAccessTokenService>(sp =>
+{
+    // Use JWT secret as the signing key for file access tokens
+    var jwtSecret = builder.Configuration["JwtSettings:SecretKey"]
+        ?? throw new InvalidOperationException("JwtSettings:SecretKey configuration is required for file access tokens");
+    var logger = sp.GetRequiredService<ILogger<FileAccessTokenService>>();
+    return new FileAccessTokenService(jwtSecret, logger);
+});
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Famick.HomeManagement.Core.Mapping.ProductGroupMappingProfile).Assembly);
