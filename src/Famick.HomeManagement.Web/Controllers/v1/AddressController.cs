@@ -67,4 +67,38 @@ public class AddressController : ApiControllerBase
 
         return ApiResponse(result);
     }
+
+    /// <summary>
+    /// Normalizes and geocodes an address, returning multiple suggestions
+    /// </summary>
+    /// <remarks>
+    /// Returns multiple address suggestions sorted by confidence.
+    /// Useful when the input address is ambiguous or incomplete.
+    /// </remarks>
+    [HttpPost("normalize/suggestions")]
+    [ProducesResponseType(typeof(List<NormalizedAddressResult>), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> NormalizeSuggestions(
+        [FromBody] NormalizeAddressRequest request,
+        [FromQuery] int limit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        var validationResult = await _normalizeValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationErrorResponse(
+                validationResult.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
+            );
+        }
+
+        _logger.LogInformation("Getting address suggestions for: {AddressLine1}, {City}, {StateProvince} (limit: {Limit})",
+            request.AddressLine1, request.City, request.StateProvince, limit);
+
+        var results = await _addressService.NormalizeSuggestionsAsync(request, limit, cancellationToken);
+
+        return ApiResponse(results);
+    }
 }

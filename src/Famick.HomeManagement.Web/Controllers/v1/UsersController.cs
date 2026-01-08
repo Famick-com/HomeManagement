@@ -253,4 +253,55 @@ public class UsersController : ApiControllerBase
             return NotFoundResponse($"User with ID {id} not found");
         }
     }
+
+    /// <summary>
+    /// Links a contact to a user
+    /// </summary>
+    [HttpPut("{id}/contact/{contactId}")]
+    [ProducesResponseType(typeof(ManagedUserDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> LinkContact(
+        Guid id,
+        Guid contactId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Linking contact {ContactId} to user {UserId}", contactId, id);
+
+        try
+        {
+            var user = await _userManagementService.LinkContactAsync(id, contactId, cancellationToken);
+            return ApiResponse(user);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Unlinks the contact from a user
+    /// </summary>
+    [HttpDelete("{id}/contact")]
+    [ProducesResponseType(typeof(ManagedUserDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(403)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UnlinkContact(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Unlinking contact from user {UserId}", id);
+
+        try
+        {
+            var user = await _userManagementService.UnlinkContactAsync(id, cancellationToken);
+            return ApiResponse(user);
+        }
+        catch (EntityNotFoundException)
+        {
+            return NotFoundResponse($"User with ID {id} not found");
+        }
+    }
 }
