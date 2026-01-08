@@ -99,7 +99,7 @@ public class HomeController : ApiControllerBase
             );
         }
 
-        _logger.LogInformation("Setting up home at '{Address}' for tenant {TenantId}", request.Address, TenantId);
+        _logger.LogInformation("Setting up home for tenant {TenantId}", TenantId);
 
         var home = await _homeService.SetupHomeAsync(request, cancellationToken);
 
