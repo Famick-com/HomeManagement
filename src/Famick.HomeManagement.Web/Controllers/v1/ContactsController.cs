@@ -15,14 +15,20 @@ namespace Famick.HomeManagement.Web.Controllers.v1;
 public class ContactsController : ApiControllerBase
 {
     private readonly IContactService _contactService;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly IFileAccessTokenService _tokenService;
 
     public ContactsController(
         IContactService contactService,
+        IFileStorageService fileStorageService,
+        IFileAccessTokenService tokenService,
         ITenantProvider tenantProvider,
         ILogger<ContactsController> logger)
         : base(tenantProvider, logger)
     {
         _contactService = contactService;
+        _fileStorageService = fileStorageService;
+        _tokenService = tokenService;
     }
 
     #region Contact CRUD
@@ -343,6 +349,204 @@ public class ContactsController : ApiControllerBase
         await _contactService.SetPrimaryPhoneAsync(id, phoneId, ct);
 
         return NoContent();
+    }
+
+    #endregion
+
+    #region Email Addresses
+
+    /// <summary>
+    /// Adds an email address to a contact
+    /// </summary>
+    [HttpPost("{id}/emails")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(ContactEmailAddressDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> AddEmail(
+        Guid id,
+        [FromBody] AddEmailRequest request,
+        CancellationToken ct)
+    {
+        _logger.LogInformation("Adding email to contact {ContactId}", id);
+
+        var email = await _contactService.AddEmailAsync(id, request, ct);
+
+        return CreatedAtAction(nameof(Get), new { id }, email);
+    }
+
+    /// <summary>
+    /// Updates an email address
+    /// </summary>
+    [HttpPut("emails/{emailId}")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(ContactEmailAddressDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateEmail(
+        Guid emailId,
+        [FromBody] AddEmailRequest request,
+        CancellationToken ct)
+    {
+        _logger.LogInformation("Updating email {EmailId}", emailId);
+
+        var email = await _contactService.UpdateEmailAsync(emailId, request, ct);
+
+        return ApiResponse(email);
+    }
+
+    /// <summary>
+    /// Removes an email address
+    /// </summary>
+    [HttpDelete("emails/{emailId}")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> RemoveEmail(Guid emailId, CancellationToken ct)
+    {
+        _logger.LogInformation("Removing email {EmailId}", emailId);
+
+        await _contactService.RemoveEmailAsync(emailId, ct);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Sets an email as the primary email
+    /// </summary>
+    [HttpPut("{id}/emails/{emailId}/primary")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> SetPrimaryEmail(Guid id, Guid emailId, CancellationToken ct)
+    {
+        _logger.LogInformation("Setting email {EmailId} as primary for contact {ContactId}", emailId, id);
+
+        await _contactService.SetPrimaryEmailAsync(id, emailId, ct);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Profile Image
+
+    /// <summary>
+    /// Uploads a profile image for a contact
+    /// </summary>
+    [HttpPost("{id}/profile-image")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(string), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UploadProfileImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken ct)
+    {
+        _logger.LogInformation("Uploading profile image for contact {ContactId}", id);
+
+        if (file.Length == 0)
+        {
+            return ErrorResponse("No file provided");
+        }
+
+        if (file.Length > 5 * 1024 * 1024) // 5MB limit
+        {
+            return ErrorResponse("File size exceeds 5MB limit");
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(extension))
+        {
+            return ErrorResponse("Invalid file type. Allowed types: JPG, PNG, GIF, WebP");
+        }
+
+        using var stream = file.OpenReadStream();
+        var imageUrl = await _contactService.UploadProfileImageAsync(id, stream, file.FileName, ct);
+
+        return ApiResponse(new { imageUrl });
+    }
+
+    /// <summary>
+    /// Deletes the profile image for a contact
+    /// </summary>
+    [HttpDelete("{id}/profile-image")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DeleteProfileImage(Guid id, CancellationToken ct)
+    {
+        _logger.LogInformation("Deleting profile image for contact {ContactId}", id);
+
+        await _contactService.DeleteProfileImageAsync(id, ct);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Gets the profile image for a contact.
+    /// Accepts either Authorization header OR a valid access token in query string.
+    /// </summary>
+    /// <param name="id">Contact ID</param>
+    /// <param name="token">Optional access token for browser-initiated requests</param>
+    /// <param name="ct">Cancellation token</param>
+    [HttpGet("{id}/profile-image")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(FileStreamResult), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetProfileImage(Guid id, [FromQuery] string? token, CancellationToken ct)
+    {
+        _logger.LogInformation("Getting profile image for contact {ContactId}", id);
+
+        // Check authorization: either authenticated user OR valid token
+        var isAuthenticated = User.Identity?.IsAuthenticated == true;
+        var hasValidToken = !string.IsNullOrEmpty(token) &&
+            _tokenService.ValidateToken(token, "contact-profile-image", id, TenantId);
+
+        if (!isAuthenticated && !hasValidToken)
+        {
+            return Unauthorized();
+        }
+
+        var contact = await _contactService.GetByIdAsync(id, ct);
+        if (contact == null)
+        {
+            return NotFoundResponse("Contact not found");
+        }
+
+        if (string.IsNullOrEmpty(contact.ProfileImageFileName))
+        {
+            return NotFoundResponse("Contact does not have a profile image");
+        }
+
+        // Get the file path from file storage service
+        var filePath = _fileStorageService.GetContactProfileImagePath(id, contact.ProfileImageFileName);
+        if (!System.IO.File.Exists(filePath))
+        {
+            _logger.LogWarning("Profile image file not found on disk: {FilePath}", filePath);
+            return NotFoundResponse("Profile image file not found");
+        }
+
+        // Determine content type from file extension
+        var contentType = Path.GetExtension(filePath).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream"
+        };
+
+        return PhysicalFile(filePath, contentType);
     }
 
     #endregion
