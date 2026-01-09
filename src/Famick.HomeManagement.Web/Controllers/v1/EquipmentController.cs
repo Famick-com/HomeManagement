@@ -555,4 +555,128 @@ public class EquipmentController : ApiControllerBase
     }
 
     #endregion
+
+    #region Usage Tracking
+
+    /// <summary>
+    /// Gets usage logs for an equipment item
+    /// </summary>
+    [HttpGet("{id}/usage")]
+    [ProducesResponseType(typeof(List<EquipmentUsageLogDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetUsageLogs(Guid id, CancellationToken ct)
+    {
+        _logger.LogInformation("Getting usage logs for equipment {EquipmentId} in tenant {TenantId}", id, TenantId);
+
+        var logs = await _equipmentService.GetUsageLogsAsync(id, ct);
+
+        return ApiResponse(logs);
+    }
+
+    /// <summary>
+    /// Adds a usage log entry to equipment
+    /// </summary>
+    [HttpPost("{id}/usage")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(EquipmentUsageLogDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> AddUsageLog(
+        Guid id,
+        [FromBody] CreateEquipmentUsageLogRequest request,
+        CancellationToken ct)
+    {
+        _logger.LogInformation("Adding usage log to equipment {EquipmentId} for tenant {TenantId}", id, TenantId);
+
+        var log = await _equipmentService.AddUsageLogAsync(id, request, ct);
+
+        return CreatedAtAction(nameof(GetUsageLogs), new { id }, log);
+    }
+
+    /// <summary>
+    /// Deletes a usage log entry
+    /// </summary>
+    [HttpDelete("usage/{logId}")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DeleteUsageLog(Guid logId, CancellationToken ct)
+    {
+        _logger.LogInformation("Deleting usage log {LogId} for tenant {TenantId}", logId, TenantId);
+
+        await _equipmentService.DeleteUsageLogAsync(logId, ct);
+
+        return NoContent();
+    }
+
+    #endregion
+
+    #region Maintenance Records
+
+    /// <summary>
+    /// Gets maintenance records for an equipment item
+    /// </summary>
+    [HttpGet("{id}/maintenance")]
+    [ProducesResponseType(typeof(List<EquipmentMaintenanceRecordDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetMaintenanceRecords(Guid id, CancellationToken ct)
+    {
+        _logger.LogInformation("Getting maintenance records for equipment {EquipmentId} in tenant {TenantId}", id, TenantId);
+
+        var records = await _equipmentService.GetMaintenanceRecordsAsync(id, ct);
+
+        return ApiResponse(records);
+    }
+
+    /// <summary>
+    /// Adds a maintenance record to equipment
+    /// </summary>
+    [HttpPost("{id}/maintenance")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(EquipmentMaintenanceRecordDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> AddMaintenanceRecord(
+        Guid id,
+        [FromBody] CreateEquipmentMaintenanceRecordRequest request,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            return ValidationErrorResponse(new Dictionary<string, string[]>
+            {
+                { "Description", new[] { "Description is required" } }
+            });
+        }
+
+        _logger.LogInformation("Adding maintenance record to equipment {EquipmentId} for tenant {TenantId}", id, TenantId);
+
+        var record = await _equipmentService.AddMaintenanceRecordAsync(id, request, ct);
+
+        return CreatedAtAction(nameof(GetMaintenanceRecords), new { id }, record);
+    }
+
+    /// <summary>
+    /// Deletes a maintenance record
+    /// </summary>
+    [HttpDelete("maintenance/{recordId}")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DeleteMaintenanceRecord(Guid recordId, CancellationToken ct)
+    {
+        _logger.LogInformation("Deleting maintenance record {RecordId} for tenant {TenantId}", recordId, TenantId);
+
+        await _equipmentService.DeleteMaintenanceRecordAsync(recordId, ct);
+
+        return NoContent();
+    }
+
+    #endregion
 }
