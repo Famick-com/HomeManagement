@@ -148,6 +148,33 @@ public class StockController : ApiControllerBase
     }
 
     /// <summary>
+    /// Adds multiple stock entries in a batch (supports individual date tracking)
+    /// </summary>
+    [HttpPost("batch")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(List<StockEntryDto>), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> AddStockBatch(
+        [FromBody] AddStockBatchRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Adding stock batch for product {ProductId}, tenant {TenantId}", request.ProductId, TenantId);
+
+        try
+        {
+            var entries = await _stockService.AddStockBatchAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(List), entries);
+        }
+        catch (EntityNotFoundException ex)
+        {
+            return NotFoundResponse(ex.Message);
+        }
+    }
+
+    /// <summary>
     /// Adjusts a stock entry's amount or details
     /// </summary>
     [HttpPut("{id}")]
