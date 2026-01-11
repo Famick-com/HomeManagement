@@ -53,6 +53,9 @@ builder.Services.AddScoped<IBarcodeScannerService, WebBarcodeScannerService>();
 // Add inventory session service
 builder.Services.AddScoped<IInventorySessionService, BrowserInventorySessionService>();
 
+// Add shopping list preference storage
+builder.Services.AddScoped<IShoppingListPreferenceStorage, BrowserShoppingListPreferenceStorage>();
+
 builder.Services.AddCore(builder.Configuration);
 
 await builder.Build().RunAsync();

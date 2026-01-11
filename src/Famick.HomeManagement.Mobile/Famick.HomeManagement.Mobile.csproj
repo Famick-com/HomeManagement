@@ -45,6 +45,8 @@
 
         <!-- Embed assemblies for emulator/manual APK installs (disable Fast Deployment) -->
         <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
+        <CodesignKey>Apple Development</CodesignKey>
+        <CodesignProvision>Automatic</CodesignProvision>
     </PropertyGroup>
 
     <ItemGroup>

@@ -20,6 +20,7 @@ public class ShoppingListsController : ApiControllerBase
     private readonly IValidator<UpdateShoppingListRequest> _updateListValidator;
     private readonly IValidator<AddShoppingListItemRequest> _addItemValidator;
     private readonly IValidator<UpdateShoppingListItemRequest> _updateItemValidator;
+    private readonly IValidator<AddToShoppingListRequest> _quickAddValidator;
 
     public ShoppingListsController(
         IShoppingListService shoppingListService,
@@ -27,6 +28,7 @@ public class ShoppingListsController : ApiControllerBase
         IValidator<UpdateShoppingListRequest> updateListValidator,
         IValidator<AddShoppingListItemRequest> addItemValidator,
         IValidator<UpdateShoppingListItemRequest> updateItemValidator,
+        IValidator<AddToShoppingListRequest> quickAddValidator,
         ITenantProvider tenantProvider,
         ILogger<ShoppingListsController> logger)
         : base(tenantProvider, logger)
@@ -36,6 +38,7 @@ public class ShoppingListsController : ApiControllerBase
         _updateListValidator = updateListValidator;
         _addItemValidator = addItemValidator;
         _updateItemValidator = updateItemValidator;
+        _quickAddValidator = quickAddValidator;
     }
 
     #region List Management (CRUD)
@@ -55,6 +58,44 @@ public class ShoppingListsController : ApiControllerBase
 
         var shoppingLists = await _shoppingListService.ListAllAsync(cancellationToken);
         return ApiResponse(shoppingLists);
+    }
+
+    /// <summary>
+    /// Gets shopping lists for a specific store
+    /// </summary>
+    /// <param name="shoppingLocationId">Store ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of shopping lists for the specified store</returns>
+    [HttpGet("by-store/{shoppingLocationId}")]
+    [ProducesResponseType(typeof(List<ShoppingListSummaryDto>), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> ListByStore(
+        Guid shoppingLocationId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Listing shopping lists for store {StoreId} for tenant {TenantId}",
+            shoppingLocationId, TenantId);
+
+        var shoppingLists = await _shoppingListService.ListByStoreAsync(shoppingLocationId, cancellationToken);
+        return ApiResponse(shoppingLists);
+    }
+
+    /// <summary>
+    /// Gets dashboard summary of all shopping lists grouped by store
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Dashboard summary with lists grouped by store</returns>
+    [HttpGet("dashboard")]
+    [ProducesResponseType(typeof(ShoppingListDashboardDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetDashboard(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting shopping list dashboard for tenant {TenantId}", TenantId);
+
+        var dashboard = await _shoppingListService.GetDashboardSummaryAsync(cancellationToken);
+        return ApiResponse(dashboard);
     }
 
     /// <summary>
@@ -386,6 +427,126 @@ public class ShoppingListsController : ApiControllerBase
 
         var groupedList = await _shoppingListService.GroupItemsByLocationAsync(id, cancellationToken);
         return ApiResponse(groupedList);
+    }
+
+    #endregion
+
+    #region Quick Add & Store Integration
+
+    /// <summary>
+    /// Quick add item from Stock Overview or barcode scan
+    /// </summary>
+    /// <param name="request">Quick add request with shopping list ID and product/barcode</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Created shopping list item</returns>
+    [HttpPost("quick-add")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(ShoppingListItemDto), 201)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> QuickAdd(
+        [FromBody] AddToShoppingListRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validationResult = await _quickAddValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return ValidationErrorResponse(
+                validationResult.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
+            );
+        }
+
+        _logger.LogInformation("Quick adding item to shopping list {ListId} for tenant {TenantId}",
+            request.ShoppingListId, TenantId);
+
+        var item = await _shoppingListService.QuickAddItemAsync(request, cancellationToken);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = request.ShoppingListId },
+            item
+        );
+    }
+
+    /// <summary>
+    /// Lookup item in store integration to get aisle/department info
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="itemId">Shopping list item ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated shopping list item with store location info</returns>
+    [HttpPost("{id}/items/{itemId}/lookup")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(ShoppingListItemDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> LookupItem(
+        Guid id,
+        Guid itemId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Looking up item {ItemId} in store for list {ListId} for tenant {TenantId}",
+            itemId, id, TenantId);
+
+        var item = await _shoppingListService.LookupItemInStoreAsync(itemId, cancellationToken);
+        return ApiResponse(item);
+    }
+
+    /// <summary>
+    /// Send shopping list items to the store's cart
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="request">Items to send (empty = all unpurchased with external product IDs)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of cart operation</returns>
+    [HttpPost("{id}/send-to-cart")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(SendToCartResult), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> SendToCart(
+        Guid id,
+        [FromBody] SendToCartRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Sending items to cart for list {ListId} for tenant {TenantId}",
+            id, TenantId);
+
+        var result = await _shoppingListService.SendToCartAsync(id, request, cancellationToken);
+        return ApiResponse(result);
+    }
+
+    /// <summary>
+    /// Toggle item purchased status
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="itemId">Shopping list item ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated shopping list item</returns>
+    [HttpPost("{id}/items/{itemId}/toggle-purchased")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(ShoppingListItemDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> TogglePurchased(
+        Guid id,
+        Guid itemId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Toggling purchased status for item {ItemId} in list {ListId} for tenant {TenantId}",
+            itemId, id, TenantId);
+
+        var item = await _shoppingListService.TogglePurchasedAsync(itemId, cancellationToken);
+        return ApiResponse(item);
     }
 
     #endregion
