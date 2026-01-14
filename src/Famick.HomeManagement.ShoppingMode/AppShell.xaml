@@ -5,12 +5,42 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:Famick.HomeManagement.ShoppingMode.Pages"
     Title="Famick Shopping"
-    FlyoutBehavior="Disabled">
+    FlyoutBehavior="Flyout">
 
-    <!-- List Selection is the root page - login is shown modally if needed -->
-    <ShellContent
-        Title="Shopping Lists"
-        ContentTemplate="{DataTemplate pages:ListSelectionPage}"
-        Route="ListSelectionPage" />
+    <!-- Flyout Header -->
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="100" BackgroundColor="{AppThemeBinding Light=#1976D2, Dark=#1565C0}">
+            <Label Text="Famick Shopping"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center" />
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- Main Content -->
+    <FlyoutItem Title="Shopping Lists">
+        <ShellContent
+            Title="Shopping Lists"
+            ContentTemplate="{DataTemplate pages:ListSelectionPage}"
+            Route="ListSelectionPage" />
+    </FlyoutItem>
+
+    <!-- Menu Footer with Actions -->
+    <Shell.FlyoutFooter>
+        <VerticalStackLayout Padding="10" Spacing="5">
+            <Button Text="About"
+                    Clicked="OnAboutClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                    HorizontalOptions="Start" />
+            <Button Text="Sign Out"
+                    Clicked="OnSignOutClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                    HorizontalOptions="Start" />
+        </VerticalStackLayout>
+    </Shell.FlyoutFooter>
 
 </Shell>

@@ -23,6 +23,11 @@ public partial class LoginPage : ContentPage
 
         // Restore last server mode
         _selectedMode = _apiSettings.Mode;
+
+        // Set picker selection based on saved mode
+        ServerModePicker.SelectedIndex = _selectedMode == ServerMode.Cloud ? 0 : 1;
+
+        // Update UI visibility
         UpdateServerModeUI();
 
         // Restore self-hosted URL if configured
@@ -32,33 +37,16 @@ public partial class LoginPage : ContentPage
         }
     }
 
-    private void OnCloudSelected(object? sender, EventArgs e)
+    private void OnServerModeChanged(object? sender, EventArgs e)
     {
-        _selectedMode = ServerMode.Cloud;
-        UpdateServerModeUI();
-    }
-
-    private void OnSelfHostedSelected(object? sender, EventArgs e)
-    {
-        _selectedMode = ServerMode.SelfHosted;
+        _selectedMode = ServerModePicker.SelectedIndex == 0
+            ? ServerMode.Cloud
+            : ServerMode.SelfHosted;
         UpdateServerModeUI();
     }
 
     private void UpdateServerModeUI()
     {
-        var selectedColor = Application.Current?.RequestedTheme == AppTheme.Dark
-            ? Color.FromArgb("#1565C0")
-            : Color.FromArgb("#1976D2");
-        var unselectedColor = Application.Current?.RequestedTheme == AppTheme.Dark
-            ? Color.FromArgb("#424242")
-            : Color.FromArgb("#E0E0E0");
-
-        CloudButton.BackgroundColor = _selectedMode == ServerMode.Cloud ? selectedColor : unselectedColor;
-        CloudButton.TextColor = _selectedMode == ServerMode.Cloud ? Colors.White : Colors.Black;
-
-        SelfHostedButton.BackgroundColor = _selectedMode == ServerMode.SelfHosted ? selectedColor : unselectedColor;
-        SelfHostedButton.TextColor = _selectedMode == ServerMode.SelfHosted ? Colors.White : Colors.Black;
-
         SelfHostedUrlSection.IsVisible = _selectedMode == ServerMode.SelfHosted;
     }
 
@@ -167,8 +155,7 @@ public partial class LoginPage : ContentPage
         LoginButton.IsEnabled = !isLoading;
         EmailEntry.IsEnabled = !isLoading;
         PasswordEntry.IsEnabled = !isLoading;
-        CloudButton.IsEnabled = !isLoading;
-        SelfHostedButton.IsEnabled = !isLoading;
+        ServerModePicker.IsEnabled = !isLoading;
         ServerUrlEntry.IsEnabled = !isLoading;
         TestConnectionButton.IsEnabled = !isLoading;
     }

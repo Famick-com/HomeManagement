@@ -19,6 +19,11 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
+#if IOS
+        // Disable iOS Password AutoFill floating button
+        Platforms.iOS.DisableAutoFillHandler.Register();
+#endif
+
         // API Settings (singleton - configures server URL)
         var apiSettings = new ApiSettings();
         builder.Services.AddSingleton(apiSettings);

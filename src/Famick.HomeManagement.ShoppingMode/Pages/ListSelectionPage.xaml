@@ -5,10 +5,6 @@
              Title="Famick Shopping"
              Shell.NavBarIsVisible="True">
 
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Logout" Clicked="OnLogoutClicked" />
-    </ContentPage.ToolbarItems>
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

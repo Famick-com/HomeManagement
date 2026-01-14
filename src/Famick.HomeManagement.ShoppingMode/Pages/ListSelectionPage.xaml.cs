@@ -205,19 +205,4 @@ public partial class ListSelectionPage : ContentPage
         ErrorLabel.Text = message;
     }
 
-    private async void OnLogoutClicked(object? sender, EventArgs e)
-    {
-        var confirm = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "Cancel");
-        if (!confirm) return;
-
-        // Clear token
-        await _tokenStorage.ClearTokensAsync();
-
-        // Show login page
-        var loginPage = Application.Current?.Handler?.MauiContext?.Services.GetService<LoginPage>();
-        if (loginPage != null)
-        {
-            await Navigation.PushModalAsync(new NavigationPage(loginPage));
-        }
-    }
 }
