@@ -1,5 +1,8 @@
 using Famick.HomeManagement.Core.DTOs.ShoppingLists;
+using Famick.HomeManagement.Core.DTOs.StoreIntegrations;
+using Famick.HomeManagement.Core.Exceptions;
 using Famick.HomeManagement.Core.Interfaces;
+using Famick.HomeManagement.Core.Interfaces.Plugins;
 using Famick.HomeManagement.Web.Controllers;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +19,7 @@ namespace Famick.HomeManagement.Web.Controllers.v1;
 public class ShoppingListsController : ApiControllerBase
 {
     private readonly IShoppingListService _shoppingListService;
+    private readonly IStoreIntegrationService _storeIntegrationService;
     private readonly IValidator<CreateShoppingListRequest> _createListValidator;
     private readonly IValidator<UpdateShoppingListRequest> _updateListValidator;
     private readonly IValidator<AddShoppingListItemRequest> _addItemValidator;
@@ -24,6 +28,7 @@ public class ShoppingListsController : ApiControllerBase
 
     public ShoppingListsController(
         IShoppingListService shoppingListService,
+        IStoreIntegrationService storeIntegrationService,
         IValidator<CreateShoppingListRequest> createListValidator,
         IValidator<UpdateShoppingListRequest> updateListValidator,
         IValidator<AddShoppingListItemRequest> addItemValidator,
@@ -34,6 +39,7 @@ public class ShoppingListsController : ApiControllerBase
         : base(tenantProvider, logger)
     {
         _shoppingListService = shoppingListService;
+        _storeIntegrationService = storeIntegrationService;
         _createListValidator = createListValidator;
         _updateListValidator = updateListValidator;
         _addItemValidator = addItemValidator;
@@ -545,8 +551,101 @@ public class ShoppingListsController : ApiControllerBase
         _logger.LogInformation("Toggling purchased status for item {ItemId} in list {ListId} for tenant {TenantId}",
             itemId, id, TenantId);
 
-        var item = await _shoppingListService.TogglePurchasedAsync(itemId, cancellationToken);
-        return ApiResponse(item);
+        try
+        {
+            var item = await _shoppingListService.TogglePurchasedAsync(itemId, cancellationToken);
+            return ApiResponse(item);
+        }
+        catch (EntityNotFoundException)
+        {
+            return NotFoundResponse($"Shopping list item {itemId} not found");
+        }
+    }
+
+    /// <summary>
+    /// Move purchased items to inventory
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="request">Items to move to inventory</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the operation</returns>
+    [HttpPost("{id}/move-to-inventory")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(MoveToInventoryResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> MoveToInventory(
+        Guid id,
+        [FromBody] MoveToInventoryRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Moving {Count} items to inventory from list {ListId} for tenant {TenantId}",
+            request.Items.Count, id, TenantId);
+
+        // Ensure the request's shopping list ID matches the route
+        request.ShoppingListId = id;
+
+        var result = await _shoppingListService.MoveToInventoryAsync(request, cancellationToken);
+        return ApiResponse(result);
+    }
+
+    /// <summary>
+    /// Search for products in the store linked to a shopping list
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="query">Search query</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of matching store products</returns>
+    [HttpGet("{id}/search-products")]
+    [ProducesResponseType(typeof(List<StoreProductResult>), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> SearchProducts(
+        Guid id,
+        [FromQuery] string query,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return ValidationErrorResponse(new Dictionary<string, string[]>
+            {
+                { "query", new[] { "Search query is required" } }
+            });
+        }
+
+        _logger.LogInformation("Searching products for list {ListId} with query '{Query}' for tenant {TenantId}",
+            id, query, TenantId);
+
+        // Get the shopping list to find the associated store
+        var list = await _shoppingListService.GetListByIdAsync(id, includeItems: false, cancellationToken);
+        if (list == null)
+        {
+            return NotFoundResponse("Shopping list not found");
+        }
+
+        if (list.ShoppingLocationId == Guid.Empty)
+        {
+            return ApiResponse(new List<StoreProductResult>());
+        }
+
+        try
+        {
+            var results = await _storeIntegrationService.SearchProductsAtStoreAsync(
+                list.ShoppingLocationId,
+                new StoreProductSearchRequest { Query = query },
+                cancellationToken);
+
+            return ApiResponse(results);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Failed to search products at store for list {ListId}", id);
+            return ApiResponse(new List<StoreProductResult>());
+        }
     }
 
     #endregion

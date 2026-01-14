@@ -65,6 +65,9 @@ public static class MauiProgram
         // Add inventory session service
         builder.Services.AddScoped<IInventorySessionService, MauiInventorySessionService>();
 
+        // Add navigation menu preference storage
+        builder.Services.AddScoped<INavMenuPreferenceStorage, MauiNavMenuPreferenceStorage>();
+
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();

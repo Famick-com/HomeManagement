@@ -56,6 +56,9 @@ builder.Services.AddScoped<IInventorySessionService, BrowserInventorySessionServ
 // Add shopping list preference storage
 builder.Services.AddScoped<IShoppingListPreferenceStorage, BrowserShoppingListPreferenceStorage>();
 
+// Add navigation menu preference storage
+builder.Services.AddScoped<INavMenuPreferenceStorage, BrowserNavMenuPreferenceStorage>();
+
 builder.Services.AddCore(builder.Configuration);
 
 await builder.Build().RunAsync();

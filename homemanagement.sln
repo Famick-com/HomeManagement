@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famick.HomeManagement.Share
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famick.HomeManagement.Mobile", "src\Famick.HomeManagement.Mobile\Famick.HomeManagement.Mobile.csproj", "{C7079811-FD7F-4570-9C8C-A571A6E0B280}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Famick.HomeManagement.ShoppingMode", "src\Famick.HomeManagement.ShoppingMode\Famick.HomeManagement.ShoppingMode.csproj", "{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,6 +145,18 @@ Global
 		{C7079811-FD7F-4570-9C8C-A571A6E0B280}.Release|x64.Build.0 = Release|Any CPU
 		{C7079811-FD7F-4570-9C8C-A571A6E0B280}.Release|x86.ActiveCfg = Release|Any CPU
 		{C7079811-FD7F-4570-9C8C-A571A6E0B280}.Release|x86.Build.0 = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|x64.Build.0 = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Debug|x86.Build.0 = Debug|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|x64.ActiveCfg = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|x64.Build.0 = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|x86.ActiveCfg = Release|Any CPU
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -153,5 +167,6 @@ Global
 		{18671FEA-F62C-417D-B3CF-8793EFC0E2E7} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{E8729831-E6C4-44A9-89BB-699B794B19AD} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C7079811-FD7F-4570-9C8C-A571A6E0B280} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{D19A2E49-7F5F-4CA3-AB50-2D9BF8126204} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
