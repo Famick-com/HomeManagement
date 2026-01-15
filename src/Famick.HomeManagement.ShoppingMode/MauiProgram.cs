@@ -42,6 +42,7 @@ public static class MauiProgram
 
         // Core Services
         builder.Services.AddSingleton<TokenStorage>();
+        builder.Services.AddSingleton<TenantStorage>();
         builder.Services.AddScoped<ShoppingApiClient>();
         builder.Services.AddSingleton<LocationService>();
         builder.Services.AddSingleton<OfflineStorageService>();

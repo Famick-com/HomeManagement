@@ -4,19 +4,18 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:Famick.HomeManagement.ShoppingMode.Pages"
-    Title="Famick Shopping"
+    Title="Shopping"
     FlyoutBehavior="Flyout"
     FlyoutBackgroundColor="#dbf0c9">
 
     <!-- Flyout Header -->
     <Shell.FlyoutHeader>
-        <Grid HeightRequest="100" BackgroundColor="#dbf0c9">
-            <Label Text="Famick Shopping"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   TextColor="Black"
+        <Grid HeightRequest="120" BackgroundColor="#dbf0c9" Padding="10">
+            <Image Source="famick_logo"
+                   Aspect="AspectFit"
                    VerticalOptions="Center"
-                   HorizontalOptions="Center" />
+                   HorizontalOptions="Center"
+                   HeightRequest="80" />
         </Grid>
     </Shell.FlyoutHeader>
 

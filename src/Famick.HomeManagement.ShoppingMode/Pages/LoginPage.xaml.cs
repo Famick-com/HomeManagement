@@ -6,14 +6,16 @@ public partial class LoginPage : ContentPage
 {
     private readonly ApiSettings _apiSettings;
     private readonly TokenStorage _tokenStorage;
+    private readonly TenantStorage _tenantStorage;
     private readonly ShoppingApiClient _apiClient;
     private ServerMode _selectedMode = ServerMode.Cloud;
 
-    public LoginPage(ApiSettings apiSettings, TokenStorage tokenStorage, ShoppingApiClient apiClient)
+    public LoginPage(ApiSettings apiSettings, TokenStorage tokenStorage, TenantStorage tenantStorage, ShoppingApiClient apiClient)
     {
         InitializeComponent();
         _apiSettings = apiSettings;
         _tokenStorage = tokenStorage;
+        _tenantStorage = tenantStorage;
         _apiClient = apiClient;
     }
 
@@ -130,6 +132,19 @@ public partial class LoginPage : ContentPage
             if (result.Success && result.Data != null)
             {
                 await _tokenStorage.SetTokensAsync(result.Data.AccessToken, result.Data.RefreshToken);
+
+                // Get tenant name - try from login response first, then fetch separately
+                var tenantName = result.Data.Tenant?.Name;
+                if (string.IsNullOrEmpty(tenantName))
+                {
+                    var tenantResult = await _apiClient.GetTenantAsync();
+                    if (tenantResult.Success && tenantResult.Data != null)
+                    {
+                        tenantName = tenantResult.Data.Name;
+                    }
+                }
+
+                await _tenantStorage.SetTenantNameAsync(tenantName);
                 // Pop the modal to return to ListSelectionPage
                 await Navigation.PopModalAsync();
             }

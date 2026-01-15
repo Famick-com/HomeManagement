@@ -20,6 +20,17 @@ public class LoginResponse
 {
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
+    public TenantInfo? Tenant { get; set; }
+}
+
+/// <summary>
+/// Tenant information from the login response or tenant endpoint.
+/// </summary>
+public class TenantInfo
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? Subdomain { get; set; }
 }
 
 /// <summary>

@@ -49,7 +49,12 @@ public class ShoppingApiClient
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                var content = await response.Content.ReadAsStringAsync();
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var result = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(content, options);
                 return result != null
                     ? ApiResult<LoginResponse>.Ok(result)
                     : ApiResult<LoginResponse>.Fail("Invalid response");
@@ -309,6 +314,37 @@ public class ShoppingApiClient
         catch (Exception ex)
         {
             return ApiResult<MoveToInventoryResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get tenant information.
+    /// </summary>
+    public async Task<ApiResult<TenantInfo>> GetTenantAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/tenant");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var result = System.Text.Json.JsonSerializer.Deserialize<TenantInfo>(content, options);
+                return result != null
+                    ? ApiResult<TenantInfo>.Ok(result)
+                    : ApiResult<TenantInfo>.Fail("Invalid response");
+            }
+
+            return ApiResult<TenantInfo>.Fail("Failed to get tenant info");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<TenantInfo>.Fail($"Connection error: {ex.Message}");
         }
     }
 

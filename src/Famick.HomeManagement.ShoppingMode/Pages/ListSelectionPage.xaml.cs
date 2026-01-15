@@ -10,6 +10,7 @@ public partial class ListSelectionPage : ContentPage
     private readonly TokenStorage _tokenStorage;
     private readonly LocationService _locationService;
     private readonly OfflineStorageService _offlineStorage;
+    private readonly TenantStorage _tenantStorage;
 
     public ObservableCollection<ShoppingListSummary> ShoppingLists { get; } = new();
 
@@ -17,13 +18,15 @@ public partial class ListSelectionPage : ContentPage
         ShoppingApiClient apiClient,
         TokenStorage tokenStorage,
         LocationService locationService,
-        OfflineStorageService offlineStorage)
+        OfflineStorageService offlineStorage,
+        TenantStorage tenantStorage)
     {
         InitializeComponent();
         _apiClient = apiClient;
         _tokenStorage = tokenStorage;
         _locationService = locationService;
         _offlineStorage = offlineStorage;
+        _tenantStorage = tenantStorage;
         BindingContext = this;
     }
 
@@ -42,6 +45,15 @@ public partial class ListSelectionPage : ContentPage
                 await Navigation.PushModalAsync(new NavigationPage(loginPage));
             }
             return;
+        }
+
+        // Set page title with tenant name
+        Title = await _tenantStorage.GetAppTitleAsync();
+
+        // Refresh Shell title (tenant name may have changed after login)
+        if (Shell.Current is AppShell appShell)
+        {
+            await appShell.RefreshTitleAsync();
         }
 
         await LoadShoppingListsAsync();
