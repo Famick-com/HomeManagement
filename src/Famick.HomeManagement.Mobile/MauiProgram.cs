@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Core.Interfaces;
+using Famick.HomeManagement.Core.Services;
 using Famick.HomeManagement.Mobile.Services;
 using Famick.HomeManagement.UI.Localization;
 using Famick.HomeManagement.UI.Services;
@@ -57,7 +58,13 @@ public static class MauiProgram
         builder.Services.AddScoped<ApiAuthStateProvider>();
         builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
 
-        builder.Services.AddAuthorizationCore();
+        // Configure authorization policies (must match server-side policies)
+        builder.Services.AddAuthorizationCore(options =>
+        {
+            options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
+            options.AddPolicy("RequireEditor", policy => policy.RequireRole("Admin", "Editor"));
+            options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
+        });
 
         // Add barcode scanner service (MAUI implementation with camera)
         builder.Services.AddScoped<IBarcodeScannerService, MauiBarcodeScannerService>();
@@ -67,6 +74,12 @@ public static class MauiProgram
 
         // Add navigation menu preference storage
         builder.Services.AddScoped<INavMenuPreferenceStorage, MauiNavMenuPreferenceStorage>();
+
+        // Add user permissions service (required by MainLayout for CanEdit functionality)
+        builder.Services.AddScoped<IUserPermissions, UserPermissions>();
+
+        // Add version service (required by MainLayout)
+        builder.Services.AddSingleton<IVersionService, VersionService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
