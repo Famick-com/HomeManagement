@@ -196,4 +196,72 @@ public class ShoppingLocationsController : ApiControllerBase
         var products = await _shoppingLocationService.GetProductsAtLocationAsync(id, cancellationToken);
         return ApiResponse(products);
     }
+
+    /// <summary>
+    /// Gets the aisle order configuration for a store, including known aisles
+    /// </summary>
+    /// <param name="id">Shopping location ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Aisle order configuration</returns>
+    [HttpGet("{id}/aisle-order")]
+    [ProducesResponseType(typeof(AisleOrderDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetAisleOrder(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting aisle order for location {ShoppingLocationId} for tenant {TenantId}", id, TenantId);
+
+        var aisleOrder = await _shoppingLocationService.GetAisleOrderAsync(id, cancellationToken);
+        return ApiResponse(aisleOrder);
+    }
+
+    /// <summary>
+    /// Updates the custom aisle order for a store
+    /// </summary>
+    /// <param name="id">Shopping location ID</param>
+    /// <param name="request">Aisle order update request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated aisle order configuration</returns>
+    [HttpPut("{id}/aisle-order")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(typeof(AisleOrderDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> UpdateAisleOrder(
+        Guid id,
+        [FromBody] UpdateAisleOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Updating aisle order for location {ShoppingLocationId} for tenant {TenantId}", id, TenantId);
+
+        var aisleOrder = await _shoppingLocationService.UpdateAisleOrderAsync(id, request, cancellationToken);
+        return ApiResponse(aisleOrder);
+    }
+
+    /// <summary>
+    /// Clears the custom aisle order for a store (reverts to default ordering)
+    /// </summary>
+    /// <param name="id">Shopping location ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content on success</returns>
+    [HttpDelete("{id}/aisle-order")]
+    [Authorize(Policy = "RequireEditor")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> ClearAisleOrder(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Clearing aisle order for location {ShoppingLocationId} for tenant {TenantId}", id, TenantId);
+
+        await _shoppingLocationService.ClearAisleOrderAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

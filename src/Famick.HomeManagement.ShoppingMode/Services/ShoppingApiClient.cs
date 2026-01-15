@@ -179,7 +179,17 @@ public class ShoppingApiClient
     /// <summary>
     /// Quick add an item to a shopping list.
     /// </summary>
-    public async Task<ApiResult<bool>> QuickAddItemAsync(Guid listId, string productName, decimal amount, string? barcode, string? note, bool isPurchased = true)
+    public async Task<ApiResult<bool>> QuickAddItemAsync(
+        Guid listId,
+        string productName,
+        decimal amount,
+        string? barcode,
+        string? note,
+        bool isPurchased = true,
+        string? aisle = null,
+        string? department = null,
+        string? externalProductId = null,
+        decimal? price = null)
     {
         try
         {
@@ -191,8 +201,12 @@ public class ShoppingApiClient
                 amount,
                 barcode,
                 note,
-                lookupInStore = true,
-                isPurchased
+                lookupInStore = string.IsNullOrEmpty(externalProductId), // Only lookup if we don't have store data
+                isPurchased,
+                aisle,
+                department,
+                externalProductId,
+                price
             });
 
             return response.IsSuccessStatusCode
@@ -345,6 +359,81 @@ public class ShoppingApiClient
         catch (Exception ex)
         {
             return ApiResult<TenantInfo>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get aisle order for a shopping location.
+    /// </summary>
+    public async Task<ApiResult<AisleOrderDto>> GetAisleOrderAsync(Guid locationId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync($"api/v1/shoppinglocations/{locationId}/aisle-order");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AisleOrderDto>();
+                return result != null
+                    ? ApiResult<AisleOrderDto>.Ok(result)
+                    : ApiResult<AisleOrderDto>.Fail("Invalid response");
+            }
+
+            return ApiResult<AisleOrderDto>.Fail("Failed to load aisle order");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<AisleOrderDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Update aisle order for a shopping location.
+    /// </summary>
+    public async Task<ApiResult<AisleOrderDto>> UpdateAisleOrderAsync(Guid locationId, UpdateAisleOrderRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync(
+                $"api/v1/shoppinglocations/{locationId}/aisle-order",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AisleOrderDto>();
+                return result != null
+                    ? ApiResult<AisleOrderDto>.Ok(result)
+                    : ApiResult<AisleOrderDto>.Fail("Invalid response");
+            }
+
+            return ApiResult<AisleOrderDto>.Fail("Failed to update aisle order");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<AisleOrderDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Reset aisle order to default for a shopping location.
+    /// </summary>
+    public async Task<ApiResult<bool>> ResetAisleOrderAsync(Guid locationId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.DeleteAsync(
+                $"api/v1/shoppinglocations/{locationId}/aisle-order");
+
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to reset aisle order");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
         }
     }
 

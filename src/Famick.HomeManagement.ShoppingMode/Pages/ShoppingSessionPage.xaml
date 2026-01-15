@@ -2,42 +2,48 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"             
              x:Class="Famick.HomeManagement.ShoppingMode.Pages.ShoppingSessionPage"
-             Title="{Binding ListName}">
+             Title="{Binding ListName}"
+             SafeAreaEdges="None"
+             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#121212}">
 
     <Shell.BackButtonBehavior>
         <BackButtonBehavior Command="{Binding BackCommand}" />
     </Shell.BackButtonBehavior>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Order="Primary"
+                     Clicked="OnAisleOrderClicked"
+                     IconImageSource="pencil" />
+    </ContentPage.ToolbarItems>
+
+    <Grid ios:Page.UseSafeArea="True">
 
         <!-- Offline Banner -->
         <Border x:Name="OfflineBanner"
-                Grid.Row="0"
                 IsVisible="False"
                 Padding="10"
                 Margin="0"
                 StrokeShape="RoundRectangle 0"
                 Stroke="Transparent"
                 StrokeThickness="0"
-                BackgroundColor="#FFF3E0">
+                BackgroundColor="#FFF3E0"
+                VerticalOptions="Start"
+                ZIndex="10"> <!-- Ensure banner is on top -->
             <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-                <Label Text="Offline Mode"
-                       FontAttributes="Bold"
-                       TextColor="#E65100"
-                       VerticalOptions="Center" />
-                <Label Text="Changes will sync when online"
-                       FontSize="12"
-                       TextColor="#F57C00"
-                       VerticalOptions="Center" />
+                <Label Text="Offline Mode" FontAttributes="Bold" TextColor="#E65100" VerticalOptions="Center" />
+                <Label Text="Changes will sync when online" FontSize="12" TextColor="#F57C00" VerticalOptions="Center" />
             </HorizontalStackLayout>
         </Border>
 
         <!-- Main Content -->
-        <RefreshView Grid.Row="1"
+        <RefreshView
                      x:Name="RefreshContainer"
-                     Refreshing="OnRefreshing">
+                     Refreshing="OnRefreshing"
+                     BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#121212}">
             <CollectionView x:Name="ItemsCollection"
+                            BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#121212}"
                             ItemsSource="{Binding GroupedItems}"
                             IsGrouped="True"
                             SelectionMode="None">
@@ -108,20 +114,29 @@
                         </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <BoxView HeightRequest="100" Color="{AppThemeBinding Light=#F5F5F5, Dark=#121212}" />
+                </CollectionView.Footer>
             </CollectionView>
         </RefreshView>
 
         <!-- Loading Overlay -->
         <ActivityIndicator x:Name="LoadingIndicator"
-                           Grid.Row="1"
                            IsRunning="False"
                            IsVisible="False"
                            VerticalOptions="Center"
                            HorizontalOptions="Center" />
-
         <!-- Bottom Panel -->
-        <Grid Grid.Row="2" Padding="15" ColumnDefinitions="*,Auto"
-              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}">
+        <Grid VerticalOptions="End"
+              Padding="15"
+              ColumnDefinitions="*,Auto"
+              BackgroundColor="{AppThemeBinding Light=#F5F5F5E8, Dark=#1A1A1AE8}">
+
+            <Grid.Padding>
+                <OnPlatform x:TypeArguments="Thickness">
+                    <On Platform="iOS" Value="15, 15, 15, 35" /> 
+                </OnPlatform>
+            </Grid.Padding>
 
             <!-- Subtotal -->
             <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">

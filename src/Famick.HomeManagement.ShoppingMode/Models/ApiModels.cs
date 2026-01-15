@@ -150,3 +150,20 @@ public class MoveToInventoryResponse
     public List<Guid> TodoItemIds { get; set; } = new();
     public List<string> Errors { get; set; } = new();
 }
+
+/// <summary>
+/// Aisle order configuration for a store.
+/// </summary>
+public class AisleOrderDto
+{
+    public List<string> OrderedAisles { get; set; } = new();
+    public List<string> KnownAisles { get; set; } = new();
+}
+
+/// <summary>
+/// Request to update the aisle order for a store.
+/// </summary>
+public class UpdateAisleOrderRequest
+{
+    public List<string>? OrderedAisles { get; set; }
+}

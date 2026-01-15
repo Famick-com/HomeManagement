@@ -3,14 +3,26 @@
     x:Class="Famick.HomeManagement.ShoppingMode.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:pages="clr-namespace:Famick.HomeManagement.ShoppingMode.Pages"
     Title="Shopping"
     FlyoutBehavior="Flyout"
-    FlyoutBackgroundColor="#dbf0c9">
+    ios:NavigationPage.IsNavigationBarTranslucent="True">
 
-    <!-- Flyout Header -->
+    <Shell.Resources>
+        <ResourceDictionary>
+            <Style TargetType="Shell" ApplyToDerivedTypes="True">
+                <!-- IMPORTANT: Removing explicit background allows iOS 26 Liquid Glass -->
+                <Setter Property="Shell.BackgroundColor" Value="Transparent" />
+                <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light=Black, Dark=White}" />
+                <Setter Property="Shell.TitleColor" Value="{AppThemeBinding Light=Black, Dark=White}" />
+            </Style>
+        </ResourceDictionary>
+    </Shell.Resources>
+
+    <!-- Flyout Header: Use a slightly translucent color to match the glass theme -->
     <Shell.FlyoutHeader>
-        <Grid HeightRequest="120" BackgroundColor="#dbf0c9" Padding="10">
+        <Grid HeightRequest="120" BackgroundColor="#E0DBF0C9" Padding="10"> <!-- Semi-transparent -->
             <Image Source="famick_logo"
                    Aspect="AspectFit"
                    VerticalOptions="Center"

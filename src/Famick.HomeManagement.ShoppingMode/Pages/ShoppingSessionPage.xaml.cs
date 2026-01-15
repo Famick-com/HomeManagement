@@ -113,10 +113,14 @@ public partial class ShoppingSessionPage : ContentPage
             GroupedItems.Clear();
 
             // Group items by aisle/department
+            // Note: Items come from the server sorted by custom aisle order (via SortOrder).
+            // We preserve that order by NOT re-sorting groups after GroupBy.
+            // GroupBy maintains the order of groups based on when the first element of each group appears.
             var groups = _session.Items
                 .OrderBy(i => i.SortOrder)
-                .GroupBy(i => string.IsNullOrEmpty(i.Aisle) ? i.Department ?? "Other" : $"Aisle {i.Aisle}")
-                .OrderBy(g => g.Key);
+                .GroupBy(i => string.IsNullOrEmpty(i.Aisle)
+                    ? i.Department ?? "Other"
+                    : int.TryParse(i.Aisle, out _) ? $"Aisle {i.Aisle}" : i.Aisle);
 
             foreach (var group in groups)
             {
@@ -235,6 +239,22 @@ public partial class ShoppingSessionPage : ContentPage
                 Body = null
             });
         }
+    }
+
+    private async void OnAisleOrderClicked(object? sender, EventArgs e)
+    {
+        if (_session == null)
+        {
+            await DisplayAlertAsync("Error", "Shopping session not loaded", "OK");
+            return;
+        }
+
+        var navigationParameter = new Dictionary<string, object>
+        {
+            { "LocationId", _session.StoreId.ToString() },
+            { "StoreName", _session.StoreName }
+        };
+        await Shell.Current.GoToAsync(nameof(AisleOrderPage), navigationParameter);
     }
 
     private async void OnAddItemClicked(object? sender, EventArgs e)
@@ -438,6 +458,8 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (_connectivityService.IsOnline)
         {
+            // Clear cache and force reload from server
+            await _offlineStorage.ClearSessionAsync(_listId);
             await LoadSessionAsync();
         }
         RefreshContainer.IsRefreshing = false;

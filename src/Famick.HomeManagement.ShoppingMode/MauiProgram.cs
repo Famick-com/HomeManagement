@@ -58,6 +58,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ShoppingSessionPage>();
         builder.Services.AddTransient<AddItemPage>();
         builder.Services.AddTransient<BarcodeScannerPage>();
+        builder.Services.AddTransient<AisleOrderPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

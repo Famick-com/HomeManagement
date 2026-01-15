@@ -16,6 +16,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ShoppingSessionPage), typeof(ShoppingSessionPage));
         Routing.RegisterRoute(nameof(AddItemPage), typeof(AddItemPage));
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
+        Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
 
         // Load tenant name and update title
         _ = LoadTenantNameAsync();

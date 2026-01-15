@@ -229,7 +229,7 @@ public partial class AddItemPage : ContentPage
 
         try
         {
-            // Create the new item
+            // Create the new item for local cache
             var newItem = new CachedShoppingListItem
             {
                 Id = Guid.NewGuid(),
@@ -247,10 +247,37 @@ public partial class AddItemPage : ContentPage
                 ExternalProductId = _lookupResult?.ExternalProductId
             };
 
-            // Add to local storage
-            await _offlineStorage.AddItemToSessionAsync(_listId, newItem);
+            // Try to add to server immediately if online
+            if (_connectivityService.IsOnline)
+            {
+                var result = await _apiClient.QuickAddItemAsync(
+                    _listId,
+                    productName,
+                    _quantity,
+                    _barcode,
+                    NoteEntry.Text?.Trim(),
+                    isPurchased: true,
+                    aisle: _lookupResult?.Aisle,
+                    department: _lookupResult?.Department,
+                    externalProductId: _lookupResult?.ExternalProductId,
+                    price: _lookupResult?.Price);
 
-            // Queue sync operation
+                if (result.Success)
+                {
+                    // Server add succeeded - clear cache and reload to get server state
+                    await _offlineStorage.ClearSessionAsync(_listId);
+                    await Shell.Current.GoToAsync("..");
+                    return;
+                }
+                else
+                {
+                    // Server add failed - show error but still add to local cache
+                    System.Diagnostics.Debug.WriteLine($"Server add failed: {result.ErrorMessage}");
+                }
+            }
+
+            // Offline or server failed - add to local cache and queue for later
+            await _offlineStorage.AddItemToSessionAsync(_listId, newItem);
             await _offlineStorage.EnqueueOperationAsync(new OfflineOperation
             {
                 Id = Guid.NewGuid(),
