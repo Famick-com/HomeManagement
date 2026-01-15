@@ -62,8 +62,8 @@
                             SelectionChanged="OnListSelected">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Margin="10,5" Padding="15" CornerRadius="10" HasShadow="False"
-                               BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
+                        <Border Margin="10,5" Padding="15" StrokeShape="RoundRectangle 10" Stroke="Transparent" StrokeThickness="0"
+                                BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                                 <!-- List Name -->
                                 <Label Grid.Row="0" Grid.Column="0"
@@ -96,28 +96,35 @@
                                        VerticalOptions="Center"
                                        TextColor="Gray" />
                             </Grid>
-                        </Frame>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
 
         <!-- Error Message -->
-        <Frame x:Name="ErrorFrame"
-               Grid.Row="1"
-               IsVisible="False"
-               Margin="20"
-               Padding="20"
-               CornerRadius="10"
-               BackgroundColor="#FFEBEE"
-               VerticalOptions="Center">
+        <Border x:Name="ErrorFrame"
+                Grid.Row="1"
+                IsVisible="False"
+                Margin="20"
+                Padding="20"
+                StrokeShape="RoundRectangle 10"
+                Stroke="Transparent"
+                StrokeThickness="0"
+                BackgroundColor="#FFEBEE"
+                VerticalOptions="Center">
             <VerticalStackLayout Spacing="10">
                 <Label x:Name="ErrorLabel"
                        TextColor="#C62828"
                        HorizontalOptions="Center" />
-                <Button Text="Retry"
-                        Clicked="OnRefreshClicked" />
+                <Button x:Name="RetryButton"
+                        Text="Retry"
+                        Clicked="OnRetryClicked" />
+                <Button Text="Server Settings"
+                        BackgroundColor="Transparent"
+                        TextColor="#1976D2"
+                        Clicked="OnServerSettingsClicked" />
             </VerticalStackLayout>
-        </Frame>
+        </Border>
     </Grid>
 </ContentPage>

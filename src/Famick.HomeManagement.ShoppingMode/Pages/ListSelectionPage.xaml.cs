@@ -112,7 +112,7 @@ public partial class ListSelectionPage : ContentPage
         if (detectedStore != null && detectedStore.Id != list.ShoppingLocationId)
         {
             // Ask user if they want to switch stores
-            var switchStore = await DisplayAlert(
+            var switchStore = await DisplayAlertAsync(
                 "Different Store Detected",
                 $"You appear to be at {detectedStore.Name}. Would you like to switch to this store?",
                 "Yes, Switch",
@@ -160,6 +160,26 @@ public partial class ListSelectionPage : ContentPage
     private void OnRefreshClicked(object? sender, EventArgs e)
     {
         _ = LoadShoppingListsAsync();
+    }
+
+    private async void OnRetryClicked(object? sender, EventArgs e)
+    {
+        RetryButton.IsEnabled = false;
+        RetryButton.Text = "Retrying...";
+        try
+        {
+            await LoadShoppingListsAsync();
+        }
+        finally
+        {
+            RetryButton.IsEnabled = true;
+            RetryButton.Text = "Retry";
+        }
+    }
+
+    private async void OnServerSettingsClicked(object? sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(ServerConfigPage));
     }
 
     private async void OnRefreshing(object? sender, EventArgs e)

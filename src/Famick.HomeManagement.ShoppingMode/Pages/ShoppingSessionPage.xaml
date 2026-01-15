@@ -12,14 +12,15 @@
     <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- Offline Banner -->
-        <Frame x:Name="OfflineBanner"
-               Grid.Row="0"
-               IsVisible="False"
-               Padding="10"
-               Margin="0"
-               CornerRadius="0"
-               BackgroundColor="#FFF3E0"
-               HasShadow="False">
+        <Border x:Name="OfflineBanner"
+                Grid.Row="0"
+                IsVisible="False"
+                Padding="10"
+                Margin="0"
+                StrokeShape="RoundRectangle 0"
+                Stroke="Transparent"
+                StrokeThickness="0"
+                BackgroundColor="#FFF3E0">
             <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
                 <Label Text="Offline Mode"
                        FontAttributes="Bold"
@@ -30,7 +31,7 @@
                        TextColor="#F57C00"
                        VerticalOptions="Center" />
             </HorizontalStackLayout>
-        </Frame>
+        </Border>
 
         <!-- Main Content -->
         <RefreshView Grid.Row="1"
@@ -44,13 +45,13 @@
                 <!-- Group Header (Aisle/Department) -->
                 <CollectionView.GroupHeaderTemplate>
                     <DataTemplate>
-                        <Frame Padding="15,10" Margin="0" CornerRadius="0" HasShadow="False"
-                               BackgroundColor="{AppThemeBinding Light=#E3F2FD, Dark=#1A237E}">
+                        <Border Padding="15,10" Margin="0" StrokeShape="RoundRectangle 0" Stroke="Transparent" StrokeThickness="0"
+                                BackgroundColor="{AppThemeBinding Light=#E3F2FD, Dark=#1A237E}">
                             <Label Text="{Binding Key}"
                                    FontSize="16"
                                    FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light=#1565C0, Dark=#90CAF9}" />
-                        </Frame>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.GroupHeaderTemplate>
 
@@ -67,8 +68,8 @@
                                 </SwipeItems>
                             </SwipeView.RightItems>
 
-                            <Frame Padding="10" Margin="5,2" CornerRadius="8" HasShadow="False"
-                                   BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
+                            <Border Padding="10" Margin="5,2" StrokeShape="RoundRectangle 8" Stroke="Transparent" StrokeThickness="0"
+                                    BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
 
                                     <!-- Checkbox -->
@@ -103,7 +104,7 @@
                                            Aspect="AspectFill"
                                            IsVisible="{Binding HasImage}" />
                                 </Grid>
-                            </Frame>
+                            </Border>
                         </SwipeView>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

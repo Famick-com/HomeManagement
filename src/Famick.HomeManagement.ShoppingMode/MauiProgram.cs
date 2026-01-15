@@ -47,12 +47,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<OfflineStorageService>();
         builder.Services.AddScoped<ImageCacheService>();
 
-        // ConnectivityService needs ShoppingApiClient, register as singleton
-        builder.Services.AddSingleton<ConnectivityService>(sp =>
-        {
-            var apiClient = sp.GetRequiredService<ShoppingApiClient>();
-            return new ConnectivityService(apiClient);
-        });
+        // ConnectivityService needs ShoppingApiClient, register as scoped to match ShoppingApiClient's lifetime
+        builder.Services.AddScoped<ConnectivityService>();
 
         // Pages (registered for DI navigation)
         builder.Services.AddTransient<LoginPage>();

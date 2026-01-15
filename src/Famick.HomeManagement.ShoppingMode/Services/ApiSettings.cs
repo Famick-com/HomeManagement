@@ -48,13 +48,14 @@ public class ApiSettings
 
     /// <summary>
     /// Gets or sets the current server mode.
+    /// Default is SelfHosted for self-hosted deployments.
     /// </summary>
     public ServerMode Mode
     {
         get
         {
-            var stored = Preferences.Default.Get(ServerModeKey, nameof(ServerMode.Cloud));
-            return Enum.TryParse<ServerMode>(stored, out var mode) ? mode : ServerMode.Cloud;
+            var stored = Preferences.Default.Get(ServerModeKey, nameof(ServerMode.SelfHosted));
+            return Enum.TryParse<ServerMode>(stored, out var mode) ? mode : ServerMode.SelfHosted;
         }
         set => Preferences.Default.Set(ServerModeKey, value.ToString());
     }

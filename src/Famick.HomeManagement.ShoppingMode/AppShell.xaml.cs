@@ -23,7 +23,7 @@ public partial class AppShell : Shell
         var version = AppInfo.VersionString;
         var build = AppInfo.BuildString;
 
-        await DisplayAlert(
+        await DisplayAlertAsync(
             "About Famick Shopping",
             $"Version {version} (Build {build})\n\n" +
             "A companion app for managing your shopping lists.\n\n" +
@@ -35,7 +35,7 @@ public partial class AppShell : Shell
     {
         FlyoutIsPresented = false;
 
-        var confirm = await DisplayAlert("Sign Out", "Are you sure you want to sign out?", "Yes", "Cancel");
+        var confirm = await DisplayAlertAsync("Sign Out", "Are you sure you want to sign out?", "Yes", "Cancel");
         if (!confirm) return;
 
         var tokenStorage = Application.Current?.Handler?.MauiContext?.Services.GetService<TokenStorage>();

@@ -5,15 +5,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:Famick.HomeManagement.ShoppingMode.Pages"
     Title="Famick Shopping"
-    FlyoutBehavior="Flyout">
+    FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="#dbf0c9">
 
     <!-- Flyout Header -->
     <Shell.FlyoutHeader>
-        <Grid HeightRequest="100" BackgroundColor="{AppThemeBinding Light=#1976D2, Dark=#1565C0}">
+        <Grid HeightRequest="100" BackgroundColor="#dbf0c9">
             <Label Text="Famick Shopping"
                    FontSize="24"
                    FontAttributes="Bold"
-                   TextColor="White"
+                   TextColor="Black"
                    VerticalOptions="Center"
                    HorizontalOptions="Center" />
         </Grid>

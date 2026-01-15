@@ -221,7 +221,7 @@ public partial class AddItemPage : ContentPage
         var productName = ProductNameEntry.Text?.Trim();
         if (string.IsNullOrEmpty(productName))
         {
-            await DisplayAlert("Error", "Please enter a product name", "OK");
+            await DisplayAlertAsync("Error", "Please enter a product name", "OK");
             return;
         }
 
@@ -271,7 +271,7 @@ public partial class AddItemPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Failed to add item: {ex.Message}", "OK");
+            await DisplayAlertAsync("Error", $"Failed to add item: {ex.Message}", "OK");
         }
         finally
         {

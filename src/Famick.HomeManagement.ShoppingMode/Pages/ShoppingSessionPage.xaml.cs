@@ -77,7 +77,7 @@ public partial class ShoppingSessionPage : ContentPage
                 }
                 else
                 {
-                    await DisplayAlert("Error", result.ErrorMessage ?? "Failed to load list", "OK");
+                    await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to load list", "OK");
                     await Shell.Current.GoToAsync("..");
                     return;
                 }
@@ -90,7 +90,7 @@ public partial class ShoppingSessionPage : ContentPage
             }
             else
             {
-                await DisplayAlert("Error", "Unable to load shopping list. Please try again online.", "OK");
+                await DisplayAlertAsync("Error", "Unable to load shopping list. Please try again online.", "OK");
                 await Shell.Current.GoToAsync("..");
             }
         }
@@ -277,7 +277,7 @@ public partial class ShoppingSessionPage : ContentPage
             UpdateSubtotal();
 
             // TODO: Scroll to item
-            await DisplayAlert("Found!", $"{existingItem.ProductName} checked off", "OK");
+            await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
         }
         else
         {
@@ -295,20 +295,20 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (!_connectivityService.IsOnline)
         {
-            await DisplayAlert("Offline", "Please connect to the internet to complete shopping.", "OK");
+            await DisplayAlertAsync("Offline", "Please connect to the internet to complete shopping.", "OK");
             return;
         }
 
         if (_session == null)
         {
-            await DisplayAlert("Error", "No shopping session found.", "OK");
+            await DisplayAlertAsync("Error", "No shopping session found.", "OK");
             return;
         }
 
         var purchasedItems = _session.Items.Where(i => i.IsPurchased).ToList();
         if (purchasedItems.Count == 0)
         {
-            var confirmEmpty = await DisplayAlert(
+            var confirmEmpty = await DisplayAlertAsync(
                 "No Items Purchased",
                 "You haven't marked any items as purchased. Do you want to exit without completing?",
                 "Exit",
@@ -322,7 +322,7 @@ public partial class ShoppingSessionPage : ContentPage
             return;
         }
 
-        var confirm = await DisplayAlert(
+        var confirm = await DisplayAlertAsync(
             "Complete Shopping?",
             $"This will move {purchasedItems.Count} purchased item(s) to your inventory.",
             "Complete",
@@ -367,7 +367,7 @@ public partial class ShoppingSessionPage : ContentPage
                     message += $"\n{result.Data.Errors.Count} error(s) occurred.";
                 }
 
-                await DisplayAlert("Shopping Complete", message, "OK");
+                await DisplayAlertAsync("Shopping Complete", message, "OK");
 
                 // Clear local cache
                 await _offlineStorage.ClearSessionAsync(_listId);
@@ -375,12 +375,12 @@ public partial class ShoppingSessionPage : ContentPage
             }
             else
             {
-                await DisplayAlert("Error", result.ErrorMessage ?? "Failed to complete shopping", "OK");
+                await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to complete shopping", "OK");
             }
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Failed to complete shopping: {ex.Message}", "OK");
+            await DisplayAlertAsync("Error", $"Failed to complete shopping: {ex.Message}", "OK");
         }
         finally
         {
