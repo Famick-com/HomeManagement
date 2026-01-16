@@ -37,8 +37,9 @@ public class LabelSheetService
             labels.Count, format, spec.LabelsPerPage);
 
         // Calculate scaling for QR code and text based on label size
-        var qrCodeHeight = spec.LabelHeight * 0.7f; // 70% of label height
+        var qrCodeHeight = spec.LabelHeight * 0.65f; // 65% of label height (reduced to accommodate category)
         var fontSize = spec.LabelWidth * 6f; // Scale font with label width (2" -> 12pt, 4" -> 24pt)
+        var categoryFontSize = fontSize * 0.6f; // Category text is 60% of short code font size
         var qrPixelsPerModule = spec.LabelWidth >= 3f ? 8 : 6; // Higher resolution for larger labels
 
         var document = Document.Create(container =>
@@ -69,7 +70,7 @@ public class LabelSheetService
                                         var label = labels[labelIndex];
                                         rowDescriptor.ConstantItem(spec.LabelWidth, Unit.Inch)
                                             .Height(spec.LabelHeight, Unit.Inch)
-                                            .Element(c => CreateLabel(c, label, qrCodeHeight, fontSize, qrPixelsPerModule));
+                                            .Element(c => CreateLabel(c, label, qrCodeHeight, fontSize, categoryFontSize, qrPixelsPerModule));
                                         labelIndex++;
                                     }
                                     else
@@ -101,7 +102,7 @@ public class LabelSheetService
         return document.GeneratePdf();
     }
 
-    private void CreateLabel(IContainer container, LabelInfo label, float qrCodeHeight, float fontSize, int qrPixelsPerModule)
+    private void CreateLabel(IContainer container, LabelInfo label, float qrCodeHeight, float fontSize, float categoryFontSize, int qrPixelsPerModule)
     {
         var qrCodeBytes = _qrCodeService.GenerateQrCodeBytes(label.ShortCode, pixelsPerModule: qrPixelsPerModule);
 
@@ -126,6 +127,17 @@ public class LabelSheetService
                     .FontSize(fontSize)
                     .Bold()
                     .FontFamily(Fonts.Courier);
+
+                // Category text below short code (only if set)
+                if (!string.IsNullOrWhiteSpace(label.Category))
+                {
+                    column.Item()
+                        .AlignCenter()
+                        .PaddingTop(1)
+                        .Text(label.Category)
+                        .FontSize(categoryFontSize)
+                        .FontFamily(Fonts.Arial);
+                }
             });
     }
 }
@@ -137,4 +149,5 @@ public class LabelInfo
 {
     public Guid Id { get; set; }
     public string ShortCode { get; set; } = string.Empty;
+    public string? Category { get; set; }
 }

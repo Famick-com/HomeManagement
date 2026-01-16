@@ -401,7 +401,7 @@ public class StorageBinsController : ApiControllerBase
                 var bin = await _storageBinService.GetByIdAsync(binId, ct);
                 if (bin != null)
                 {
-                    existingBins.Add(new LabelInfo { Id = bin.Id, ShortCode = bin.ShortCode });
+                    existingBins.Add(new LabelInfo { Id = bin.Id, ShortCode = bin.ShortCode, Category = bin.Category });
                 }
             }
 
@@ -413,7 +413,7 @@ public class StorageBinsController : ApiControllerBase
                     foreach (var bin in existingBins)
                     {
                         if (labels.Count >= labelsNeeded) break;
-                        labels.Add(new LabelInfo { Id = bin.Id, ShortCode = bin.ShortCode });
+                        labels.Add(new LabelInfo { Id = bin.Id, ShortCode = bin.ShortCode, Category = bin.Category });
                     }
                 }
             }
