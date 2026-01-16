@@ -36,5 +36,18 @@
 	<!-- Location permission for store detection -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Famick Shopping uses your location to detect which store you're shopping at and organize your list accordingly.</string>
+
+	<!-- URL scheme for deep linking -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.famick.shopping</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>famickshopping</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

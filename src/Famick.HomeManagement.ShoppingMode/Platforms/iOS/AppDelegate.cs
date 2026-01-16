@@ -1,4 +1,4 @@
-﻿using Foundation;
+using Foundation;
 using UIKit;
 using Microsoft.Maui.Platform;
 
@@ -24,11 +24,26 @@ public class AppDelegate : MauiUIApplicationDelegate
                     if (window != null)
                     {
                         // Use SystemBackground for proper light/dark mode support
-                        window.BackgroundColor = UIColor.SystemBackground; 
-                        break; 
+                        window.BackgroundColor = UIColor.SystemBackground;
+                        break;
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Handle URL scheme deep links (iOS 9+)
+    /// </summary>
+    public override bool OpenUrl(UIApplication application, NSUrl url, NSDictionary options)
+    {
+        if (url != null && url.Scheme == "famickshopping")
+        {
+            var uri = new Uri(url.AbsoluteString ?? string.Empty);
+            App.HandleDeepLink(uri);
+            return true;
+        }
+
+        return base.OpenUrl(application, url, options);
     }
 }

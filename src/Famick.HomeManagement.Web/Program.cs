@@ -1,4 +1,5 @@
 using AspNetCoreRateLimit;
+using Famick.HomeManagement.Core.Configuration;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Web.Middleware;
 using Famick.HomeManagement.Web.Services;
@@ -113,6 +114,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddCore(builder.Configuration);
+
+// Configure app store links for mobile deep linking
+builder.Services.Configure<AppStoreLinksSettings>(
+    builder.Configuration.GetSection("AppStoreLinks"));
 
 // Register HttpContextAccessor for tenant resolution from HTTP context
 builder.Services.AddHttpContextAccessor();

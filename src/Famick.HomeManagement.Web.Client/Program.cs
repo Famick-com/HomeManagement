@@ -39,6 +39,9 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredServ
 // Add user permissions service for role-based UI restrictions
 builder.Services.AddScoped<IUserPermissions, UserPermissions>();
 
+// Add mobile detection service for deep linking support
+builder.Services.AddScoped<IMobileDetectionService, MobileDetectionService>();
+
 // Configure authorization policies (must match server-side policies)
 builder.Services.AddAuthorizationCore(options =>
 {
