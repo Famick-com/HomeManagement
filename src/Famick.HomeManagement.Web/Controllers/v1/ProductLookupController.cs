@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Core.DTOs.ProductLookup;
+using Famick.HomeManagement.Core.DTOs.StoreIntegrations;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Core.Interfaces.Plugins;
 using Famick.HomeManagement.Domain.Entities;
@@ -19,11 +20,13 @@ namespace Famick.HomeManagement.Web.Controllers.v1;
 public class ProductLookupController : ApiControllerBase
 {
     private readonly IProductLookupService _lookupService;
+    private readonly IStoreIntegrationService _storeIntegrationService;
     private readonly IPluginLoader _pluginLoader;
     private readonly HomeManagementDbContext _dbContext;
 
     public ProductLookupController(
         IProductLookupService lookupService,
+        IStoreIntegrationService storeIntegrationService,
         IPluginLoader pluginLoader,
         HomeManagementDbContext dbContext,
         ITenantProvider tenantProvider,
@@ -31,6 +34,7 @@ public class ProductLookupController : ApiControllerBase
         : base(tenantProvider, logger)
     {
         _lookupService = lookupService;
+        _storeIntegrationService = storeIntegrationService;
         _pluginLoader = pluginLoader;
         _dbContext = dbContext;
     }
@@ -52,14 +56,93 @@ public class ProductLookupController : ApiControllerBase
             return BadRequest(new { error_message = "Query is required" });
         }
 
-        _logger.LogInformation("Product lookup search: {Query}, Mode: {SearchMode}",
-            request.Query, request.SearchMode);
+        _logger.LogInformation("Product lookup search: {Query}, Mode: {SearchMode}, PreferredStore: {PreferredStore}",
+            request.Query, request.SearchMode, request.PreferredShoppingLocationId);
 
         var results = await _lookupService.SearchAsync(
             request.Query,
             request.MaxResults,
             request.SearchMode,
             cancellationToken);
+
+        // If a preferred shopping location is specified, also search via store integration
+        // This uses the user's OAuth token for proper authentication
+        if (request.PreferredShoppingLocationId.HasValue && request.IncludeStoreResults)
+        {
+            try
+            {
+                var storeResults = await _storeIntegrationService.SearchProductsAtStoreAsync(
+                    request.PreferredShoppingLocationId.Value,
+                    new StoreProductSearchRequest { Query = request.Query, MaxResults = request.MaxResults },
+                    cancellationToken);
+
+                // Get shopping location info for the results
+                var shoppingLocation = await _dbContext.ShoppingLocations
+                    .FirstOrDefaultAsync(sl => sl.Id == request.PreferredShoppingLocationId.Value, cancellationToken);
+
+                // Convert store results to lookup results and merge
+                foreach (var storeResult in storeResults)
+                {
+                    // Check if this product is already in results (by barcode or external ID)
+                    var existingResult = results.FirstOrDefault(r =>
+                        (!string.IsNullOrEmpty(r.Barcode) && r.Barcode == storeResult.Barcode) ||
+                        (!string.IsNullOrEmpty(r.ExternalProductId) && r.ExternalProductId == storeResult.ExternalProductId));
+
+                    if (existingResult != null)
+                    {
+                        // Enrich existing result with store-specific data
+                        existingResult.Price ??= storeResult.Price;
+                        existingResult.PriceUnit ??= storeResult.PriceUnit;
+                        existingResult.SalePrice ??= storeResult.SalePrice;
+                        existingResult.Aisle ??= storeResult.Aisle;
+                        existingResult.Shelf ??= storeResult.Shelf;
+                        existingResult.Department ??= storeResult.Department;
+                        existingResult.InStock ??= storeResult.InStock;
+                        existingResult.ShoppingLocationId ??= request.PreferredShoppingLocationId;
+                        existingResult.ShoppingLocationName ??= shoppingLocation?.Name;
+                    }
+                    else
+                    {
+                        // Add as new result
+                        results.Add(new ProductLookupResult
+                        {
+                            Name = storeResult.Name ?? string.Empty,
+                            Barcode = storeResult.Barcode,
+                            BrandName = storeResult.Brand,
+                            Description = storeResult.Description,
+                            ExternalProductId = storeResult.ExternalProductId,
+                            Price = storeResult.Price,
+                            PriceUnit = storeResult.PriceUnit,
+                            SalePrice = storeResult.SalePrice,
+                            Aisle = storeResult.Aisle,
+                            Shelf = storeResult.Shelf,
+                            Department = storeResult.Department,
+                            InStock = storeResult.InStock,
+                            Size = storeResult.Size,
+                            ProductUrl = storeResult.ProductUrl,
+                            ImageUrl = !string.IsNullOrEmpty(storeResult.ImageUrl)
+                                ? new ResultImage { ImageUrl = storeResult.ImageUrl, PluginId = shoppingLocation?.IntegrationType ?? "store" }
+                                : null,
+                            ShoppingLocationId = request.PreferredShoppingLocationId,
+                            ShoppingLocationName = shoppingLocation?.Name,
+                            Categories = storeResult.Categories ?? new List<string>(),
+                            DataSources = new Dictionary<string, string>
+                            {
+                                { shoppingLocation?.Name ?? "Store", storeResult.ExternalProductId ?? "" }
+                            }
+                        });
+                    }
+                }
+
+                _logger.LogInformation("Added {Count} results from store integration", storeResults.Count);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail the entire search if store integration fails
+                _logger.LogWarning(ex, "Failed to search via store integration for location {LocationId}",
+                    request.PreferredShoppingLocationId);
+            }
+        }
 
         // Convert ProductLookupResult to ProductLookupResultDto
         var response = new ProductLookupResponse
@@ -76,9 +159,12 @@ public class ProductLookupController : ApiControllerBase
         var sourceNames = string.Join(", ", r.DataSources.Keys);
         var primarySource = r.DataSources.FirstOrDefault();
 
+        // Determine source type - StoreIntegration if store-specific fields are present
+        var isStoreResult = r.Price.HasValue || !string.IsNullOrEmpty(r.Aisle) || !string.IsNullOrEmpty(r.Department);
+
         return new ProductLookupResultDto
         {
-            SourceType = "ProductPlugin",
+            SourceType = isStoreResult ? "StoreIntegration" : "ProductPlugin",
             PluginId = primarySource.Key ?? string.Empty,
             PluginDisplayName = sourceNames, // Show all contributing sources
             ExternalId = primarySource.Value ?? string.Empty,
@@ -91,7 +177,20 @@ public class ProductLookupController : ApiControllerBase
             Nutrition = r.Nutrition,
             Ingredients = r.Ingredients,
             ServingSizeDescription = r.ServingSizeDescription,
-            BrandOwner = r.BrandOwner
+            BrandOwner = r.BrandOwner,
+
+            // Store-specific fields
+            Price = r.Price,
+            PriceUnit = r.PriceUnit,
+            SalePrice = r.SalePrice,
+            Aisle = r.Aisle,
+            Shelf = r.Shelf,
+            Department = r.Department,
+            InStock = r.InStock,
+            Size = r.Size,
+            ProductUrl = r.ProductUrl,
+            ShoppingLocationId = r.ShoppingLocationId,
+            ShoppingLocationName = r.ShoppingLocationName,
         };
     }
 
