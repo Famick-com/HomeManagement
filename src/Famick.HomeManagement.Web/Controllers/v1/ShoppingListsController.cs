@@ -365,6 +365,35 @@ public class ShoppingListsController : ApiControllerBase
     }
 
     /// <summary>
+    /// Gets a preview of purchased items for the clear purchased dialog
+    /// </summary>
+    /// <param name="id">Shopping list ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Preview data with items grouped by product status</returns>
+    [HttpGet("{id}/clear-purchased-preview")]
+    [ProducesResponseType(typeof(ClearPurchasedPreviewDto), 200)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GetClearPurchasedPreview(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting clear purchased preview for shopping list {ShoppingListId} for tenant {TenantId}",
+            id, TenantId);
+
+        try
+        {
+            var preview = await _shoppingListService.GetClearPurchasedPreviewAsync(id, cancellationToken);
+            return ApiResponse(preview);
+        }
+        catch (EntityNotFoundException)
+        {
+            return NotFoundResponse($"Shopping list {id} not found");
+        }
+    }
+
+    /// <summary>
     /// Clears all purchased items from a shopping list
     /// </summary>
     /// <param name="id">Shopping list ID</param>
@@ -535,6 +564,7 @@ public class ShoppingListsController : ApiControllerBase
     /// </summary>
     /// <param name="id">Shopping list ID</param>
     /// <param name="itemId">Shopping list item ID</param>
+    /// <param name="request">Optional request with best before date for inventory tracking</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated shopping list item</returns>
     [HttpPost("{id}/items/{itemId}/toggle-purchased")]
@@ -546,6 +576,7 @@ public class ShoppingListsController : ApiControllerBase
     public async Task<IActionResult> TogglePurchased(
         Guid id,
         Guid itemId,
+        [FromBody] MarkItemPurchasedRequest? request,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation("Toggling purchased status for item {ItemId} in list {ListId} for tenant {TenantId}",
@@ -553,7 +584,7 @@ public class ShoppingListsController : ApiControllerBase
 
         try
         {
-            var item = await _shoppingListService.TogglePurchasedAsync(itemId, cancellationToken);
+            var item = await _shoppingListService.TogglePurchasedAsync(itemId, request, cancellationToken);
             return ApiResponse(item);
         }
         catch (EntityNotFoundException)
