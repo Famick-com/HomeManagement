@@ -1,10 +1,12 @@
 using System.Security.Claims;
+using Famick.HomeManagement.Core.Configuration;
 using Famick.HomeManagement.Core.DTOs.Authentication;
 using Famick.HomeManagement.Core.DTOs.ExternalAuth;
 using Famick.HomeManagement.Core.Exceptions;
 using Famick.HomeManagement.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Famick.HomeManagement.Web.Controllers;
 
@@ -16,14 +18,38 @@ namespace Famick.HomeManagement.Web.Controllers;
 public class ExternalAuthApiController : ControllerBase
 {
     private readonly IExternalAuthService _externalAuthService;
+    private readonly IPasskeyService _passkeyService;
+    private readonly ExternalAuthSettings _settings;
     private readonly ILogger<ExternalAuthApiController> _logger;
 
     public ExternalAuthApiController(
         IExternalAuthService externalAuthService,
+        IPasskeyService passkeyService,
+        IOptions<ExternalAuthSettings> settings,
         ILogger<ExternalAuthApiController> logger)
     {
         _externalAuthService = externalAuthService;
+        _passkeyService = passkeyService;
+        _settings = settings.Value;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Gets the authentication configuration for the frontend
+    /// </summary>
+    [HttpGet("config")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthConfigurationDto), 200)]
+    public async Task<IActionResult> GetAuthConfiguration(CancellationToken cancellationToken)
+    {
+        var providers = await _externalAuthService.GetEnabledProvidersAsync(cancellationToken);
+
+        return Ok(new AuthConfigurationDto
+        {
+            PasswordAuthEnabled = _settings.PasswordAuthEnabled,
+            PasskeyEnabled = _passkeyService.IsEnabled,
+            Providers = providers.Where(p => p.IsEnabled).ToList()
+        });
     }
 
     /// <summary>

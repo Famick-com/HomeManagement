@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\homemanagement-shared\src\Famick.HomeManagement.Domain\Famick.HomeManagement.Domain.csproj" />
@@ -34,6 +34,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>e5efebdb-723a-449e-a908-b41f1c4f0419</UserSecretsId>
   </PropertyGroup>
 
 </Project>

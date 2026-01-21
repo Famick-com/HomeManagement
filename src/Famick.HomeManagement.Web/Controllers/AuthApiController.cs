@@ -1,10 +1,12 @@
 using System.Security.Claims;
+using Famick.HomeManagement.Core.Configuration;
 using Famick.HomeManagement.Core.DTOs.Authentication;
 using Famick.HomeManagement.Core.Exceptions;
 using Famick.HomeManagement.Core.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Famick.HomeManagement.Web.Controllers;
 
@@ -21,6 +23,7 @@ public class AuthApiController : ControllerBase
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
+    private readonly ExternalAuthSettings _externalAuthSettings;
     private readonly ILogger<AuthApiController> _logger;
 
     public AuthApiController(
@@ -30,6 +33,7 @@ public class AuthApiController : ControllerBase
         IValidator<LoginRequest> loginValidator,
         IValidator<ForgotPasswordRequest> forgotPasswordValidator,
         IValidator<ResetPasswordRequest> resetPasswordValidator,
+        IOptions<ExternalAuthSettings> externalAuthSettings,
         ILogger<AuthApiController> logger)
     {
         _authService = authService;
@@ -38,6 +42,7 @@ public class AuthApiController : ControllerBase
         _loginValidator = loginValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
+        _externalAuthSettings = externalAuthSettings.Value;
         _logger = logger;
     }
 
@@ -58,6 +63,13 @@ public class AuthApiController : ControllerBase
         [FromBody] RegisterRequest request,
         CancellationToken cancellationToken)
     {
+        // Check if password authentication is enabled
+        if (!_externalAuthSettings.PasswordAuthEnabled)
+        {
+            _logger.LogWarning("Password registration attempt blocked - password authentication is disabled");
+            return StatusCode(403, new { error_message = "Password registration is disabled. Please use an external provider." });
+        }
+
         // Check if registration is allowed (only when no users exist)
         var hasUsers = await _setupService.HasUsersAsync(cancellationToken);
         if (hasUsers)
@@ -121,6 +133,13 @@ public class AuthApiController : ControllerBase
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
     {
+        // Check if password authentication is enabled
+        if (!_externalAuthSettings.PasswordAuthEnabled)
+        {
+            _logger.LogWarning("Password login attempt blocked - password authentication is disabled");
+            return StatusCode(403, new { error_message = "Password authentication is disabled. Please use an external provider." });
+        }
+
         var validationResult = await _loginValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -271,10 +290,17 @@ public class AuthApiController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(ForgotPasswordResponse), 200)]
     [ProducesResponseType(400)]
+    [ProducesResponseType(403)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
         CancellationToken cancellationToken)
     {
+        // Check if password authentication is enabled
+        if (!_externalAuthSettings.PasswordAuthEnabled)
+        {
+            return StatusCode(403, new { error_message = "Password authentication is disabled." });
+        }
+
         var validationResult = await _forgotPasswordValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -329,10 +355,17 @@ public class AuthApiController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(ResetPasswordResponse), 200)]
     [ProducesResponseType(400)]
+    [ProducesResponseType(403)]
     public async Task<IActionResult> ResetPassword(
         [FromBody] ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
+        // Check if password authentication is enabled
+        if (!_externalAuthSettings.PasswordAuthEnabled)
+        {
+            return StatusCode(403, new { error_message = "Password authentication is disabled." });
+        }
+
         var validationResult = await _resetPasswordValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
