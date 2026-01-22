@@ -41,6 +41,9 @@ public static class MauiProgram
         builder.Services.AddSingleton(apiSettings);
         builder.Services.AddSingleton<IServerSettings>(apiSettings);
 
+        // Add deep link handler for QR code / deep link setup
+        builder.Services.AddSingleton<DeepLinkHandler>();
+
         // Configure HttpClient with dynamic base URL and SSL bypass for debug
         builder.Services.AddScoped(sp =>
         {
@@ -86,6 +89,11 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var app = builder.Build();
+
+        // Set service provider for deep link handling
+        App.SetServiceProvider(app.Services);
+
+        return app;
     }
 }
