@@ -4,6 +4,7 @@ using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Core.Interfaces.Plugins;
 using Famick.HomeManagement.Domain.Entities;
 using Famick.HomeManagement.Infrastructure.Data;
+using Famick.HomeManagement.Infrastructure.Services;
 using Famick.HomeManagement.Web.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -159,15 +160,38 @@ public class ProductLookupController : ApiControllerBase
         var sourceNames = string.Join(", ", r.DataSources.Keys);
         var primarySource = r.DataSources.FirstOrDefault();
 
-        // Determine source type - StoreIntegration if store-specific fields are present
-        var isStoreResult = r.Price.HasValue || !string.IsNullOrEmpty(r.Aisle) || !string.IsNullOrEmpty(r.Department);
+        // Check if this is a local product result
+        var isLocalProduct = r.DataSources.ContainsKey(ProductLookupService.LocalProductsDataSource);
+        Guid? localProductId = null;
+        if (isLocalProduct && r.DataSources.TryGetValue(ProductLookupService.LocalProductsDataSource, out var idStr))
+        {
+            Guid.TryParse(idStr, out var parsedId);
+            localProductId = parsedId;
+        }
+
+        // Determine source type
+        string sourceType;
+        if (isLocalProduct)
+        {
+            sourceType = "LocalProduct";
+        }
+        else if (r.Price.HasValue || !string.IsNullOrEmpty(r.Aisle) || !string.IsNullOrEmpty(r.Department))
+        {
+            sourceType = "StoreIntegration";
+        }
+        else
+        {
+            sourceType = "ProductPlugin";
+        }
 
         return new ProductLookupResultDto
         {
-            SourceType = isStoreResult ? "StoreIntegration" : "ProductPlugin",
+            SourceType = sourceType,
             PluginId = primarySource.Key ?? string.Empty,
             PluginDisplayName = sourceNames, // Show all contributing sources
             ExternalId = primarySource.Value ?? string.Empty,
+            LocalProductId = localProductId,
+            IsLocalProduct = isLocalProduct,
             Name = r.Name,
             Brand = r.BrandName,
             Barcode = r.Barcode,
