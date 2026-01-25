@@ -1,6 +1,7 @@
 using Famick.HomeManagement.Core.DTOs.Equipment;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Web.Controllers;
+using Famick.HomeManagement.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -358,12 +359,10 @@ public class EquipmentController : ApiControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadDocument(
         Guid id,
-        [FromForm] IFormFile file,
-        [FromForm] string? displayName,
-        [FromForm] Guid? tagId,
+        [FromForm] UploadEquipmentDocumentRequest uploadRequest,
         CancellationToken ct)
     {
-        if (file == null || file.Length == 0)
+        if (uploadRequest.File == null || uploadRequest.File.Length == 0)
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -371,7 +370,7 @@ public class EquipmentController : ApiControllerBase
             });
         }
 
-        if (file.Length > MaxDocumentSize)
+        if (uploadRequest.File.Length > MaxDocumentSize)
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -379,7 +378,7 @@ public class EquipmentController : ApiControllerBase
             });
         }
 
-        if (!AllowedDocumentTypes.Contains(file.ContentType.ToLowerInvariant()))
+        if (!AllowedDocumentTypes.Contains(uploadRequest.File.ContentType.ToLowerInvariant()))
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -388,16 +387,16 @@ public class EquipmentController : ApiControllerBase
         }
 
         _logger.LogInformation("Uploading document '{FileName}' to equipment {EquipmentId} for tenant {TenantId}",
-            file.FileName, id, TenantId);
+            uploadRequest.File.FileName, id, TenantId);
 
-        await using var stream = file.OpenReadStream();
+        await using var stream = uploadRequest.File.OpenReadStream();
         var request = new AddEquipmentDocumentRequest
         {
-            DisplayName = displayName,
-            TagId = tagId
+            DisplayName = uploadRequest.DisplayName,
+            TagId = uploadRequest.TagId
         };
 
-        var document = await _equipmentService.AddDocumentAsync(id, stream, file.FileName, file.ContentType, request, ct);
+        var document = await _equipmentService.AddDocumentAsync(id, stream, uploadRequest.File.FileName, uploadRequest.File.ContentType, request, ct);
 
         return CreatedAtAction(nameof(GetDocuments), new { id }, document);
     }

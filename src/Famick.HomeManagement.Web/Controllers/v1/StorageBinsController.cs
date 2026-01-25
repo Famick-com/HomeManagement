@@ -1,6 +1,7 @@
 using Famick.HomeManagement.Core.DTOs.StorageBins;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Web.Controllers;
+using Famick.HomeManagement.Web.Models;
 using Famick.HomeManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -264,10 +265,10 @@ public class StorageBinsController : ApiControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadPhoto(
         Guid id,
-        [FromForm] IFormFile file,
+        [FromForm] UploadStorageBinPhotoRequest uploadRequest,
         CancellationToken ct)
     {
-        if (file == null || file.Length == 0)
+        if (uploadRequest.File == null || uploadRequest.File.Length == 0)
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -275,7 +276,7 @@ public class StorageBinsController : ApiControllerBase
             });
         }
 
-        if (file.Length > MaxPhotoSize)
+        if (uploadRequest.File.Length > MaxPhotoSize)
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -283,7 +284,7 @@ public class StorageBinsController : ApiControllerBase
             });
         }
 
-        if (!AllowedPhotoTypes.Contains(file.ContentType.ToLowerInvariant()))
+        if (!AllowedPhotoTypes.Contains(uploadRequest.File.ContentType.ToLowerInvariant()))
         {
             return ValidationErrorResponse(new Dictionary<string, string[]>
             {
@@ -292,10 +293,10 @@ public class StorageBinsController : ApiControllerBase
         }
 
         _logger.LogInformation("Uploading photo '{FileName}' to storage bin {StorageBinId} for tenant {TenantId}",
-            file.FileName, id, TenantId);
+            uploadRequest.File.FileName, id, TenantId);
 
-        await using var stream = file.OpenReadStream();
-        var photo = await _storageBinService.AddPhotoAsync(id, stream, file.FileName, file.ContentType, ct);
+        await using var stream = uploadRequest.File.OpenReadStream();
+        var photo = await _storageBinService.AddPhotoAsync(id, stream, uploadRequest.File.FileName, uploadRequest.File.ContentType, ct);
 
         return CreatedAtAction(nameof(GetPhotos), new { id }, photo);
     }

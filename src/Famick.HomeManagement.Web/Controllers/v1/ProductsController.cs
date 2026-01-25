@@ -1,6 +1,7 @@
 using Famick.HomeManagement.Core.DTOs.Products;
 using Famick.HomeManagement.Core.Interfaces;
 using Famick.HomeManagement.Web.Controllers;
+using Famick.HomeManagement.Web.Models;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -288,7 +289,7 @@ public class ProductsController : ApiControllerBase
     /// Uploads one or more images to a product
     /// </summary>
     /// <param name="id">Product ID</param>
-    /// <param name="files">Image files to upload</param>
+    /// <param name="uploadRequest">Upload request containing image files</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of uploaded image details</returns>
     [HttpPost("{id}/images")]
@@ -298,18 +299,19 @@ public class ProductsController : ApiControllerBase
     [ProducesResponseType(401)]
     [ProducesResponseType(404)]
     [ProducesResponseType(500)]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadImages(
         Guid id,
-        [FromForm] List<IFormFile> files,
+        [FromForm] UploadProductImagesRequest uploadRequest,
         CancellationToken cancellationToken)
     {
-        if (files == null || files.Count == 0)
+        if (uploadRequest.Files == null || uploadRequest.Files.Count == 0)
         {
             return BadRequest(new { error_message = "At least one image file is required" });
         }
 
         // Validate files
-        foreach (var file in files)
+        foreach (var file in uploadRequest.Files)
         {
             if (!AllowedImageTypes.Contains(file.ContentType.ToLowerInvariant()))
             {
@@ -323,11 +325,11 @@ public class ProductsController : ApiControllerBase
         }
 
         _logger.LogInformation("Uploading {Count} images to product {ProductId} for tenant {TenantId}",
-            files.Count, id, TenantId);
+            uploadRequest.Files.Count, id, TenantId);
 
         var uploadedImages = new List<ProductImageDto>();
 
-        foreach (var file in files)
+        foreach (var file in uploadRequest.Files)
         {
             await using var stream = file.OpenReadStream();
             var image = await _productsService.AddImageAsync(
