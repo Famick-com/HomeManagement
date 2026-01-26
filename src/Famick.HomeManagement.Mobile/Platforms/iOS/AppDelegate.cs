@@ -1,5 +1,6 @@
-﻿using Foundation;
+using Foundation;
 using UIKit;
+using Microsoft.Maui.Platform;
 
 namespace Famick.HomeManagement.Mobile;
 
@@ -8,28 +9,41 @@ public class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 
-    /// <summary>
-    /// Handle deep links when app is opened via URL scheme (cold start).
-    /// </summary>
-    public override bool OpenUrl(UIApplication app, NSUrl url, NSDictionary options)
+    public override void OnActivated(UIApplication application)
     {
-        if (url != null)
-        {
-            var uri = url.ToString();
-            System.Diagnostics.Debug.WriteLine($"Deep link received (iOS): {uri}");
+        base.OnActivated(application);
 
-            // Store the deep link URI for the app to process
-            iOSDeepLinkManager.PendingDeepLink = uri;
+        // Ensure the main window background is white to match the app theme and cover the safe area
+        if (UIDevice.CurrentDevice.CheckSystemVersion(13, 0)) // Available iOS 13+
+        {
+            foreach (var scene in application.ConnectedScenes)
+            {
+                if (scene is UIWindowScene windowScene)
+                {
+                    var window = windowScene.Windows.FirstOrDefault();
+                    if (window != null)
+                    {
+                        // Use SystemBackground for proper light/dark mode support
+                        window.BackgroundColor = UIColor.SystemBackground;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle URL scheme deep links (iOS 9+)
+    /// </summary>
+    public override bool OpenUrl(UIApplication application, NSUrl url, NSDictionary options)
+    {
+        if (url != null && url.Scheme == "famickshopping")
+        {
+            var uri = new Uri(url.AbsoluteString ?? string.Empty);
+            App.HandleDeepLink(uri);
+            return true;
         }
 
-        return base.OpenUrl(app, url, options);
+        return base.OpenUrl(application, url, options);
     }
-}
-
-/// <summary>
-/// Simple static class to hold pending deep link between iOS and MAUI app.
-/// </summary>
-public static class iOSDeepLinkManager
-{
-    public static string? PendingDeepLink { get; set; }
 }

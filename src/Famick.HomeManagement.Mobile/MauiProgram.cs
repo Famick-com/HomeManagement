@@ -1,12 +1,7 @@
-using Famick.HomeManagement.Core.Interfaces;
-using Famick.HomeManagement.Core.Services;
+using Famick.HomeManagement.Mobile.Pages;
+using Famick.HomeManagement.Mobile.Pages.Onboarding;
 using Famick.HomeManagement.Mobile.Services;
-using Famick.HomeManagement.UI.Localization;
-using Famick.HomeManagement.UI.Services;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
-using MudBlazor;
-using MudBlazor.Services;
 using ZXing.Net.Maui.Controls;
 
 namespace Famick.HomeManagement.Mobile;
@@ -25,75 +20,58 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        builder.Services.AddMauiBlazorWebView();
+#if IOS
+        // Disable iOS Password AutoFill floating button
+        Platforms.iOS.DisableAutoFillHandler.Register();
+#endif
 
-        // Add MudBlazor services
-        builder.Services.AddMudServices();
-
-        // Add localization services (MAUI-specific implementation)
-        builder.Services.AddScoped<ILanguagePreferenceStorage, MauiLanguagePreferenceStorage>();
-        builder.Services.AddScoped<ILocalizationService, MauiLocalizationService>();
-        builder.Services.AddScoped<ILocalizer, Localizer>();
-        builder.Services.AddTransient<MudLocalizer, FamickMudLocalizer>();
-
-        // Add API settings (configurable base URL)
+        // API Settings (singleton - configures server URL)
         var apiSettings = new ApiSettings();
         builder.Services.AddSingleton(apiSettings);
-        builder.Services.AddSingleton<IServerSettings>(apiSettings);
 
-        // Add deep link handler for QR code / deep link setup
-        builder.Services.AddSingleton<DeepLinkHandler>();
-
-        // Configure HttpClient with dynamic base URL and SSL bypass for debug
+        // Configure HttpClient with dynamic base URL
         builder.Services.AddScoped(sp =>
         {
-            var apiSettings = sp.GetRequiredService<ApiSettings>();
-            var handler = new DynamicApiHttpHandler(apiSettings);
+            var settings = sp.GetRequiredService<ApiSettings>();
+            var handler = new DynamicApiHttpHandler(settings);
             return new HttpClient(handler)
             {
-                BaseAddress = new Uri(apiSettings.BaseUrl)
+                BaseAddress = new Uri(settings.BaseUrl),
+                Timeout = TimeSpan.FromSeconds(30)
             };
         });
 
-        // Add authentication services
-        builder.Services.AddScoped<ITokenStorage, MauiTokenStorage>();
-        builder.Services.AddScoped<IApiClient, HttpApiClient>();
-        builder.Services.AddScoped<ApiAuthStateProvider>();
-        builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<ApiAuthStateProvider>());
+        // Core Services
+        builder.Services.AddSingleton<TokenStorage>();
+        builder.Services.AddSingleton<TenantStorage>();
+        builder.Services.AddSingleton<OnboardingService>();
+        builder.Services.AddScoped<ShoppingApiClient>();
+        builder.Services.AddSingleton<LocationService>();
+        builder.Services.AddSingleton<OfflineStorageService>();
+        builder.Services.AddScoped<ImageCacheService>();
 
-        // Configure authorization policies (must match server-side policies)
-        builder.Services.AddAuthorizationCore(options =>
-        {
-            options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
-            options.AddPolicy("RequireEditor", policy => policy.RequireRole("Admin", "Editor"));
-            options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
-        });
+        // ConnectivityService needs ShoppingApiClient, register as scoped to match ShoppingApiClient's lifetime
+        builder.Services.AddScoped<ConnectivityService>();
 
-        // Add barcode scanner service (MAUI implementation with camera)
-        builder.Services.AddScoped<IBarcodeScannerService, MauiBarcodeScannerService>();
+        // Onboarding Pages (only those that can be resolved by DI)
+        // Note: EmailVerificationPage and CreatePasswordPage have runtime parameters
+        // and are created manually during navigation
+        builder.Services.AddTransient<WelcomePage>();
+        builder.Services.AddTransient<QrScannerPage>();
 
-        // Add inventory session service
-        builder.Services.AddScoped<IInventorySessionService, MauiInventorySessionService>();
-
-        // Add navigation menu preference storage
-        builder.Services.AddScoped<INavMenuPreferenceStorage, MauiNavMenuPreferenceStorage>();
-
-        // Add user permissions service (required by MainLayout for CanEdit functionality)
-        builder.Services.AddScoped<IUserPermissions, UserPermissions>();
-
-        // Add version service (required by MainLayout)
-        builder.Services.AddSingleton<IVersionService, VersionService>();
+        // Main App Pages (registered for DI navigation)
+        builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<ServerConfigPage>();
+        builder.Services.AddTransient<ListSelectionPage>();
+        builder.Services.AddTransient<ShoppingSessionPage>();
+        builder.Services.AddTransient<AddItemPage>();
+        builder.Services.AddTransient<BarcodeScannerPage>();
+        builder.Services.AddTransient<AisleOrderPage>();
 
 #if DEBUG
-        builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
 
-        var app = builder.Build();
-
-        // Set service provider for deep link handling
-        App.SetServiceProvider(app.Services);
-
-        return app;
+        return builder.Build();
     }
 }

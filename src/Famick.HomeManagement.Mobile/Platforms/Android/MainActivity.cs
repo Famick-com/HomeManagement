@@ -1,4 +1,4 @@
-﻿using Android.App;
+using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
@@ -11,52 +11,52 @@ namespace Famick.HomeManagement.Mobile;
     LaunchMode = LaunchMode.SingleTop,
     ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 [IntentFilter(
-    [Intent.ActionView],
-    Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
-    DataScheme = "famick",
-    DataHost = "setup")]
+    new[] { Intent.ActionView },
+    Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
+    DataScheme = "famickshopping",
+    DataHost = "shopping")]
 public class MainActivity : MauiAppCompatActivity
 {
-    protected override void OnCreate(Bundle? savedInstanceState)
-    {
-        base.OnCreate(savedInstanceState);
-
-        // Handle deep link if app was launched with one
-        HandleIntent(Intent);
-    }
-
     protected override void OnNewIntent(Intent? intent)
     {
         base.OnNewIntent(intent);
 
-        // Handle deep link when app is already running
-        if (intent != null)
+        if (intent?.Data != null)
         {
-            HandleIntent(intent);
+            HandleDeepLink(intent);
         }
     }
 
-    private void HandleIntent(Intent? intent)
+    protected override void OnCreate(Bundle? savedInstanceState)
     {
-        if (intent?.Action != Intent.ActionView || intent.Data == null)
-            return;
+        base.OnCreate(savedInstanceState);
 
-        var uri = intent.Data.ToString();
-        if (!string.IsNullOrEmpty(uri))
+        // Handle deep link if app was opened via deep link
+        if (Intent?.Data != null)
         {
-            System.Diagnostics.Debug.WriteLine($"Deep link received: {uri}");
-
-            // Store the deep link URI for the app to process
-            // The App class will retrieve and process this
-            DeepLinkManager.PendingDeepLink = uri;
+            HandleDeepLink(Intent);
         }
     }
-}
 
-/// <summary>
-/// Simple static class to hold pending deep link between Android activity and MAUI app.
-/// </summary>
-public static class DeepLinkManager
-{
-    public static string? PendingDeepLink { get; set; }
+    private void HandleDeepLink(Intent intent)
+    {
+        var uri = intent.Data;
+        if (uri == null) return;
+
+        // Parse the deep link: famickshopping://shopping/session?ListId={guid}&ListName={name}
+        var path = uri.Path;
+        var listId = uri.GetQueryParameter("ListId");
+        var listName = uri.GetQueryParameter("ListName");
+
+        if (!string.IsNullOrEmpty(listId) && Guid.TryParse(listId, out var parsedListId))
+        {
+            // Navigate to the shopping session page
+            // The App.xaml.cs will handle this via MessagingCenter or a static property
+            App.PendingDeepLink = new DeepLinkInfo
+            {
+                ListId = parsedListId,
+                ListName = listName ?? "Shopping"
+            };
+        }
+    }
 }

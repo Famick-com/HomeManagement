@@ -20,6 +20,7 @@ public class AuthApiController : ControllerBase
     private readonly IAuthenticationService _authService;
     private readonly ISetupService _setupService;
     private readonly IPasswordResetService _passwordResetService;
+    private readonly IRegistrationService _registrationService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<ForgotPasswordRequest> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordRequest> _resetPasswordValidator;
@@ -30,6 +31,7 @@ public class AuthApiController : ControllerBase
         IAuthenticationService authService,
         ISetupService setupService,
         IPasswordResetService passwordResetService,
+        IRegistrationService registrationService,
         IValidator<LoginRequest> loginValidator,
         IValidator<ForgotPasswordRequest> forgotPasswordValidator,
         IValidator<ResetPasswordRequest> resetPasswordValidator,
@@ -39,6 +41,7 @@ public class AuthApiController : ControllerBase
         _authService = authService;
         _setupService = setupService;
         _passwordResetService = passwordResetService;
+        _registrationService = registrationService;
         _loginValidator = loginValidator;
         _forgotPasswordValidator = forgotPasswordValidator;
         _resetPasswordValidator = resetPasswordValidator;
@@ -113,6 +116,167 @@ public class AuthApiController : ControllerBase
         {
             _logger.LogError(ex, "Error during registration");
             return StatusCode(500, new { error_message = "Registration failed. Please try again." });
+        }
+    }
+
+    /// <summary>
+    /// Start registration process (mobile onboarding flow).
+    /// Creates a pending registration and sends a verification email.
+    /// </summary>
+    /// <param name="request">Household name and email</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Response indicating email was sent</returns>
+    [HttpPost("start-registration")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(StartRegistrationResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> StartRegistration(
+        [FromBody] StartRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.HouseholdName))
+        {
+            return BadRequest(new { error_message = "Email and household name are required" });
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var deviceInfo = HttpContext.Request.Headers["User-Agent"].ToString();
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+        try
+        {
+            var response = await _registrationService.StartRegistrationAsync(
+                request, ipAddress, deviceInfo, baseUrl, cancellationToken);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during start registration");
+            return StatusCode(500, new { error_message = "Failed to start registration. Please try again." });
+        }
+    }
+
+    /// <summary>
+    /// Verify email address using the token from the verification email.
+    /// </summary>
+    /// <param name="request">Verification token</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Verification result with email and household name</returns>
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(VerifyEmailResponse), 200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> VerifyEmail(
+        [FromBody] VerifyEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token))
+        {
+            return BadRequest(new { error_message = "Token is required" });
+        }
+
+        var response = await _registrationService.VerifyEmailAsync(request, cancellationToken);
+
+        if (!response.Verified)
+        {
+            return BadRequest(new { error_message = response.Message });
+        }
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Complete registration by creating the user account and tenant.
+    /// Requires email to be verified first.
+    /// </summary>
+    /// <param name="request">Password/OAuth details and user name</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Login response with tokens</returns>
+    [HttpPost("complete-registration")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(CompleteRegistrationResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> CompleteRegistration(
+        [FromBody] CompleteRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Basic validation
+        if (string.IsNullOrWhiteSpace(request.Token))
+        {
+            return BadRequest(new { error_message = "Token is required" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.FirstName) ||
+            string.IsNullOrWhiteSpace(request.LastName))
+        {
+            return BadRequest(new { error_message = "First name and last name are required" });
+        }
+
+        // Either password or OAuth provider is required
+        if (string.IsNullOrWhiteSpace(request.Password) &&
+            string.IsNullOrWhiteSpace(request.Provider))
+        {
+            return BadRequest(new { error_message = "Password or OAuth provider is required" });
+        }
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var deviceInfo = HttpContext.Request.Headers["User-Agent"].ToString();
+
+        try
+        {
+            var response = await _registrationService.CompleteRegistrationAsync(
+                request, ipAddress, deviceInfo, cancellationToken);
+
+            if (!response.Success)
+            {
+                return BadRequest(new { error_message = response.Message });
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during complete registration");
+            return StatusCode(500, new { error_message = "Registration failed. Please try again." });
+        }
+    }
+
+    /// <summary>
+    /// Resend verification email for a pending registration.
+    /// </summary>
+    /// <param name="request">Email address to resend verification to</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Response indicating email was sent</returns>
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(StartRegistrationResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> ResendVerification(
+        [FromBody] ResendVerificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new { error_message = "Email is required" });
+        }
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+        try
+        {
+            var response = await _registrationService.ResendVerificationEmailAsync(
+                request.Email, baseUrl, cancellationToken);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resending verification email");
+            return StatusCode(500, new { error_message = "Failed to resend verification email. Please try again." });
         }
     }
 

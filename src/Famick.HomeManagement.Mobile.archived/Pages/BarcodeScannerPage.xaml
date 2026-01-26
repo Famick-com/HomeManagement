@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
+             x:Class="Famick.HomeManagement.Mobile.Pages.BarcodeScannerPage"
+             Title="Scan Barcode"
+             Shell.NavBarIsVisible="True">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Camera view for barcode scanning -->
+        <zxing:CameraBarcodeReaderView
+            x:Name="BarcodeReader"
+            Grid.Row="0"
+            IsDetecting="True"
+            IsTorchOn="False"
+            BarcodesDetected="OnBarcodesDetected"
+            Options="{Binding BarcodeOptions}" />
+
+        <!-- Overlay with scanning frame -->
+        <Grid Grid.Row="0" InputTransparent="True">
+            <BoxView Color="#80000000" />
+            <Frame
+                BackgroundColor="Transparent"
+                BorderColor="White"
+                CornerRadius="10"
+                HeightRequest="200"
+                WidthRequest="280"
+                HorizontalOptions="Center"
+                VerticalOptions="Center" />
+        </Grid>
+
+        <!-- Bottom panel with cancel button -->
+        <StackLayout Grid.Row="1"
+                     BackgroundColor="{AppThemeBinding Light=White, Dark=Black}"
+                     Padding="20">
+            <Label
+                x:Name="InstructionLabel"
+                Text="Point camera at barcode"
+                HorizontalOptions="Center"
+                FontSize="16"
+                Margin="0,0,0,10" />
+            <Button
+                Text="Cancel"
+                Clicked="OnCancelClicked"
+                HorizontalOptions="Center"
+                BackgroundColor="#F44336"
+                TextColor="White"
+                CornerRadius="20"
+                Padding="30,10" />
+        </StackLayout>
+    </Grid>
+</ContentPage>

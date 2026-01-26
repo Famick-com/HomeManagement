@@ -23,6 +23,19 @@ services:
       timeout: 5s
       retries: 5
 
+  # Mailpit for local email testing
+  # Web UI: http://localhost:8025
+  # SMTP: localhost:1025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: homemanagement-mailpit-dev
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
   # Optional: pgAdmin for database management
   pgadmin:
     image: dpage/pgadmin4:latest

@@ -44,7 +44,9 @@ public class DynamicApiHttpHandler : HttpClientHandler
                 path = request.RequestUri.OriginalString.TrimStart('/');
             }
 
-            request.RequestUri = new Uri($"{baseUrl}/{path}");
+            var finalUrl = $"{baseUrl}/{path}";
+            Console.WriteLine($"[DynamicApiHttpHandler] Request URL: {finalUrl}");
+            request.RequestUri = new Uri(finalUrl);
         }
 
         return await base.SendAsync(request, cancellationToken);
