@@ -592,6 +592,223 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region OAuth APIs
+
+    /// <summary>
+    /// Get the authentication configuration including enabled OAuth providers.
+    /// </summary>
+    public async Task<ApiResult<AuthConfiguration>> GetAuthConfigurationAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/auth/external/config");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<AuthConfiguration>(content, options);
+                return result != null
+                    ? ApiResult<AuthConfiguration>.Ok(result)
+                    : ApiResult<AuthConfiguration>.Fail("Invalid response");
+            }
+
+            return ApiResult<AuthConfiguration>.Fail("Failed to get auth configuration");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<AuthConfiguration>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get OAuth challenge URL for a provider.
+    /// </summary>
+    /// <param name="provider">Provider name (Google, Apple, OIDC)</param>
+    /// <param name="callbackUrl">Custom callback URL for mobile app</param>
+    public async Task<ApiResult<OAuthChallengeResponse>> GetOAuthChallengeAsync(string provider, string callbackUrl)
+    {
+        try
+        {
+            var encodedCallback = Uri.EscapeDataString(callbackUrl);
+            var response = await _httpClient.GetAsync(
+                $"api/auth/external/{provider}/challenge?callbackUrl={encodedCallback}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<OAuthChallengeResponse>(content, options);
+                return result != null
+                    ? ApiResult<OAuthChallengeResponse>.Ok(result)
+                    : ApiResult<OAuthChallengeResponse>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<OAuthChallengeResponse>.Fail(ParseErrorMessage(error) ?? "Failed to get authorization URL");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<OAuthChallengeResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Process OAuth callback and exchange code for tokens.
+    /// </summary>
+    /// <param name="provider">Provider name (Google, Apple, OIDC)</param>
+    /// <param name="code">Authorization code from provider</param>
+    /// <param name="state">State parameter for CSRF validation</param>
+    /// <param name="rememberMe">Whether to extend refresh token lifetime</param>
+    public async Task<ApiResult<LoginResponse>> ProcessOAuthCallbackAsync(
+        string provider,
+        string code,
+        string state,
+        bool rememberMe = false)
+    {
+        try
+        {
+            var request = new OAuthCallbackRequest
+            {
+                Code = code,
+                State = state,
+                RememberMe = rememberMe
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/auth/external/{provider}/callback",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(content, options);
+                return result != null
+                    ? ApiResult<LoginResponse>.Ok(result)
+                    : ApiResult<LoginResponse>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            var errorMessage = ParseErrorMessage(error);
+
+            // Handle specific error cases
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed. Please try again.");
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                return ApiResult<LoginResponse>.Fail("Your account is inactive. Please contact support.");
+            }
+
+            return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<LoginResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Process native Apple Sign in from iOS devices.
+    /// </summary>
+    public async Task<ApiResult<LoginResponse>> ProcessNativeAppleSignInAsync(NativeAppleSignInRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/external/apple/native",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(content, options);
+                return result != null
+                    ? ApiResult<LoginResponse>.Ok(result)
+                    : ApiResult<LoginResponse>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            var errorMessage = ParseErrorMessage(error);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed. Please try again.");
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                return ApiResult<LoginResponse>.Fail("Your account is inactive. Please contact support.");
+            }
+
+            return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<LoginResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Process native Google Sign in from iOS and Android devices.
+    /// </summary>
+    public async Task<ApiResult<LoginResponse>> ProcessNativeGoogleSignInAsync(NativeGoogleSignInRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/auth/external/google/native",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<LoginResponse>(content, options);
+                return result != null
+                    ? ApiResult<LoginResponse>.Ok(result)
+                    : ApiResult<LoginResponse>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            var errorMessage = ParseErrorMessage(error);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed. Please try again.");
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                return ApiResult<LoginResponse>.Fail("Your account is inactive. Please contact support.");
+            }
+
+            return ApiResult<LoginResponse>.Fail(errorMessage ?? "Authentication failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<LoginResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     private async Task SetAuthHeaderAsync()
     {
         var token = await _tokenStorage.GetAccessTokenAsync();

@@ -1,3 +1,4 @@
+using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile.Pages.Onboarding;
@@ -8,15 +9,18 @@ public partial class CreatePasswordPage : ContentPage
     private readonly OnboardingService _onboardingService;
     private readonly ApiSettings _apiSettings;
     private readonly TokenStorage _tokenStorage;
+    private readonly OAuthService _oauthService;
     private readonly string _verificationToken;
     private readonly string _email;
     private readonly string _householdName;
+    private readonly List<Button> _oauthButtons = new();
 
     public CreatePasswordPage(
         ShoppingApiClient apiClient,
         OnboardingService onboardingService,
         ApiSettings apiSettings,
         TokenStorage tokenStorage,
+        OAuthService oauthService,
         string verificationToken,
         string email,
         string householdName)
@@ -26,6 +30,7 @@ public partial class CreatePasswordPage : ContentPage
         _onboardingService = onboardingService;
         _apiSettings = apiSettings;
         _tokenStorage = tokenStorage;
+        _oauthService = oauthService;
         _verificationToken = verificationToken;
         _email = email;
         _householdName = householdName;
@@ -34,6 +39,149 @@ public partial class CreatePasswordPage : ContentPage
         Title = string.IsNullOrEmpty(householdName) ? "Create Account" : householdName;
 
         SubtitleLabel.Text = $"Creating account for {_householdName}";
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadAuthConfigurationAsync();
+    }
+
+    private async Task LoadAuthConfigurationAsync()
+    {
+        try
+        {
+            var result = await _oauthService.GetAuthConfigurationAsync();
+
+            if (result.Success && result.Data != null)
+            {
+                var enabledProviders = result.Data.Providers
+                    .Where(p => p.IsEnabled)
+                    .ToList();
+
+                if (enabledProviders.Count > 0)
+                {
+                    OAuthButtonsContainer.Clear();
+                    _oauthButtons.Clear();
+
+                    foreach (var provider in enabledProviders)
+                    {
+                        var button = CreateProviderButton(provider);
+                        _oauthButtons.Add(button);
+                        OAuthButtonsContainer.Add(button);
+                    }
+
+                    OAuthSection.IsVisible = true;
+                }
+                else
+                {
+                    OAuthSection.IsVisible = false;
+                }
+            }
+            else
+            {
+                // Hide OAuth section if config fetch fails
+                OAuthSection.IsVisible = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load auth config: {ex.Message}");
+            OAuthSection.IsVisible = false;
+        }
+    }
+
+    private Button CreateProviderButton(ExternalAuthProvider provider)
+    {
+        var button = new Button
+        {
+            Text = provider.DisplayName,
+            HeightRequest = 45,
+            CornerRadius = 22,
+            Margin = new Thickness(5),
+            MinimumWidthRequest = 140
+        };
+
+        // Apply provider-specific styling
+        switch (provider.Provider.ToUpperInvariant())
+        {
+            case "GOOGLE":
+                button.BackgroundColor = Colors.White;
+                button.TextColor = Color.FromArgb("#4285F4");
+                button.BorderColor = Color.FromArgb("#DADCE0");
+                button.BorderWidth = 1;
+                break;
+
+            case "APPLE":
+                button.SetAppThemeColor(
+                    Button.BackgroundColorProperty,
+                    Colors.Black,
+                    Colors.White);
+                button.SetAppThemeColor(
+                    Button.TextColorProperty,
+                    Colors.White,
+                    Colors.Black);
+                break;
+
+            case "OIDC":
+            default:
+                button.SetAppThemeColor(
+                    Button.BackgroundColorProperty,
+                    Color.FromArgb("#1976D2"),
+                    Color.FromArgb("#1565C0"));
+                button.TextColor = Colors.White;
+                break;
+        }
+
+        button.Clicked += async (s, e) => await OnProviderButtonClicked(provider);
+
+        return button;
+    }
+
+    private async Task OnProviderButtonClicked(ExternalAuthProvider provider)
+    {
+        SetLoading(true);
+        HideError();
+
+        try
+        {
+            var result = await _oauthService.LoginWithProviderAsync(provider.Provider);
+
+            if (result.Success)
+            {
+                // Clear pending verification since OAuth signup was successful
+                _onboardingService.ClearPendingVerification();
+
+                // Configure for cloud with tenant name
+                if (result.LoginResponse?.Tenant?.Name != null)
+                {
+                    _apiSettings.ConfigureForCloud(result.LoginResponse.Tenant.Name);
+                }
+                else
+                {
+                    _apiSettings.ConfigureForCloud(_householdName);
+                }
+
+                // Transition to main app
+                App.TransitionToMainApp();
+            }
+            else if (result.WasCancelled)
+            {
+                // User cancelled - no error message needed
+            }
+            else
+            {
+                ShowError(result.ErrorMessage ?? "Authentication failed. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Connection error: {ex.Message}");
+        }
+        finally
+        {
+            SetLoading(false);
+        }
     }
 
     private async void OnCreateAccountClicked(object? sender, EventArgs e)
@@ -133,6 +281,12 @@ public partial class CreatePasswordPage : ContentPage
         LastNameEntry.IsEnabled = !isLoading;
         PasswordEntry.IsEnabled = !isLoading;
         ConfirmPasswordEntry.IsEnabled = !isLoading;
+
+        // Disable OAuth buttons during loading
+        foreach (var button in _oauthButtons)
+        {
+            button.IsEnabled = !isLoading;
+        }
     }
 
     private void ShowError(string message)

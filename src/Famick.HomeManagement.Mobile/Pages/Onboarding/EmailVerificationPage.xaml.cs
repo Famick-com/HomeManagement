@@ -102,6 +102,7 @@ public partial class EmailVerificationPage : ContentPage
                     _onboardingService,
                     Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<ApiSettings>(),
                     Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<TokenStorage>(),
+                    Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<OAuthService>(),
                     token,
                     result.Data.Email,
                     result.Data.HouseholdName));

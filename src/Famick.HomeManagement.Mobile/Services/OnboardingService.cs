@@ -80,7 +80,13 @@ public class OnboardingService
     }
 
     /// <summary>
-    /// Determines which page to show on app start
+    /// Determines which page to show on app start.
+    ///
+    /// Flow behavior by server type:
+    /// - Cloud (*.famick.com): Full wizard for registration/account creation
+    /// - Self-hosted: QR scan to configure, then straight to login
+    ///
+    /// Both server types go to Login once configured, skipping the wizard.
     /// </summary>
     public OnboardingState GetCurrentState(TokenStorage tokenStorage, ApiSettings apiSettings)
     {
@@ -92,18 +98,21 @@ public class OnboardingService
         }
 
         // If server is configured (QR scan or previous login), show login
+        // This applies to both cloud and self-hosted - once configured, skip wizard
         if (apiSettings.HasServerConfigured())
         {
             return OnboardingState.Login;
         }
 
-        // If there's a pending verification, resume verification flow
+        // If there's a pending verification (cloud registration flow), resume it
         if (HasPendingVerification())
         {
             return OnboardingState.EmailVerification;
         }
 
         // Otherwise, show welcome page for new users
+        // - Cloud users: Full wizard (Welcome -> Email -> Password -> etc.)
+        // - Self-hosted users: Welcome -> QR Scan -> Login
         return OnboardingState.Welcome;
     }
 }

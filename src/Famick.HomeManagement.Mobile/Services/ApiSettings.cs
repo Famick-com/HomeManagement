@@ -21,12 +21,33 @@ public class ApiSettings
     private const string ServerConfiguredKey = "server_configured";
 
     /// <summary>
-    /// Fixed cloud URL for Famick cloud service.
+    /// Fixed cloud URL for Famick cloud service (production).
     /// </summary>
     public const string CloudUrl = "https://app.famick.com";
 
     /// <summary>
+    /// Debug cloud URL for testing cloud flow locally.
+    /// Uses dev-local.famick.com which should be added to hosts file.
+    /// iOS Simulator: Add "127.0.0.1 dev-local.famick.com" to /etc/hosts
+    /// Android Emulator: Add "10.0.2.2 dev-local.famick.com" to emulator's /system/etc/hosts
+    /// </summary>
+    private static string DebugCloudUrl
+    {
+        get
+        {
+#if ANDROID
+            // Android emulator - use HTTP to avoid cert issues with custom domain
+            return "http://dev-local.famick.com:5002";
+#else
+            // iOS simulator - use HTTP to avoid cert issues with custom domain
+            return "http://dev-local.famick.com:5002";
+#endif
+        }
+    }
+
+    /// <summary>
     /// Default self-hosted URL based on platform (for development).
+    /// Points to self-hosted server on port 5003/5004.
     /// </summary>
     private static string DefaultSelfHostedUrl
     {
@@ -35,22 +56,22 @@ public class ApiSettings
 #if DEBUG
     #if ANDROID
             // Android emulator uses 10.0.2.2 to reach host's localhost
-            return "https://10.0.2.2:5001";
+            return "https://10.0.2.2:5003";
     #else
             // iOS simulator - use 127.0.0.1 instead of localhost for reliability
-            return "https://127.0.0.1:5001";
+            return "https://127.0.0.1:5003";
     #endif
 #else
     #if ANDROID
-            return "https://10.0.2.2:5001";
+            return "https://10.0.2.2:5003";
     #else
             // Check if running on a real device vs simulator
             if (DeviceInfo.DeviceType == DeviceType.Physical)
             {
                 // Physical device needs host IP and HTTP (avoid SSL cert issues)
-                return "http://10.18.16.105:5002";
+                return "http://10.18.16.105:5004";
             }
-            return "https://localhost:5001";
+            return "https://localhost:5003";
     #endif
 #endif
         }
@@ -58,15 +79,17 @@ public class ApiSettings
 
     /// <summary>
     /// Gets or sets the current server mode.
-    /// Default is SelfHosted for debug builds, Cloud for release builds.
+    /// In DEBUG builds, defaults to Cloud to test cloud flow with dev-local.famick.com.
+    /// Change to SelfHosted to test self-hosted flow.
     /// </summary>
     public ServerMode Mode
     {
         get
         {
 #if DEBUG
-            // In DEBUG mode, always use SelfHosted to connect to local dev server
-            return ServerMode.SelfHosted;
+            // In DEBUG mode, use Cloud to test cloud detection logic
+            // Change this to ServerMode.SelfHosted to test self-hosted flow
+            return ServerMode.Cloud;
 #else
             var defaultMode = nameof(ServerMode.Cloud);
             var stored = Preferences.Default.Get(ServerModeKey, defaultMode);
@@ -99,13 +122,23 @@ public class ApiSettings
 
     /// <summary>
     /// Gets the active API base URL based on current mode.
+    /// In DEBUG builds with Cloud mode, uses dev-local.famick.com for testing.
     /// </summary>
     public string BaseUrl
     {
         get
         {
             var mode = Mode;
-            var url = mode == ServerMode.Cloud ? CloudUrl : SelfHostedUrl;
+            string url;
+
+#if DEBUG
+            // In DEBUG mode, use local dev URLs
+            url = mode == ServerMode.Cloud ? DebugCloudUrl : SelfHostedUrl;
+#else
+            // In RELEASE mode, use production URLs
+            url = mode == ServerMode.Cloud ? CloudUrl : SelfHostedUrl;
+#endif
+
             Console.WriteLine($"[ApiSettings] BaseUrl called - Mode: {mode}, URL: {url}");
             return url;
         }
@@ -182,4 +215,43 @@ public class ApiSettings
         Preferences.Default.Remove(TenantNameKey);
         Preferences.Default.Remove(ServerConfiguredKey);
     }
+
+    /// <summary>
+    /// Cloud domain patterns for detecting cloud servers.
+    /// </summary>
+    private static readonly string[] CloudDomains = { "famick.com" };
+
+    /// <summary>
+    /// Checks if the current server is a cloud server (based on domain).
+    /// Cloud servers use *.famick.com domains.
+    /// </summary>
+    public bool IsCloudServer()
+    {
+        // If mode is explicitly set to Cloud, it's a cloud server
+        if (Mode == ServerMode.Cloud)
+            return true;
+
+        // Check the URL domain pattern
+        var url = BaseUrl;
+        if (string.IsNullOrEmpty(url))
+            return true; // Default to cloud behavior when not configured
+
+        try
+        {
+            var uri = new Uri(url);
+            return CloudDomains.Any(domain =>
+                uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.EndsWith($".{domain}", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return true; // Default to cloud behavior on parse error
+        }
+    }
+
+    /// <summary>
+    /// Checks if the current server is a self-hosted server.
+    /// Self-hosted servers are anything that's not a cloud server.
+    /// </summary>
+    public bool IsSelfHostedServer() => !IsCloudServer();
 }

@@ -53,6 +53,23 @@ public static class MauiProgram
         // ConnectivityService needs ShoppingApiClient, register as scoped to match ShoppingApiClient's lifetime
         builder.Services.AddScoped<ConnectivityService>();
 
+        // OAuth Service for social login
+        builder.Services.AddScoped<OAuthService>();
+
+        // Platform-specific Apple Sign in service
+#if IOS
+        builder.Services.AddSingleton<IAppleSignInService, Platforms.iOS.AppleSignInService>();
+#elif ANDROID
+        builder.Services.AddSingleton<IAppleSignInService, Platforms.Android.AppleSignInService>();
+#endif
+
+        // Platform-specific Google Sign in service
+#if IOS
+        builder.Services.AddSingleton<IGoogleSignInService, Platforms.iOS.GoogleSignInService>();
+#elif ANDROID
+        builder.Services.AddSingleton<IGoogleSignInService, Platforms.Android.GoogleSignInService>();
+#endif
+
         // Onboarding Pages (only those that can be resolved by DI)
         // Note: EmailVerificationPage and CreatePasswordPage have runtime parameters
         // and are created manually during navigation

@@ -188,8 +188,8 @@ builder.Services.AddSingleton<IFileAccessTokenService>(sp =>
 });
 
 // Register QR code and label sheet services (for storage bin labels)
-builder.Services.AddScoped<Famick.HomeManagement.Web.Services.QrCodeService>();
-builder.Services.AddScoped<Famick.HomeManagement.Web.Services.LabelSheetService>();
+builder.Services.AddScoped<Famick.HomeManagement.Web.Shared.Services.QrCodeService>();
+builder.Services.AddScoped<Famick.HomeManagement.Web.Shared.Services.LabelSheetService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Famick.HomeManagement.Core.Mapping.ProductGroupMappingProfile).Assembly);

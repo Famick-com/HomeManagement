@@ -25,6 +25,9 @@
 
 		<!-- Java SDK for Android builds (Homebrew OpenJDK 17) -->
 		<JavaSdkDirectory Condition="$([MSBuild]::IsOSPlatform('osx')) AND $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home</JavaSdkDirectory>
+
+		<!-- iOS Entitlements (Sign in with Apple, etc.) -->
+		<CodesignEntitlements Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -61,5 +64,23 @@
 		<!-- MVVM toolkit -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 	</ItemGroup>
+
+	<!-- Note: Native Google Sign-In SDK packages have compatibility issues with .NET 10 MAUI.
+	     Google Sign-In will use the web OAuth flow instead, which works correctly.
+	     Native SDK can be added later when compatible bindings become available.
+
+	     The architecture is in place:
+	     - IGoogleSignInService interface defined
+	     - Platform implementations exist (return IsAvailable = false)
+	     - OAuthService falls back to web OAuth when native not available -->
+
+	<!--
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
+		<PackageReference Include="Xamarin.Google.iOS.SignIn" Version="5.0.2.4" />
+	</ItemGroup>
+	<ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+		<PackageReference Include="Xamarin.GooglePlayServices.Auth" Version="121.0.0" />
+	</ItemGroup>
+	-->
 
 </Project>

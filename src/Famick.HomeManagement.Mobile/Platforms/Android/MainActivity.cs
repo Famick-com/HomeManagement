@@ -2,6 +2,8 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
+using Famick.HomeManagement.Mobile.Platforms.Android;
+using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile;
 
@@ -36,6 +38,14 @@ public class MainActivity : MauiAppCompatActivity
         {
             HandleDeepLink(Intent);
         }
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+
+        // Handle Google Sign-In result
+        GoogleSignInService.HandleActivityResult(requestCode, resultCode, data);
     }
 
     private void HandleDeepLink(Intent intent)

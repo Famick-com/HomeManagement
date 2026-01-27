@@ -1,3 +1,4 @@
+using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile.Pages;
@@ -9,13 +10,16 @@ public partial class LoginPage : ContentPage
     private readonly TenantStorage _tenantStorage;
     private readonly ShoppingApiClient _apiClient;
     private readonly OnboardingService _onboardingService;
+    private readonly OAuthService _oauthService;
+    private readonly List<Button> _oauthButtons = new();
 
     public LoginPage(
         ApiSettings apiSettings,
         TokenStorage tokenStorage,
         TenantStorage tenantStorage,
         ShoppingApiClient apiClient,
-        OnboardingService onboardingService)
+        OnboardingService onboardingService,
+        OAuthService oauthService)
     {
         InitializeComponent();
         _apiSettings = apiSettings;
@@ -23,9 +27,10 @@ public partial class LoginPage : ContentPage
         _tenantStorage = tenantStorage;
         _apiClient = apiClient;
         _onboardingService = onboardingService;
+        _oauthService = oauthService;
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
 
@@ -50,6 +55,133 @@ public partial class LoginPage : ContentPage
         else
         {
             ServerSettingsSection.IsVisible = false;
+        }
+
+        // Load OAuth configuration
+        await LoadAuthConfigurationAsync();
+    }
+
+    private async Task LoadAuthConfigurationAsync()
+    {
+        try
+        {
+            var result = await _oauthService.GetAuthConfigurationAsync();
+
+            if (result.Success && result.Data != null)
+            {
+                var enabledProviders = result.Data.Providers
+                    .Where(p => p.IsEnabled)
+                    .ToList();
+
+                if (enabledProviders.Count > 0)
+                {
+                    OAuthButtonsContainer.Clear();
+                    _oauthButtons.Clear();
+
+                    foreach (var provider in enabledProviders)
+                    {
+                        var button = CreateProviderButton(provider);
+                        _oauthButtons.Add(button);
+                        OAuthButtonsContainer.Add(button);
+                    }
+
+                    OAuthSection.IsVisible = true;
+                }
+                else
+                {
+                    OAuthSection.IsVisible = false;
+                }
+            }
+            else
+            {
+                // Hide OAuth section if config fetch fails
+                OAuthSection.IsVisible = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load auth config: {ex.Message}");
+            OAuthSection.IsVisible = false;
+        }
+    }
+
+    private Button CreateProviderButton(ExternalAuthProvider provider)
+    {
+        var button = new Button
+        {
+            Text = provider.DisplayName,
+            HeightRequest = 45,
+            CornerRadius = 22,
+            Margin = new Thickness(5),
+            MinimumWidthRequest = 140
+        };
+
+        // Apply provider-specific styling
+        switch (provider.Provider.ToUpperInvariant())
+        {
+            case "GOOGLE":
+                button.BackgroundColor = Colors.White;
+                button.TextColor = Color.FromArgb("#4285F4");
+                button.BorderColor = Color.FromArgb("#DADCE0");
+                button.BorderWidth = 1;
+                break;
+
+            case "APPLE":
+                button.SetAppThemeColor(
+                    Button.BackgroundColorProperty,
+                    Colors.Black,
+                    Colors.White);
+                button.SetAppThemeColor(
+                    Button.TextColorProperty,
+                    Colors.White,
+                    Colors.Black);
+                break;
+
+            case "OIDC":
+            default:
+                button.SetAppThemeColor(
+                    Button.BackgroundColorProperty,
+                    Color.FromArgb("#1976D2"),
+                    Color.FromArgb("#1565C0"));
+                button.TextColor = Colors.White;
+                break;
+        }
+
+        button.Clicked += async (s, e) => await OnProviderButtonClicked(provider);
+
+        return button;
+    }
+
+    private async Task OnProviderButtonClicked(ExternalAuthProvider provider)
+    {
+        SetLoading(true);
+        HideError();
+
+        try
+        {
+            var result = await _oauthService.LoginWithProviderAsync(provider.Provider);
+
+            if (result.Success)
+            {
+                // Navigate to main app
+                await Shell.Current.GoToAsync("//ListSelectionPage");
+            }
+            else if (result.WasCancelled)
+            {
+                // User cancelled - no error message needed
+            }
+            else
+            {
+                ShowError(result.ErrorMessage ?? "Authentication failed. Please try again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowError($"Connection error: {ex.Message}");
+        }
+        finally
+        {
+            SetLoading(false);
         }
     }
 
@@ -146,6 +278,12 @@ public partial class LoginPage : ContentPage
         LoginButton.IsEnabled = !isLoading;
         EmailEntry.IsEnabled = !isLoading;
         PasswordEntry.IsEnabled = !isLoading;
+
+        // Disable OAuth buttons during loading
+        foreach (var button in _oauthButtons)
+        {
+            button.IsEnabled = !isLoading;
+        }
     }
 
     private void ShowError(string message)

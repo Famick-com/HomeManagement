@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIDeviceFamily</key>
@@ -37,6 +39,28 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Famick Shopping uses your location to detect which store you're shopping at and organize your list accordingly.</string>
 
+	<!-- App Transport Security exceptions for local development -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<!-- Allow HTTP for local development with dev-local.famick.com -->
+			<key>dev-local.famick.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<!-- Allow HTTP for localhost development -->
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+
 	<!-- URL scheme for deep linking -->
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -46,6 +70,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>famickshopping</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.famick.homemanagement.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.famick.homemanagement</string>
 			</array>
 		</dict>
 	</array>
