@@ -46,7 +46,14 @@
         </Grid>
     </Shell.FlyoutHeader>
 
-    <!-- Main Content - Shopping Lists -->
+    <!-- Main Content -->
+    <FlyoutItem Title="Dashboard">
+        <ShellContent
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate pages:DashboardPage}"
+            Route="DashboardPage" />
+    </FlyoutItem>
+
     <FlyoutItem Title="Shopping Lists">
         <ShellContent
             Title="Shopping Lists"

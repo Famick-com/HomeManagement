@@ -437,6 +437,134 @@ public class ShoppingApiClient
         }
     }
 
+    #region Dashboard APIs
+
+    /// <summary>
+    /// Get shopping list dashboard summary.
+    /// </summary>
+    public async Task<ApiResult<ShoppingListDashboardDto>> GetDashboardAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/shoppinglists/dashboard");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ShoppingListDashboardDto>(content, options);
+                return result != null
+                    ? ApiResult<ShoppingListDashboardDto>.Ok(result)
+                    : ApiResult<ShoppingListDashboardDto>.Fail("Invalid response");
+            }
+
+            return ApiResult<ShoppingListDashboardDto>.Fail("Failed to load dashboard");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ShoppingListDashboardDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get stock statistics for dashboard.
+    /// </summary>
+    public async Task<ApiResult<StockStatisticsDto>> GetStockStatisticsAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/stock/statistics");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<StockStatisticsDto>(content, options);
+                return result != null
+                    ? ApiResult<StockStatisticsDto>.Ok(result)
+                    : ApiResult<StockStatisticsDto>.Fail("Invalid response");
+            }
+
+            return ApiResult<StockStatisticsDto>.Fail("Failed to load stock statistics");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<StockStatisticsDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get overdue chores for dashboard.
+    /// </summary>
+    public async Task<ApiResult<List<ChoreSummaryDto>>> GetOverdueChoresAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/chores/overdue");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<ChoreSummaryDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<ChoreSummaryDto>>.Ok(result)
+                    : ApiResult<List<ChoreSummaryDto>>.Ok(new List<ChoreSummaryDto>());
+            }
+
+            return ApiResult<List<ChoreSummaryDto>>.Fail("Failed to load overdue chores");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ChoreSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get chores due within the specified number of days.
+    /// </summary>
+    public async Task<ApiResult<List<ChoreSummaryDto>>> GetDueSoonChoresAsync(int daysAhead = 7)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync($"api/v1/chores/due-soon?daysAhead={daysAhead}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<ChoreSummaryDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<ChoreSummaryDto>>.Ok(result)
+                    : ApiResult<List<ChoreSummaryDto>>.Ok(new List<ChoreSummaryDto>());
+            }
+
+            return ApiResult<List<ChoreSummaryDto>>.Fail("Failed to load due soon chores");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ChoreSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     #region Registration APIs
 
     /// <summary>

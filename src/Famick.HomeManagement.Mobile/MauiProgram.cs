@@ -77,6 +77,7 @@ public static class MauiProgram
         builder.Services.AddTransient<QrScannerPage>();
 
         // Main App Pages (registered for DI navigation)
+        builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<ServerConfigPage>();
         builder.Services.AddTransient<ListSelectionPage>();

@@ -168,6 +168,70 @@ public class UpdateAisleOrderRequest
     public List<string>? OrderedAisles { get; set; }
 }
 
+#region Dashboard Models
+
+/// <summary>
+/// Dashboard summary of shopping lists.
+/// </summary>
+public class ShoppingListDashboardDto
+{
+    public List<StoreShoppingListSummary> StoresSummary { get; set; } = new();
+    public int TotalItems { get; set; }
+    public int UnpurchasedItems { get; set; }
+    public int TotalLists { get; set; }
+}
+
+/// <summary>
+/// Shopping list summary grouped by store.
+/// </summary>
+public class StoreShoppingListSummary
+{
+    public Guid ShoppingLocationId { get; set; }
+    public string ShoppingLocationName { get; set; } = string.Empty;
+    public bool HasIntegration { get; set; }
+    public List<ShoppingListSummaryDto> Lists { get; set; } = new();
+    public int TotalItems { get; set; }
+}
+
+/// <summary>
+/// Shopping list summary for dashboard.
+/// </summary>
+public class ShoppingListSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int TotalItems { get; set; }
+    public int UnpurchasedItems { get; set; }
+}
+
+/// <summary>
+/// Stock statistics for dashboard overview.
+/// </summary>
+public class StockStatisticsDto
+{
+    public int TotalProductCount { get; set; }
+    public decimal TotalStockValue { get; set; }
+    public int ExpiredCount { get; set; }
+    public int OverdueCount { get; set; }
+    public int DueSoonCount { get; set; }
+    public int BelowMinStockCount { get; set; }
+}
+
+/// <summary>
+/// Chore summary for dashboard.
+/// </summary>
+public class ChoreSummaryDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string PeriodType { get; set; } = string.Empty;
+    public DateTime? NextExecutionDate { get; set; }
+    public string? AssignedToUserName { get; set; }
+    public bool IsOverdue { get; set; }
+}
+
+#endregion
+
 #region Registration Models
 
 /// <summary>
