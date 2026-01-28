@@ -17,6 +17,10 @@ namespace Famick.HomeManagement.Mobile;
     Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
     DataScheme = "famickshopping",
     DataHost = "shopping")]
+[IntentFilter(
+    new[] { Intent.ActionView },
+    Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
+    DataScheme = "famick")]
 public class MainActivity : MauiAppCompatActivity
 {
     protected override void OnNewIntent(Intent? intent)
@@ -52,6 +56,16 @@ public class MainActivity : MauiAppCompatActivity
     {
         var uri = intent.Data;
         if (uri == null) return;
+
+        var scheme = uri.Scheme;
+
+        // Handle famick:// deep links (verification, setup, etc.)
+        if (scheme == "famick")
+        {
+            var netUri = new Uri(uri.ToString() ?? string.Empty);
+            App.HandleDeepLink(netUri);
+            return;
+        }
 
         // Parse the deep link: famickshopping://shopping/session?ListId={guid}&ListName={name}
         var path = uri.Path;

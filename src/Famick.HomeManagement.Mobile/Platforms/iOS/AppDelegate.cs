@@ -37,7 +37,7 @@ public class AppDelegate : MauiUIApplicationDelegate
     /// </summary>
     public override bool OpenUrl(UIApplication application, NSUrl url, NSDictionary options)
     {
-        if (url != null && url.Scheme == "famickshopping")
+        if (url != null && (url.Scheme == "famickshopping" || url.Scheme == "famick"))
         {
             var uri = new Uri(url.AbsoluteString ?? string.Empty);
             App.HandleDeepLink(uri);

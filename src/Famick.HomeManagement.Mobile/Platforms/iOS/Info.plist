@@ -66,6 +66,14 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
+			<string>com.famick.homemanagement.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>famick</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
 			<string>com.famick.shopping</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
