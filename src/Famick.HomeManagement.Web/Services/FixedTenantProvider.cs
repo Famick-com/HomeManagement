@@ -33,7 +33,6 @@ public class FixedTenantProvider : ITenantProvider
 
             // Try "sub" first (when MapInboundClaims = false), then standard claim types
             var userIdClaim = user.FindFirst("sub")?.Value
-                           ?? user.Identity?.Name
                            ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                            ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                            ?? user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
