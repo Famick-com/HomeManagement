@@ -130,7 +130,7 @@ if (fixedTenantId == Guid.Empty)
     fixedTenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 }
 builder.Services.AddScoped<ITenantProvider>(sp =>
-    new FixedTenantProvider(fixedTenantId, sp.GetRequiredService<IHttpContextAccessor>()));
+    new FixedTenantProvider(fixedTenantId, sp.GetRequiredService<IHttpContextAccessor>(), sp.GetRequiredService<ILogger<FixedTenantProvider>>()));
 
 // Configure Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

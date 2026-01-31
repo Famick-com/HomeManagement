@@ -12,11 +12,13 @@ public class FixedTenantProvider : ITenantProvider
 {
     private readonly Guid _tenantId;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<FixedTenantProvider> _logger;
 
-    public FixedTenantProvider(Guid tenantId, IHttpContextAccessor httpContextAccessor)
+    public FixedTenantProvider(Guid tenantId, IHttpContextAccessor httpContextAccessor, ILogger<FixedTenantProvider> logger)
     {
         _tenantId = tenantId;
         _httpContextAccessor = httpContextAccessor;
+        _logger = logger;
     }
 
     public Guid? TenantId => _tenantId;
@@ -29,11 +31,19 @@ public class FixedTenantProvider : ITenantProvider
             if (user == null || user.Identity?.IsAuthenticated != true)
                 return null;
 
-            // Try multiple claim types - JWT "sub" can be mapped differently
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            // Try "sub" first (when MapInboundClaims = false), then standard claim types
+            var userIdClaim = user.FindFirst("sub")?.Value
+                           ?? user.Identity?.Name
+                           ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                            ?? user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                           ?? user.FindFirst("sub")?.Value
                            ?? user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+            if (userIdClaim == null)
+            {
+                var claimTypes = string.Join(", ", user.Claims.Select(c => $"{c.Type}={c.Value}"));
+                _logger.LogWarning("Could not resolve UserId. IsAuthenticated={IsAuth}, Claims=[{Claims}]",
+                    user.Identity?.IsAuthenticated, claimTypes);
+            }
 
             return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
         }
