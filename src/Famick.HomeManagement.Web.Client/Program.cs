@@ -42,7 +42,7 @@ builder.Services.AddScoped<IUserPermissions, UserPermissions>();
 // Add mobile detection service for deep linking support
 builder.Services.AddScoped<IMobileDetectionService, MobileDetectionService>();
 
-// Configure authorization policies (must match server-side policies)
+// Configure authorization policies — must match AuthorizationPolicies.Configure in Web.Shared
 builder.Services.AddAuthorizationCore(options =>
 {
     options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));

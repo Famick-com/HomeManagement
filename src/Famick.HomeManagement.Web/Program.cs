@@ -13,6 +13,7 @@ using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Famick.HomeManagement.Infrastructure;
+using Famick.HomeManagement.Web.Shared;
 using Famick.HomeManagement.Infrastructure.Services;
 using Famick.HomeManagement.Core;
 using Famick.HomeManagement.Core.Services;
@@ -154,17 +155,13 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
         ClockSkew = TimeSpan.Zero,
-        NameClaimType = "sub"  // Use "sub" claim as the user identifier
+        NameClaimType = "sub",  // Use "sub" claim as the user identifier
+        RoleClaimType = "role"  // Match short claim name when MapInboundClaims is false
     };
 });
 
 // Configure authorization policies for role-based access
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireAdmin", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("RequireEditor", policy => policy.RequireRole("Admin", "Editor"));
-    options.AddPolicy("RequireViewer", policy => policy.RequireRole("Admin", "Editor", "Viewer"));
-});
+builder.Services.AddAuthorization(AuthorizationPolicies.Configure);
 
 // Register file storage service (for product images and equipment documents)
 // Files are stored outside wwwroot to prevent direct access - served through authenticated API endpoints
