@@ -12,7 +12,7 @@ public partial class LoginPage : ContentPage
     private readonly ShoppingApiClient _apiClient;
     private readonly OnboardingService _onboardingService;
     private readonly OAuthService _oauthService;
-    private readonly List<Button> _oauthButtons = new();
+    private readonly List<View> _oauthButtons = new();
 
     public LoginPage(
         ApiSettings apiSettings,
@@ -35,9 +35,9 @@ public partial class LoginPage : ContentPage
     {
         base.OnAppearing();
 
-        // Show tenant name if available
+        // Show tenant name for self-hosted users only
         var tenantName = _apiSettings.TenantName;
-        if (!string.IsNullOrEmpty(tenantName))
+        if (!string.IsNullOrEmpty(tenantName) && _apiSettings.Mode == ServerMode.SelfHosted)
         {
             TenantNameLabel.Text = tenantName;
             TenantFrame.IsVisible = true;
@@ -109,8 +109,44 @@ public partial class LoginPage : ContentPage
         }
     }
 
-    private Button CreateProviderButton(ExternalAuthProvider provider)
+    private View CreateProviderButton(ExternalAuthProvider provider)
     {
+        var providerKey = provider.Provider.ToUpperInvariant();
+        var isIconOnly = providerKey is "GOOGLE" or "APPLE";
+
+        if (isIconOnly)
+        {
+            var imageButton = new ImageButton
+            {
+                Source = GetProviderImageSource(providerKey),
+                HeightRequest = 50,
+                WidthRequest = 50,
+                CornerRadius = 25,
+                Margin = new Thickness(5),
+                Padding = new Thickness(12),
+                Aspect = Aspect.AspectFit
+            };
+
+            switch (providerKey)
+            {
+                case "GOOGLE":
+                    imageButton.BackgroundColor = Colors.White;
+                    imageButton.BorderColor = Color.FromArgb("#DADCE0");
+                    imageButton.BorderWidth = 1;
+                    break;
+
+                case "APPLE":
+                    imageButton.SetAppThemeColor(
+                        ImageButton.BackgroundColorProperty,
+                        Colors.Black,
+                        Colors.White);
+                    break;
+            }
+
+            imageButton.Clicked += async (s, e) => await OnProviderButtonClicked(provider);
+            return imageButton;
+        }
+
         var button = new Button
         {
             Text = provider.DisplayName,
@@ -120,40 +156,24 @@ public partial class LoginPage : ContentPage
             MinimumWidthRequest = 140
         };
 
-        // Apply provider-specific styling
-        switch (provider.Provider.ToUpperInvariant())
-        {
-            case "GOOGLE":
-                button.BackgroundColor = Colors.White;
-                button.TextColor = Color.FromArgb("#4285F4");
-                button.BorderColor = Color.FromArgb("#DADCE0");
-                button.BorderWidth = 1;
-                break;
-
-            case "APPLE":
-                button.SetAppThemeColor(
-                    Button.BackgroundColorProperty,
-                    Colors.Black,
-                    Colors.White);
-                button.SetAppThemeColor(
-                    Button.TextColorProperty,
-                    Colors.White,
-                    Colors.Black);
-                break;
-
-            case "OIDC":
-            default:
-                button.SetAppThemeColor(
-                    Button.BackgroundColorProperty,
-                    Color.FromArgb("#1976D2"),
-                    Color.FromArgb("#1565C0"));
-                button.TextColor = Colors.White;
-                break;
-        }
+        button.SetAppThemeColor(
+            Button.BackgroundColorProperty,
+            Color.FromArgb("#1976D2"),
+            Color.FromArgb("#1565C0"));
+        button.TextColor = Colors.White;
 
         button.Clicked += async (s, e) => await OnProviderButtonClicked(provider);
-
         return button;
+    }
+
+    private static string GetProviderImageSource(string providerKey)
+    {
+        return providerKey switch
+        {
+            "GOOGLE" => "google_logo",
+            "APPLE" => "apple_logo",
+            _ => "dotnet_bot"
+        };
     }
 
     private async Task OnProviderButtonClicked(ExternalAuthProvider provider)
@@ -294,9 +314,9 @@ public partial class LoginPage : ContentPage
         PasswordEntry.IsEnabled = !isLoading;
 
         // Disable OAuth buttons during loading
-        foreach (var button in _oauthButtons)
+        foreach (var view in _oauthButtons)
         {
-            button.IsEnabled = !isLoading;
+            view.IsEnabled = !isLoading;
         }
     }
 

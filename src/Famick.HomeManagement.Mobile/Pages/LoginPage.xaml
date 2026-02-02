@@ -87,10 +87,6 @@
                 <BoxView HeightRequest="1"
                          BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
                          Margin="0,5" />
-                <Label Text="Or continue with"
-                       FontSize="14"
-                       HorizontalOptions="Center"
-                       TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
                 <FlexLayout x:Name="OAuthButtonsContainer"
                             Wrap="Wrap"
                             JustifyContent="Center"
