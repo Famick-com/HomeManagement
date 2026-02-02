@@ -1,5 +1,6 @@
 using Famick.HomeManagement.Mobile.Pages;
 using Famick.HomeManagement.Mobile.Pages.Onboarding;
+using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 using Microsoft.Extensions.Logging;
 using ZXing.Net.Maui.Controls;
@@ -85,6 +86,15 @@ public static class MauiProgram
         builder.Services.AddTransient<AddItemPage>();
         builder.Services.AddTransient<BarcodeScannerPage>();
         builder.Services.AddTransient<AisleOrderPage>();
+        builder.Services.AddTransient<SettingsPage>();
+
+        // Wizard Pages
+        builder.Services.AddTransient<WizardHouseholdInfoPage>();
+        builder.Services.AddTransient<WizardMembersPage>();
+        builder.Services.AddTransient<WizardHomeStatsPage>();
+        builder.Services.AddTransient<WizardMaintenancePage>();
+        builder.Services.AddTransient<WizardVehiclesPage>();
+        // Note: WizardVehicleEditPage has runtime parameters and is created manually
 
 #if DEBUG
         builder.Logging.AddDebug();

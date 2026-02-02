@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Mobile.Models;
+using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile.Pages;
@@ -13,6 +14,7 @@ public partial class DashboardPage : ContentPage
     private StockStatisticsDto? _stockStatistics;
     private int _overdueChoresCount;
     private int _dueThisWeekCount;
+    private bool _wizardRedirectAttempted;
 
     public DashboardPage(
         ShoppingApiClient apiClient,
@@ -51,7 +53,49 @@ public partial class DashboardPage : ContentPage
             await appShell.RefreshTitleAsync();
         }
 
+        // Auto-redirect to wizard if not completed (only once per app session)
+        var onboardingService = Application.Current?.Handler?.MauiContext?.Services.GetService<OnboardingService>();
+        if (!_wizardRedirectAttempted && onboardingService != null && !onboardingService.IsHomeSetupWizardCompleted())
+        {
+            _wizardRedirectAttempted = true;
+            // Check server wizard state to confirm it's actually incomplete
+            var wizardResult = await _apiClient.GetWizardStateAsync();
+            if (wizardResult.Success && wizardResult.Data != null && wizardResult.Data.IsComplete)
+            {
+                // Server says wizard is done - sync local state
+                onboardingService.MarkHomeSetupWizardCompleted();
+            }
+            else if (wizardResult.Success)
+            {
+                // Wizard genuinely not complete - redirect
+                var wizardPage = Application.Current?.Handler?.MauiContext?.Services.GetService<WizardHouseholdInfoPage>();
+                if (wizardPage != null)
+                {
+                    await Navigation.PushAsync(wizardPage);
+                    return;
+                }
+            }
+            // If the API call failed (e.g. 404, no wizard endpoint), just skip and show dashboard
+        }
+
+        // Check if wizard needs to be shown (banner for re-run)
+        CheckWizardBanner();
+
         await LoadDashboardAsync();
+    }
+
+    private void CheckWizardBanner()
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        var onboardingService = services?.GetService<OnboardingService>();
+        if (onboardingService != null && !onboardingService.IsHomeSetupWizardCompleted())
+        {
+            MainThread.BeginInvokeOnMainThread(() => WizardBanner.IsVisible = true);
+        }
+        else
+        {
+            MainThread.BeginInvokeOnMainThread(() => WizardBanner.IsVisible = false);
+        }
     }
 
     private async Task LoadDashboardAsync()
@@ -277,5 +321,15 @@ public partial class DashboardPage : ContentPage
     private async void OnViewListsClicked(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//ListSelectionPage");
+    }
+
+    private async void OnWizardBannerTapped(object? sender, EventArgs e)
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        var wizardPage = services?.GetService<WizardHouseholdInfoPage>();
+        if (wizardPage != null)
+        {
+            await Navigation.PushAsync(wizardPage);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Mobile.Models;
+using Famick.HomeManagement.Mobile.Pages.Onboarding;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile.Pages;
@@ -51,10 +52,13 @@ public partial class LoginPage : ContentPage
         {
             ServerSettingsSection.IsVisible = true;
             ServerInfoLabel.Text = $"Server: {GetDisplayUrl(_apiSettings.SelfHostedUrl)}";
+            CreateAccountSection.IsVisible = false;
         }
         else
         {
             ServerSettingsSection.IsVisible = false;
+            // Show "Create Account" for cloud servers
+            CreateAccountSection.IsVisible = _apiSettings.IsCloudServer();
         }
 
         // Load OAuth configuration
@@ -164,7 +168,7 @@ public partial class LoginPage : ContentPage
             if (result.Success)
             {
                 // Navigate to main app
-                await Shell.Current.GoToAsync("//ListSelectionPage");
+                await Shell.Current.GoToAsync("//DashboardPage");
             }
             else if (result.WasCancelled)
             {
@@ -247,7 +251,7 @@ public partial class LoginPage : ContentPage
                 _apiSettings.MarkServerConfigured();
 
                 // Navigate to main app
-                await Shell.Current.GoToAsync("//ListSelectionPage");
+                await Shell.Current.GoToAsync("//DashboardPage");
             }
             else
             {
@@ -261,6 +265,16 @@ public partial class LoginPage : ContentPage
         finally
         {
             SetLoading(false);
+        }
+    }
+
+    private async void OnCreateAccountClicked(object? sender, EventArgs e)
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        if (services != null)
+        {
+            var welcomePage = services.GetRequiredService<WelcomePage>();
+            await Navigation.PushAsync(welcomePage);
         }
     }
 

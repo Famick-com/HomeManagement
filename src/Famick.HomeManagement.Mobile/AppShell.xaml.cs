@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Mobile.Pages;
+using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile;
@@ -17,6 +18,14 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(AddItemPage), typeof(AddItemPage));
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
+
+        // Wizard routes
+        Routing.RegisterRoute(nameof(WizardHouseholdInfoPage), typeof(WizardHouseholdInfoPage));
+        Routing.RegisterRoute(nameof(WizardMembersPage), typeof(WizardMembersPage));
+        Routing.RegisterRoute(nameof(WizardHomeStatsPage), typeof(WizardHomeStatsPage));
+        Routing.RegisterRoute(nameof(WizardMaintenancePage), typeof(WizardMaintenancePage));
+        Routing.RegisterRoute(nameof(WizardVehiclesPage), typeof(WizardVehiclesPage));
+        Routing.RegisterRoute(nameof(WizardVehicleEditPage), typeof(WizardVehicleEditPage));
 
         // Load tenant name and update title
         _ = LoadTenantNameAsync();
@@ -68,43 +77,16 @@ public partial class AppShell : Shell
         }
     }
 
-    private async void OnAboutClicked(object? sender, EventArgs e)
+    private async void OnSettingsClicked(object? sender, EventArgs e)
     {
         FlyoutIsPresented = false;
 
-        var version = AppInfo.VersionString;
-        var build = AppInfo.BuildString;
-
-        // Get tenant name for About dialog
-        var tenantName = "";
-        try
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        var settingsPage = services?.GetService<SettingsPage>();
+        if (settingsPage != null)
         {
-            var tenantStorage = Application.Current?.Handler?.MauiContext?.Services.GetService<TenantStorage>();
-            if (tenantStorage != null)
-            {
-                var name = await tenantStorage.GetTenantNameAsync();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    tenantName = name;
-                }
-            }
+            await Current.Navigation.PushAsync(settingsPage);
         }
-        catch
-        {
-            // Use default
-        }
-
-        var aboutTitle = string.IsNullOrEmpty(tenantName)
-            ? "About Famick Home"
-            : $"About {tenantName}";
-
-        await DisplayAlertAsync(
-            aboutTitle,
-            $"Version {version} (Build {build})\n\n" +
-            "Famick Home Management\n" +
-            "A companion app for managing your home.\n\n" +
-            (string.IsNullOrEmpty(tenantName) ? "" : $"Household: {tenantName}"),
-            "OK");
     }
 
     private async void OnSignOutClicked(object? sender, EventArgs e)

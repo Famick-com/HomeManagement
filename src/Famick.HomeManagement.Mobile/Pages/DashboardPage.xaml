@@ -13,13 +13,14 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
                 <!-- Loading Indicator (overlays content) -->
                 <ActivityIndicator x:Name="LoadingIndicator"
                                    Grid.Row="0"
-                                   Grid.RowSpan="5"
+                                   Grid.RowSpan="6"
                                    IsRunning="False"
                                    IsVisible="False"
                                    VerticalOptions="Center"
@@ -27,8 +28,41 @@
                                    Color="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
                                    ZIndex="100" />
 
+                <!-- Home Setup Wizard Banner (conditionally visible) -->
+                <Border x:Name="WizardBanner"
+                        Grid.Row="0"
+                        IsVisible="False"
+                        Padding="15"
+                        StrokeShape="RoundRectangle 12"
+                        Stroke="#1976D2"
+                        StrokeThickness="1"
+                        BackgroundColor="{AppThemeBinding Light=#E3F2FD, Dark=#1A237E}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnWizardBannerTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnSpacing="15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="&#127968;" FontSize="24" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Complete Home Setup"
+                                   FontSize="15" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#1565C0, Dark=#90CAF9}" />
+                            <Label Text="Finish setting up your home to unlock all features"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light=#1976D2, Dark=#64B5F6}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text="&#8250;" FontSize="24"
+                               TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
                 <!-- Stats Cards Row 1 -->
-                <Grid Grid.Row="0" ColumnSpacing="15">
+                <Grid Grid.Row="1" ColumnSpacing="15">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -142,7 +176,7 @@
                 </Grid>
 
                 <!-- Stats Cards Row 2 -->
-                <Grid Grid.Row="1" ColumnSpacing="15">
+                <Grid Grid.Row="2" ColumnSpacing="15">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -256,7 +290,7 @@
                 </Grid>
 
                 <!-- Quick Actions Section -->
-                <Border Grid.Row="2"
+                <Border Grid.Row="3"
                         Padding="20"
                         StrokeShape="RoundRectangle 12"
                         Stroke="Transparent"
@@ -293,7 +327,7 @@
                 </Border>
 
                 <!-- Overdue Chores Alert (conditionally visible) -->
-                <Border Grid.Row="3"
+                <Border Grid.Row="4"
                         x:Name="OverdueChoresAlert"
                         IsVisible="False"
                         Padding="15"
@@ -339,7 +373,7 @@
 
                 <!-- Error Message -->
                 <Border x:Name="ErrorAlert"
-                        Grid.Row="4"
+                        Grid.Row="5"
                         IsVisible="False"
                         Padding="15"
                         StrokeShape="RoundRectangle 10"

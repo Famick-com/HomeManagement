@@ -38,6 +38,7 @@ public partial class App : Application
             OnboardingState.Welcome => CreateOnboardingNavigationPage(),
             OnboardingState.EmailVerification => CreateEmailVerificationPage(),
             OnboardingState.Login => new AppShell(),
+            OnboardingState.HomeSetupWizard => new AppShell(),
             OnboardingState.LoggedIn => new AppShell(),
             _ => CreateOnboardingNavigationPage()
         };

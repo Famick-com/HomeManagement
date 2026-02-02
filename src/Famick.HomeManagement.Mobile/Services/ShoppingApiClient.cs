@@ -937,6 +937,398 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region Wizard APIs
+
+    public async Task<ApiResult<WizardStateDto>> GetWizardStateAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/wizard/state");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<WizardStateDto>(content, options);
+                return result != null
+                    ? ApiResult<WizardStateDto>.Ok(result)
+                    : ApiResult<WizardStateDto>.Fail("Invalid response");
+            }
+            return ApiResult<WizardStateDto>.Fail("Failed to load wizard state");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<WizardStateDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SaveHouseholdInfoAsync(HouseholdInfoDto dto)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/household-info", dto);
+            if (response.IsSuccessStatusCode)
+                return ApiResult<bool>.Ok(true);
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? $"Failed to save household info ({response.StatusCode})");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<NormalizedAddressResult>> NormalizeAddressAsync(NormalizeAddressRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/addresses/normalize", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<NormalizedAddressResult>(content, options);
+                return result != null
+                    ? ApiResult<NormalizedAddressResult>.Ok(result)
+                    : ApiResult<NormalizedAddressResult>.Fail("No normalization result");
+            }
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return ApiResult<NormalizedAddressResult>.Fail("Address not found");
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<NormalizedAddressResult>.Fail(ParseErrorMessage(error) ?? "Address normalization failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<NormalizedAddressResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SaveHomeStatisticsAsync(HomeStatisticsDto dto)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/home-statistics", dto);
+            if (response.IsSuccessStatusCode)
+                return ApiResult<bool>.Ok(true);
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? $"Failed to save home statistics ({response.StatusCode})");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SaveMaintenanceItemsAsync(MaintenanceItemsDto dto)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/maintenance-items", dto);
+            if (response.IsSuccessStatusCode)
+                return ApiResult<bool>.Ok(true);
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? $"Failed to save maintenance items ({response.StatusCode})");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<HouseholdMemberDto>>> GetHouseholdMembersAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/wizard/members");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<HouseholdMemberDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<HouseholdMemberDto>>.Ok(result)
+                    : ApiResult<List<HouseholdMemberDto>>.Ok(new List<HouseholdMemberDto>());
+            }
+            return ApiResult<List<HouseholdMemberDto>>.Fail("Failed to load household members");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<HouseholdMemberDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SaveCurrentUserContactAsync(SaveCurrentUserContactRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/members/me", request);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to save your info");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<HouseholdMemberDto>> AddHouseholdMemberAsync(AddHouseholdMemberRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/wizard/members", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<HouseholdMemberDto>(content, options);
+                return result != null
+                    ? ApiResult<HouseholdMemberDto>.Ok(result)
+                    : ApiResult<HouseholdMemberDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<HouseholdMemberDto>.Fail(ParseErrorMessage(error) ?? "Failed to add member");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<HouseholdMemberDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateHouseholdMemberAsync(Guid contactId, UpdateHouseholdMemberRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/wizard/members/{contactId}", request);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update member");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteHouseholdMemberAsync(Guid contactId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.DeleteAsync($"api/v1/wizard/members/{contactId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove member");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<DuplicateContactResultDto>> CheckDuplicateContactAsync(CheckDuplicateContactRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/wizard/members/check-duplicate", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DuplicateContactResultDto>(content, options);
+                return result != null
+                    ? ApiResult<DuplicateContactResultDto>.Ok(result)
+                    : ApiResult<DuplicateContactResultDto>.Fail("Invalid response");
+            }
+            return ApiResult<DuplicateContactResultDto>.Fail("Failed to check for duplicates");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<DuplicateContactResultDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> CompleteWizardAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsync("api/v1/wizard/complete", null);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to complete wizard");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Vehicle APIs
+
+    public async Task<ApiResult<List<VehicleSummaryDto>>> GetVehiclesAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/vehicles");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<VehicleSummaryDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<VehicleSummaryDto>>.Ok(result)
+                    : ApiResult<List<VehicleSummaryDto>>.Ok(new List<VehicleSummaryDto>());
+            }
+            return ApiResult<List<VehicleSummaryDto>>.Fail("Failed to load vehicles");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<VehicleSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<VehicleSummaryDto>> CreateVehicleAsync(CreateVehicleRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/vehicles", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<VehicleSummaryDto>(content, options);
+                return result != null
+                    ? ApiResult<VehicleSummaryDto>.Ok(result)
+                    : ApiResult<VehicleSummaryDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<VehicleSummaryDto>.Fail(ParseErrorMessage(error) ?? "Failed to create vehicle");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<VehicleSummaryDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateVehicleAsync(Guid id, UpdateVehicleRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/vehicles/{id}", request);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update vehicle");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteVehicleAsync(Guid id)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.DeleteAsync($"api/v1/vehicles/{id}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete vehicle");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Property Link APIs
+
+    public async Task<ApiResult<List<PropertyLinkDto>>> GetPropertyLinksAsync()
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync("api/v1/home/property-links");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<PropertyLinkDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<PropertyLinkDto>>.Ok(result)
+                    : ApiResult<List<PropertyLinkDto>>.Ok(new List<PropertyLinkDto>());
+            }
+            return ApiResult<List<PropertyLinkDto>>.Fail("Failed to load property links");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<PropertyLinkDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<PropertyLinkDto>> CreatePropertyLinkAsync(CreatePropertyLinkRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/home/property-links", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<PropertyLinkDto>(content, options);
+                return result != null
+                    ? ApiResult<PropertyLinkDto>.Ok(result)
+                    : ApiResult<PropertyLinkDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<PropertyLinkDto>.Fail(ParseErrorMessage(error) ?? "Failed to create property link");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<PropertyLinkDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeletePropertyLinkAsync(Guid id)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.DeleteAsync($"api/v1/home/property-links/{id}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete property link");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     private async Task SetAuthHeaderAsync()
     {
         var token = await _tokenStorage.GetAccessTokenAsync();

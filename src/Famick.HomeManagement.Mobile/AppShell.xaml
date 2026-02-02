@@ -75,8 +75,8 @@
                      BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
                      Margin="0,0,0,5" />
 
-            <Button Text="About"
-                    Clicked="OnAboutClicked"
+            <Button Text="Settings"
+                    Clicked="OnSettingsClicked"
                     BackgroundColor="Transparent"
                     TextColor="{AppThemeBinding Light=Black, Dark=White}"
                     HorizontalOptions="Start"

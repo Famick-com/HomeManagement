@@ -79,6 +79,12 @@
                        HorizontalOptions="Center"
                        TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
 
+                <Button Text="Sign In"
+                        Clicked="OnSignInClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                        FontSize="16" />
+
                 <Button x:Name="QrCodeButton"
                         Text="I have a QR Code"
                         Clicked="OnQrCodeClicked"

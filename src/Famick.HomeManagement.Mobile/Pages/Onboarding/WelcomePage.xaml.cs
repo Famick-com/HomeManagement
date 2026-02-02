@@ -72,6 +72,19 @@ public partial class WelcomePage : ContentPage
         }
     }
 
+    private void OnSignInClicked(object? sender, EventArgs e)
+    {
+        var services = Application.Current!.Handler!.MauiContext!.Services;
+        var apiSettings = services.GetRequiredService<ApiSettings>();
+
+        // Configure for cloud and mark server as configured so LoginPage shows
+        apiSettings.ConfigureForCloud(null);
+        _onboardingService.MarkOnboardingCompleted();
+
+        // Transition to main app (AppShell) which will show LoginPage via DashboardPage auth check
+        App.TransitionToMainApp();
+    }
+
     private async void OnQrCodeClicked(object? sender, EventArgs e)
     {
         await Navigation.PushAsync(new QrScannerPage(

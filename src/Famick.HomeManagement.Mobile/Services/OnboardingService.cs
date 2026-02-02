@@ -6,6 +6,7 @@ namespace Famick.HomeManagement.Mobile.Services;
 public class OnboardingService
 {
     private const string OnboardingCompletedKey = "onboarding_completed";
+    private const string HomeSetupWizardCompletedKey = "home_setup_wizard_completed";
     private const string PendingVerificationEmailKey = "pending_verification_email";
     private const string PendingVerificationTokenKey = "pending_verification_token";
 
@@ -31,7 +32,24 @@ public class OnboardingService
     public void ResetOnboarding()
     {
         Preferences.Default.Remove(OnboardingCompletedKey);
+        Preferences.Default.Remove(HomeSetupWizardCompletedKey);
         ClearPendingVerification();
+    }
+
+    /// <summary>
+    /// Checks if the home setup wizard has been completed
+    /// </summary>
+    public bool IsHomeSetupWizardCompleted()
+    {
+        return Preferences.Default.Get(HomeSetupWizardCompletedKey, false);
+    }
+
+    /// <summary>
+    /// Marks the home setup wizard as completed
+    /// </summary>
+    public void MarkHomeSetupWizardCompleted()
+    {
+        Preferences.Default.Set(HomeSetupWizardCompletedKey, true);
     }
 
     /// <summary>
@@ -90,7 +108,8 @@ public class OnboardingService
     /// </summary>
     public OnboardingState GetCurrentState(TokenStorage tokenStorage, ApiSettings apiSettings)
     {
-        // If user has valid tokens, go straight to main app
+        // If user has valid tokens, go to main app
+        // Wizard completion is checked in DashboardPage via server API
         var hasTokens = !string.IsNullOrEmpty(tokenStorage.GetAccessToken());
         if (hasTokens)
         {
@@ -136,6 +155,11 @@ public enum OnboardingState
     /// Server configured, show login page
     /// </summary>
     Login,
+
+    /// <summary>
+    /// User is authenticated but hasn't completed the home setup wizard
+    /// </summary>
+    HomeSetupWizard,
 
     /// <summary>
     /// User is logged in, go to main app

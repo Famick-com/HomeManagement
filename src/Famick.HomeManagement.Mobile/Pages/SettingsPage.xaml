@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Famick.HomeManagement.Mobile.Pages.SettingsPage"
+             Title="Settings"
+             Shell.NavBarIsVisible="True">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30">
+
+            <Label Text="Settings"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <!-- Home Setup Section -->
+            <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Home Setup" FontAttributes="Bold" FontSize="16"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label Text="Re-run the home setup wizard to update your household information, members, home details, maintenance items, and vehicles."
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#666666, Dark=#999999}" />
+                    <Button Text="Re-run Home Setup Wizard"
+                            Clicked="OnRerunWizardClicked"
+                            BackgroundColor="Transparent"
+                            BorderColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                            BorderWidth="2"
+                            TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                            CornerRadius="8" HeightRequest="44" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- About -->
+            <Button Text="About Famick Home"
+                    Clicked="OnAboutClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                    FontSize="14"
+                    HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
