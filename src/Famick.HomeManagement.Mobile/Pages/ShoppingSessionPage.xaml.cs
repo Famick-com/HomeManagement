@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Windows.Input;
 using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -26,6 +28,10 @@ public partial class ShoppingSessionPage : ContentPage
 
     public ObservableCollection<ItemGroup> GroupedItems { get; } = new();
 
+    public ICommand RemoveItemCommand { get; }
+    public ICommand ToggleItemCommand { get; }
+    public ICommand ShowItemDetailCommand { get; }
+
     public ShoppingSessionPage(
         ShoppingApiClient apiClient,
         OfflineStorageService offlineStorage,
@@ -38,6 +44,10 @@ public partial class ShoppingSessionPage : ContentPage
         _connectivityService = connectivityService;
         _imageCacheService = imageCacheService;
 
+        RemoveItemCommand = new Command<CachedShoppingListItem>(async item => await RemoveItemAsync(item));
+        ToggleItemCommand = new Command<CachedShoppingListItem>(async item => await ToggleItemAsync(item));
+        ShowItemDetailCommand = new Command<CachedShoppingListItem>(ShowItemDetail);
+
         BindingContext = this;
 
         _connectivityService.ConnectivityChanged += OnConnectivityChanged;
@@ -46,7 +56,7 @@ public partial class ShoppingSessionPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        Title = ListName;
+        PageTitleLabel.Text = ListName;
         UpdateConnectivityUI();
         await LoadSessionAsync();
     }
@@ -73,7 +83,13 @@ public partial class ShoppingSessionPage : ContentPage
                 if (result.Success && result.Data != null)
                 {
                     _session = await _offlineStorage.CacheShoppingSessionAsync(_listId, result.Data);
-                    await _imageCacheService.CacheImagesForSessionAsync(_session);
+                    await _imageCacheService.CacheImagesForSessionAsync(_session, result.Data.Items);
+
+                    // Persist cached image paths back to SQLite
+                    foreach (var item in _session.Items.Where(i => !string.IsNullOrEmpty(i.LocalImagePath)))
+                    {
+                        await _offlineStorage.UpdateItemStateAsync(item);
+                    }
                 }
                 else
                 {
@@ -106,18 +122,17 @@ public partial class ShoppingSessionPage : ContentPage
 
         // Set flag to prevent OnItemCheckedChanged from queueing operations during UI binding
         _isPopulatingItems = true;
-        Console.WriteLine("PopulateItems: Setting _isPopulatingItems = true");
 
         try
         {
             GroupedItems.Clear();
 
-            // Group items by aisle/department
-            // Note: Items come from the server sorted by custom aisle order (via SortOrder).
-            // We preserve that order by NOT re-sorting groups after GroupBy.
-            // GroupBy maintains the order of groups based on when the first element of each group appears.
-            var groups = _session.Items
-                .OrderBy(i => i.SortOrder)
+            // Separate unpurchased and purchased items
+            var unpurchased = _session.Items.Where(i => !i.IsPurchased).OrderBy(i => i.SortOrder).ToList();
+            var purchased = _session.Items.Where(i => i.IsPurchased).OrderBy(i => i.SortOrder).ToList();
+
+            // Group unpurchased items by aisle/department
+            var groups = unpurchased
                 .GroupBy(i => string.IsNullOrEmpty(i.Aisle)
                     ? i.Department ?? "Other"
                     : int.TryParse(i.Aisle, out _) ? $"Aisle {i.Aisle}" : i.Aisle);
@@ -128,10 +143,11 @@ public partial class ShoppingSessionPage : ContentPage
                 GroupedItems.Add(itemGroup);
             }
 
-            // Log items with their original states
-            foreach (var item in _session.Items)
+            // Add purchased items as a separate group at the bottom
+            if (purchased.Count > 0)
             {
-                Console.WriteLine($"PopulateItems: {item.ProductName} - IsPurchased={item.IsPurchased}, OriginalIsPurchased={item.OriginalIsPurchased}");
+                var purchasedGroup = new ItemGroup($"Purchased ({purchased.Count})", purchased);
+                GroupedItems.Add(purchasedGroup);
             }
         }
         finally
@@ -140,7 +156,6 @@ public partial class ShoppingSessionPage : ContentPage
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 _isPopulatingItems = false;
-                Console.WriteLine("PopulateItems: Setting _isPopulatingItems = false");
             });
         }
     }
@@ -171,19 +186,91 @@ public partial class ShoppingSessionPage : ContentPage
         }
     }
 
+    private async Task ToggleItemAsync(CachedShoppingListItem? item)
+    {
+        if (item == null || _session == null) return;
+
+        item.IsPurchased = !item.IsPurchased;
+        item.PurchasedAt = item.IsPurchased ? DateTime.UtcNow : null;
+
+        await _offlineStorage.UpdateItemStateAsync(item);
+
+        if (!item.IsNewItem)
+        {
+            if (_connectivityService.IsOnline)
+            {
+                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
+                if (result.Success)
+                {
+                    item.OriginalIsPurchased = item.IsPurchased;
+                    await _offlineStorage.UpdateItemStateAsync(item);
+                }
+                else
+                {
+                    await EnqueueToggleOperationAsync(item);
+                }
+            }
+            else
+            {
+                await EnqueueToggleOperationAsync(item);
+            }
+        }
+
+        PopulateItems();
+        UpdateSubtotal();
+    }
+
+    private async Task RemoveItemAsync(CachedShoppingListItem? item)
+    {
+        if (item == null || _session == null) return;
+
+        // Remove from in-memory session
+        _session.Items.Remove(item);
+
+        // Remove from SQLite cache
+        await _offlineStorage.RemoveItemFromSessionAsync(item.Id);
+
+        // Try API delete if online, otherwise queue
+        if (!item.IsNewItem)
+        {
+            if (_connectivityService.IsOnline)
+            {
+                var result = await _apiClient.RemoveItemAsync(_listId, item.Id);
+                if (!result.Success)
+                {
+                    await EnqueueRemoveOperationAsync(item.Id);
+                }
+            }
+            else
+            {
+                await EnqueueRemoveOperationAsync(item.Id);
+            }
+        }
+
+        PopulateItems();
+        UpdateSubtotal();
+    }
+
+    private async Task EnqueueRemoveOperationAsync(Guid itemId)
+    {
+        await _offlineStorage.EnqueueOperationAsync(new OfflineOperation
+        {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            OperationType = "RemoveItem",
+            PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = itemId })
+        });
+    }
+
     private async void OnItemCheckedChanged(object? sender, CheckedChangedEventArgs e)
     {
         // Skip during initial UI population - we only want to track user-initiated changes
         if (_isPopulatingItems)
-        {
             return;
-        }
 
         if (sender is not CheckBox checkBox || checkBox.BindingContext is not CachedShoppingListItem item)
             return;
 
-        // Note: Two-way binding already updated item.IsPurchased to e.Value
-        // So we just need to update the timestamp and handle storage/queueing
         item.PurchasedAt = e.Value ? DateTime.UtcNow : null;
 
         // Update local storage first
@@ -194,49 +281,42 @@ public partial class ShoppingSessionPage : ContentPage
         {
             if (_connectivityService.IsOnline)
             {
-                // Try to sync immediately
                 var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
                 if (result.Success)
                 {
-                    // Update original state to match server
                     item.OriginalIsPurchased = item.IsPurchased;
                     await _offlineStorage.UpdateItemStateAsync(item);
-                    Console.WriteLine($"Real-time sync: {item.ProductName} toggled to {item.IsPurchased}");
                 }
                 else
                 {
-                    // Log for later replay
-                    await LogToggleRequestAsync(item);
-                    Console.WriteLine($"Real-time sync failed, logged for replay: {item.ProductName}");
+                    await EnqueueToggleOperationAsync(item);
                 }
             }
             else
             {
-                // Offline - log for later replay
-                await LogToggleRequestAsync(item);
-                Console.WriteLine($"Offline - logged toggle for replay: {item.ProductName}");
+                await EnqueueToggleOperationAsync(item);
             }
         }
 
+        // Re-populate to move item between groups
+        PopulateItems();
         UpdateSubtotal();
     }
 
-    private async Task LogToggleRequestAsync(CachedShoppingListItem item)
+    private async Task EnqueueToggleOperationAsync(CachedShoppingListItem item)
     {
-        // Remove any existing pending requests for this item (to avoid duplicates)
+        // Remove any existing pending toggle for this item
         await _offlineStorage.RemovePendingToggleOperationsAsync(_listId, item.Id);
 
-        // Only log if current state differs from original
+        // Only enqueue if current state differs from original
         if (item.IsPurchased != item.OriginalIsPurchased)
         {
-            var url = $"api/v1/shoppinglists/{_listId}/items/{item.Id}/toggle-purchased";
-            await _offlineStorage.LogHttpRequestAsync(new HttpRequestLog
+            await _offlineStorage.EnqueueOperationAsync(new OfflineOperation
             {
                 Id = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
-                Method = "POST",
-                Url = url,
-                Body = null
+                OperationType = "TogglePurchased",
+                PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = item.Id, item.IsPurchased })
             });
         }
     }
@@ -259,7 +339,6 @@ public partial class ShoppingSessionPage : ContentPage
 
     private async void OnAddItemClicked(object? sender, EventArgs e)
     {
-        // Navigate to AddItemPage without a barcode for manual entry
         var navigationParameter = new Dictionary<string, object>
         {
             { "ListId", _listId.ToString() }
@@ -269,6 +348,21 @@ public partial class ShoppingSessionPage : ContentPage
 
     private async void OnScanClicked(object? sender, EventArgs e)
     {
+        // Request camera permission before opening scanner
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+            if (status != PermissionStatus.Granted)
+            {
+                await DisplayAlertAsync(
+                    "Camera Required",
+                    "Camera permission is needed to scan barcodes. Please enable it in Settings.",
+                    "OK");
+                return;
+            }
+        }
+
         var scannerPage = new BarcodeScannerPage();
         await Navigation.PushModalAsync(scannerPage);
         var barcode = await scannerPage.ScanAsync();
@@ -283,25 +377,21 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (_session == null) return;
 
-        // Check if item is in current list
         var existingItem = _session.Items.FirstOrDefault(i =>
             i.Barcode?.Equals(barcode, StringComparison.OrdinalIgnoreCase) == true);
 
         if (existingItem != null)
         {
-            // Mark as purchased and scroll to it
             existingItem.IsPurchased = true;
             existingItem.PurchasedAt = DateTime.UtcNow;
             await _offlineStorage.UpdateItemStateAsync(existingItem);
             PopulateItems();
             UpdateSubtotal();
 
-            // TODO: Scroll to item
             await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
         }
         else
         {
-            // Item not in list - offer to add it
             var navigationParameter = new Dictionary<string, object>
             {
                 { "Barcode", barcode },
@@ -354,10 +444,9 @@ public partial class ShoppingSessionPage : ContentPage
 
         try
         {
-            // First, replay any pending HTTP requests
-            await ReplayPendingRequestsAsync();
+            // Sync any pending offline operations first
+            await _offlineStorage.SyncPendingOperationsAsync(_apiClient);
 
-            // Build move-to-inventory request
             var request = new MoveToInventoryRequest
             {
                 ShoppingListId = _listId,
@@ -372,24 +461,18 @@ public partial class ShoppingSessionPage : ContentPage
                 }).ToList()
             };
 
-            // Call move-to-inventory endpoint
             var result = await _apiClient.MoveToInventoryAsync(request);
 
             if (result.Success && result.Data != null)
             {
                 var message = $"Added {result.Data.ItemsAddedToStock} item(s) to inventory.";
                 if (result.Data.TodoItemsCreated > 0)
-                {
                     message += $"\n{result.Data.TodoItemsCreated} item(s) need product setup.";
-                }
                 if (result.Data.Errors.Count > 0)
-                {
                     message += $"\n{result.Data.Errors.Count} error(s) occurred.";
-                }
 
                 await DisplayAlertAsync("Shopping Complete", message, "OK");
 
-                // Clear local cache
                 await _offlineStorage.ClearSessionAsync(_listId);
                 await Shell.Current.GoToAsync("..");
             }
@@ -408,66 +491,27 @@ public partial class ShoppingSessionPage : ContentPage
         }
     }
 
-    private async Task ReplayPendingRequestsAsync()
-    {
-        var pendingRequests = await _offlineStorage.GetPendingHttpRequestsAsync();
-        Console.WriteLine($"ReplayPendingRequests: Found {pendingRequests.Count} pending requests");
-
-        foreach (var request in pendingRequests)
-        {
-            try
-            {
-                // For now, we handle toggle-purchased requests
-                if (request.Method == "POST" && request.Url.Contains("toggle-purchased"))
-                {
-                    // Extract listId and itemId from URL
-                    // URL format: api/v1/shoppinglists/{listId}/items/{itemId}/toggle-purchased
-                    var parts = request.Url.Split('/');
-                    if (parts.Length >= 6)
-                    {
-                        var listId = Guid.Parse(parts[3]);
-                        var itemId = Guid.Parse(parts[5]);
-
-                        var result = await _apiClient.TogglePurchasedAsync(listId, itemId);
-                        if (result.Success)
-                        {
-                            await _offlineStorage.MarkHttpRequestCompletedAsync(request.Id);
-                            Console.WriteLine($"Replayed toggle request for item {itemId}");
-                        }
-                        else
-                        {
-                            await _offlineStorage.UpdateHttpRequestErrorAsync(request.Id, result.ErrorMessage ?? "Unknown error");
-                        }
-                    }
-                }
-                else
-                {
-                    // Mark as completed for unsupported request types
-                    await _offlineStorage.MarkHttpRequestCompletedAsync(request.Id);
-                }
-            }
-            catch (Exception ex)
-            {
-                await _offlineStorage.UpdateHttpRequestErrorAsync(request.Id, ex.Message);
-                Console.WriteLine($"Failed to replay request {request.Id}: {ex.Message}");
-            }
-        }
-    }
-
     private async void OnRefreshing(object? sender, EventArgs e)
     {
         if (_connectivityService.IsOnline)
         {
-            // Clear cache and force reload from server
+            // Sync pending operations, then reload
+            await _offlineStorage.SyncPendingOperationsAsync(_apiClient);
             await _offlineStorage.ClearSessionAsync(_listId);
             await LoadSessionAsync();
         }
         RefreshContainer.IsRefreshing = false;
     }
 
-    private void OnConnectivityChanged(object? sender, bool isOnline)
+    private async void OnConnectivityChanged(object? sender, bool isOnline)
     {
         MainThread.BeginInvokeOnMainThread(UpdateConnectivityUI);
+
+        if (isOnline)
+        {
+            // Auto-sync pending operations when coming back online
+            await _offlineStorage.SyncPendingOperationsAsync(_apiClient);
+        }
     }
 
     private void UpdateConnectivityUI()
@@ -476,6 +520,61 @@ public partial class ShoppingSessionPage : ContentPage
         OfflineBanner.IsVisible = !isOnline;
         CompleteButton.IsEnabled = isOnline;
         CompleteButton.Opacity = isOnline ? 1.0 : 0.5;
+    }
+
+    private void ShowItemDetail(CachedShoppingListItem? item)
+    {
+        if (item == null) return;
+
+        DetailProductName.Text = item.ProductName;
+        DetailQuantity.Text = item.Amount.ToString("G");
+
+        // Image
+        if (item.HasImage)
+        {
+            DetailImage.Source = item.ImageSource;
+            DetailImage.IsVisible = true;
+            DetailNoImage.IsVisible = false;
+        }
+        else
+        {
+            DetailImage.IsVisible = false;
+            DetailNoImage.IsVisible = true;
+        }
+
+        // Location
+        DetailAisle.Text = !string.IsNullOrEmpty(item.Aisle)
+            ? (int.TryParse(item.Aisle, out _) ? $"Aisle {item.Aisle}" : item.Aisle)
+            : "—";
+        DetailShelf.Text = !string.IsNullOrEmpty(item.Shelf) ? item.Shelf : "—";
+        DetailDepartment.Text = !string.IsNullOrEmpty(item.Department) ? item.Department : "—";
+
+        // Price
+        DetailPriceSection.IsVisible = item.HasPrice;
+        DetailPrice.Text = item.Price.HasValue ? $"${item.Price:F2}" : "";
+
+        // Note
+        if (!string.IsNullOrEmpty(item.Note))
+        {
+            DetailNote.Text = item.Note;
+            DetailNote.IsVisible = true;
+        }
+        else
+        {
+            DetailNote.IsVisible = false;
+        }
+
+        DetailOverlay.IsVisible = true;
+    }
+
+    private void OnDetailOverlayTapped(object? sender, TappedEventArgs e)
+    {
+        DetailOverlay.IsVisible = false;
+    }
+
+    private void OnDetailCloseClicked(object? sender, EventArgs e)
+    {
+        DetailOverlay.IsVisible = false;
     }
 
     private void ShowLoading(bool show)

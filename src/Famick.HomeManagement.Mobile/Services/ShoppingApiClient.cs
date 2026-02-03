@@ -189,7 +189,8 @@ public class ShoppingApiClient
         string? aisle = null,
         string? department = null,
         string? externalProductId = null,
-        decimal? price = null)
+        decimal? price = null,
+        string? imageUrl = null)
     {
         try
         {
@@ -206,7 +207,8 @@ public class ShoppingApiClient
                 aisle,
                 department,
                 externalProductId,
-                price
+                price,
+                imageUrl
             });
 
             return response.IsSuccessStatusCode
@@ -430,6 +432,30 @@ public class ShoppingApiClient
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
                 : ApiResult<bool>.Fail("Failed to reset aisle order");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Remove an item from a shopping list.
+    /// </summary>
+    public async Task<ApiResult<bool>> RemoveItemAsync(Guid listId, Guid itemId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.DeleteAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return ApiResult<bool>.Ok(true);
+
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove item");
         }
         catch (Exception ex)
         {

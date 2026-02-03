@@ -75,20 +75,3 @@ public class OfflineOperation
     public int RetryCount { get; set; }
 }
 
-/// <summary>
-/// HTTP request log for offline request replay
-/// </summary>
-public class HttpRequestLog
-{
-    [PrimaryKey]
-    public Guid Id { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-    public string Method { get; set; } = "";
-    public string Url { get; set; } = "";
-    public string? Headers { get; set; }
-    public string? Body { get; set; }
-    public int RetryCount { get; set; }
-    public bool IsCompleted { get; set; }
-    public string? LastError { get; set; }
-}

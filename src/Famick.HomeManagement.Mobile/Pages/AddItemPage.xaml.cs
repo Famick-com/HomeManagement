@@ -11,6 +11,7 @@ public partial class AddItemPage : ContentPage
     private readonly ShoppingApiClient _apiClient;
     private readonly OfflineStorageService _offlineStorage;
     private readonly ConnectivityService _connectivityService;
+    private readonly ImageCacheService _imageCacheService;
 
     private string? _barcode;
     private Guid _listId;
@@ -42,12 +43,14 @@ public partial class AddItemPage : ContentPage
     public AddItemPage(
         ShoppingApiClient apiClient,
         OfflineStorageService offlineStorage,
-        ConnectivityService connectivityService)
+        ConnectivityService connectivityService,
+        ImageCacheService imageCacheService)
     {
         InitializeComponent();
         _apiClient = apiClient;
         _offlineStorage = offlineStorage;
         _connectivityService = connectivityService;
+        _imageCacheService = imageCacheService;
     }
 
     protected override async void OnAppearing()
@@ -229,6 +232,15 @@ public partial class AddItemPage : ContentPage
 
         try
         {
+            var isPurchased = MarkPurchasedCheckBox.IsChecked;
+
+            // Cache product image if available
+            string? localImagePath = null;
+            if (!string.IsNullOrEmpty(_lookupResult?.ImageUrl))
+            {
+                localImagePath = await _imageCacheService.CacheImageAsync(_lookupResult.ImageUrl);
+            }
+
             // Create the new item for local cache
             var newItem = new CachedShoppingListItem
             {
@@ -238,13 +250,14 @@ public partial class AddItemPage : ContentPage
                 Amount = _quantity,
                 Note = NoteEntry.Text?.Trim(),
                 Barcode = _barcode,
-                IsPurchased = true, // Auto-check since we just scanned it
-                PurchasedAt = DateTime.UtcNow,
+                IsPurchased = isPurchased,
+                PurchasedAt = isPurchased ? DateTime.UtcNow : null,
                 IsNewItem = true,
                 Price = _lookupResult?.Price,
                 Aisle = _lookupResult?.Aisle,
                 Department = _lookupResult?.Department,
-                ExternalProductId = _lookupResult?.ExternalProductId
+                ExternalProductId = _lookupResult?.ExternalProductId,
+                LocalImagePath = localImagePath
             };
 
             // Try to add to server immediately if online
@@ -256,11 +269,12 @@ public partial class AddItemPage : ContentPage
                     _quantity,
                     _barcode,
                     NoteEntry.Text?.Trim(),
-                    isPurchased: true,
+                    isPurchased: isPurchased,
                     aisle: _lookupResult?.Aisle,
                     department: _lookupResult?.Department,
                     externalProductId: _lookupResult?.ExternalProductId,
-                    price: _lookupResult?.Price);
+                    price: _lookupResult?.Price,
+                    imageUrl: _lookupResult?.ImageUrl);
 
                 if (result.Success)
                 {
@@ -290,7 +304,7 @@ public partial class AddItemPage : ContentPage
                     Amount = _quantity,
                     Barcode = _barcode,
                     Note = NoteEntry.Text?.Trim(),
-                    IsPurchased = true
+                    IsPurchased = isPurchased
                 })
             });
 

@@ -1,18 +1,36 @@
+using System.Net.Http.Headers;
 using Famick.HomeManagement.Mobile.Models;
 
 namespace Famick.HomeManagement.Mobile.Services;
 
 /// <summary>
 /// Service for caching product images locally.
+/// Uses a dedicated HttpClient that does NOT go through DynamicApiHttpHandler,
+/// so external image URLs (e.g., OpenFoodFacts) are fetched directly.
 /// </summary>
 public class ImageCacheService
 {
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient _imageHttpClient;
+    private readonly TokenStorage _tokenStorage;
+    private readonly ApiSettings _apiSettings;
     private readonly string _cacheDirectory;
 
-    public ImageCacheService(HttpClient httpClient)
+    public ImageCacheService(TokenStorage tokenStorage, ApiSettings apiSettings)
     {
-        _httpClient = httpClient;
+        _tokenStorage = tokenStorage;
+        _apiSettings = apiSettings;
+
+        // Dedicated HttpClient without DynamicApiHttpHandler so external URLs work
+#if DEBUG
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+        };
+        _imageHttpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+#else
+        _imageHttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+#endif
+
         _cacheDirectory = Path.Combine(FileSystem.CacheDirectory, "images");
 
         if (!Directory.Exists(_cacheDirectory))
@@ -22,22 +40,39 @@ public class ImageCacheService
     }
 
     /// <summary>
-    /// Caches all product images for a shopping session.
+    /// Caches all product images for a shopping session using the original API item data.
     /// </summary>
-    public async Task CacheImagesForSessionAsync(ShoppingSession session)
+    public async Task CacheImagesForSessionAsync(ShoppingSession session, List<ShoppingListItemDto>? apiItems = null)
     {
+        if (apiItems == null || apiItems.Count == 0) return;
+
+        // Build a lookup from item ID to image URL
+        var imageUrls = apiItems
+            .Where(i => !string.IsNullOrEmpty(i.ImageUrl))
+            .ToDictionary(i => i.Id, i => i.ImageUrl!);
+
+        System.Diagnostics.Debug.WriteLine($"[ImageCache] {apiItems.Count} API items, {imageUrls.Count} have ImageUrl");
+
         var tasks = new List<Task>();
 
         foreach (var item in session.Items)
         {
             if (!string.IsNullOrEmpty(item.LocalImagePath))
-            {
-                // Already cached
                 continue;
-            }
 
-            // Get image URL from the API (would need to be added to item DTO)
-            // For now, skip if no image URL available
+            if (imageUrls.TryGetValue(item.Id, out var imageUrl))
+            {
+                var capturedItem = item;
+                var capturedUrl = imageUrl;
+                tasks.Add(Task.Run(async () =>
+                {
+                    var localPath = await CacheImageAsync(capturedUrl);
+                    if (localPath != null)
+                    {
+                        capturedItem.LocalImagePath = localPath;
+                    }
+                }));
+            }
         }
 
         await Task.WhenAll(tasks);
@@ -66,14 +101,30 @@ public class ImageCacheService
                 return localPath;
             }
 
+            System.Diagnostics.Debug.WriteLine($"[ImageCache] Downloading: {imageUrl}");
+
             // Download and save
-            var imageData = await _httpClient.GetByteArrayAsync(imageUrl);
+            var request = new HttpRequestMessage(HttpMethod.Get, imageUrl);
+
+            // Add auth header for API-hosted images
+            var apiBase = _apiSettings.BaseUrl.TrimEnd('/');
+            if (imageUrl.StartsWith(apiBase, StringComparison.OrdinalIgnoreCase))
+            {
+                var token = await _tokenStorage.GetAccessTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            var response = await _imageHttpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var imageData = await response.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(localPath, imageData);
 
             return localPath;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[ImageCache] Failed to cache {imageUrl}: {ex.Message}");
             return null;
         }
     }

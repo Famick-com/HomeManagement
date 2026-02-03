@@ -144,6 +144,16 @@
                                 TextColor="White" />
                     </HorizontalStackLayout>
 
+                    <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                        <CheckBox x:Name="MarkPurchasedCheckBox"
+                                  IsChecked="True"
+                                  Color="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                                  VerticalOptions="Center" />
+                        <Label Text="Mark as purchased"
+                               FontSize="14"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
                     <Label Text="Note (optional)" FontSize="14" FontAttributes="Bold" />
                     <Entry x:Name="NoteEntry"
                            Placeholder="Add a note..." />

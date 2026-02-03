@@ -21,6 +21,19 @@ public partial class BarcodeScannerPage : ContentPage
         BindingContext = this;
     }
 
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (status != PermissionStatus.Granted)
+        {
+            BarcodeReader.IsDetecting = false;
+            InstructionLabel.Text = "Camera permission not granted";
+            InstructionLabel.TextColor = Colors.Red;
+        }
+    }
+
     /// <summary>
     /// Start scanning and return the result when a barcode is detected or cancelled.
     /// </summary>

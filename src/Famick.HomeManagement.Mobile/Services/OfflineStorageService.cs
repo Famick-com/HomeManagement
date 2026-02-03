@@ -25,7 +25,6 @@ public class OfflineStorageService
             await _database.CreateTableAsync<ShoppingSession>();
             await _database.CreateTableAsync<CachedShoppingListItem>();
             await _database.CreateTableAsync<OfflineOperation>();
-            await _database.CreateTableAsync<HttpRequestLog>();
         }
         return _database;
     }
@@ -313,9 +312,27 @@ public class OfflineStorageService
                     return result.Success;
                 }
                 break;
+
+            case "RemoveItem":
+                var removeData = JsonSerializer.Deserialize<RemoveItemPayload>(operation.PayloadJson);
+                if (removeData != null)
+                {
+                    var result = await apiClient.RemoveItemAsync(removeData.ListId, removeData.ItemId);
+                    return result.Success;
+                }
+                break;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Removes an item from a cached session.
+    /// </summary>
+    public async Task RemoveItemFromSessionAsync(Guid itemId)
+    {
+        var db = await GetDatabaseAsync();
+        await db.Table<CachedShoppingListItem>().DeleteAsync(i => i.Id == itemId);
     }
 
     /// <summary>
@@ -355,76 +372,7 @@ public class OfflineStorageService
         await db.DeleteAllAsync<CachedShoppingListItem>();
         await db.DeleteAllAsync<ShoppingSession>();
         await db.DeleteAllAsync<OfflineOperation>();
-        await db.DeleteAllAsync<HttpRequestLog>();
     }
-
-    #region HTTP Request Logging
-
-    /// <summary>
-    /// Logs an HTTP request for later replay.
-    /// </summary>
-    public async Task LogHttpRequestAsync(HttpRequestLog request)
-    {
-        var db = await GetDatabaseAsync();
-        await db.InsertAsync(request);
-        Console.WriteLine($"LogHttpRequest: Logged {request.Method} {request.Url}");
-    }
-
-    /// <summary>
-    /// Gets all pending HTTP requests that haven't been replayed.
-    /// </summary>
-    public async Task<List<HttpRequestLog>> GetPendingHttpRequestsAsync()
-    {
-        var db = await GetDatabaseAsync();
-        return await db.Table<HttpRequestLog>()
-            .Where(r => !r.IsCompleted)
-            .OrderBy(r => r.CreatedAt)
-            .ToListAsync();
-    }
-
-    /// <summary>
-    /// Marks an HTTP request as completed.
-    /// </summary>
-    public async Task MarkHttpRequestCompletedAsync(Guid requestId)
-    {
-        var db = await GetDatabaseAsync();
-        var request = await db.Table<HttpRequestLog>()
-            .FirstOrDefaultAsync(r => r.Id == requestId);
-
-        if (request != null)
-        {
-            request.IsCompleted = true;
-            await db.UpdateAsync(request);
-        }
-    }
-
-    /// <summary>
-    /// Updates the retry count and error for a failed HTTP request.
-    /// </summary>
-    public async Task UpdateHttpRequestErrorAsync(Guid requestId, string error)
-    {
-        var db = await GetDatabaseAsync();
-        var request = await db.Table<HttpRequestLog>()
-            .FirstOrDefaultAsync(r => r.Id == requestId);
-
-        if (request != null)
-        {
-            request.RetryCount++;
-            request.LastError = error;
-            await db.UpdateAsync(request);
-        }
-    }
-
-    /// <summary>
-    /// Clears completed HTTP request logs.
-    /// </summary>
-    public async Task ClearCompletedHttpRequestsAsync()
-    {
-        var db = await GetDatabaseAsync();
-        await db.Table<HttpRequestLog>().DeleteAsync(r => r.IsCompleted);
-    }
-
-    #endregion
 
     private class TogglePurchasedPayload
     {
@@ -441,5 +389,11 @@ public class OfflineStorageService
         public string? Barcode { get; set; }
         public string? Note { get; set; }
         public bool IsPurchased { get; set; }
+    }
+
+    private class RemoveItemPayload
+    {
+        public Guid ListId { get; set; }
+        public Guid ItemId { get; set; }
     }
 }
