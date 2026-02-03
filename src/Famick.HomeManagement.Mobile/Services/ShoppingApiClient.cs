@@ -398,22 +398,32 @@ public class ShoppingApiClient
         try
         {
             await SetAuthHeaderAsync();
+
+            // Debug: Log what we're sending
+            var requestJson = System.Text.Json.JsonSerializer.Serialize(request);
+            System.Diagnostics.Debug.WriteLine($"[UpdateAisleOrder] Sending: {requestJson}");
+
             var response = await _httpClient.PutAsJsonAsync(
                 $"api/v1/shoppinglocations/{locationId}/aisle-order",
                 request);
 
+            var responseContent = await response.Content.ReadAsStringAsync();
+            System.Diagnostics.Debug.WriteLine($"[UpdateAisleOrder] Response {response.StatusCode}: {responseContent}");
+
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AisleOrderDto>();
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var result = System.Text.Json.JsonSerializer.Deserialize<AisleOrderDto>(responseContent, options);
                 return result != null
                     ? ApiResult<AisleOrderDto>.Ok(result)
                     : ApiResult<AisleOrderDto>.Fail("Invalid response");
             }
 
-            return ApiResult<AisleOrderDto>.Fail("Failed to update aisle order");
+            return ApiResult<AisleOrderDto>.Fail($"Failed: {response.StatusCode} - {responseContent}");
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[UpdateAisleOrder] Exception: {ex}");
             return ApiResult<AisleOrderDto>.Fail($"Connection error: {ex.Message}");
         }
     }

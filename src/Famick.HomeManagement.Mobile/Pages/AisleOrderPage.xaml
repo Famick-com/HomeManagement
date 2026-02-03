@@ -18,7 +18,7 @@
                 Stroke="Transparent"
                 StrokeThickness="0"
                 BackgroundColor="{AppThemeBinding Light=#F2F2F7, Dark=#1C1C1E}">
-            <Label Text="Hold and drag to reorder aisles."
+            <Label Text="Use the arrows to reorder aisles."
                    FontSize="13"
                    TextColor="{AppThemeBinding Light=#8E8E93, Dark=#8E8E93}" />
         </Border>
@@ -54,15 +54,16 @@
         <CollectionView x:Name="AisleList"
                         Grid.Row="1"
                         SelectionMode="None"
-                        CanReorderItems="True"
-                        ReorderCompleted="OnReorderCompleted"
                         BackgroundColor="{AppThemeBinding Light=#F2F2F7, Dark=#000000}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="0" HeightRequest="44"
+                    <Grid Padding="0" HeightRequest="52"
                           BackgroundColor="{AppThemeBinding Light=White, Dark=#1C1C1E}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
@@ -74,16 +75,49 @@
                                Padding="16,0,0,0"
                                TextColor="{AppThemeBinding Light=Black, Dark=White}" />
 
-                        <!-- Reorder Handle (three lines) - iOS standard -->
-                        <Label Grid.Column="1"
-                               Text="≡"
-                               FontSize="22"
-                               TextColor="{AppThemeBinding Light=#C7C7CC, Dark=#48484A}"
-                               VerticalOptions="Center"
-                               Padding="0,0,16,0" />
+                        <!-- Move to Top Button -->
+                        <ImageButton Grid.Column="1"
+                                     Source="arrow_up_double.png"
+                                     WidthRequest="40"
+                                     HeightRequest="44"
+                                     Padding="10"
+                                     BackgroundColor="Transparent"
+                                     Clicked="OnMoveToTopClicked"
+                                     CommandParameter="{Binding .}" />
+
+                        <!-- Move Up Button -->
+                        <ImageButton Grid.Column="2"
+                                     Source="arrow_up.png"
+                                     WidthRequest="40"
+                                     HeightRequest="44"
+                                     Padding="10"
+                                     BackgroundColor="Transparent"
+                                     Clicked="OnMoveUpClicked"
+                                     CommandParameter="{Binding .}" />
+
+                        <!-- Move Down Button -->
+                        <ImageButton Grid.Column="3"
+                                     Source="arrow_down.png"
+                                     WidthRequest="40"
+                                     HeightRequest="44"
+                                     Padding="10"
+                                     BackgroundColor="Transparent"
+                                     Clicked="OnMoveDownClicked"
+                                     CommandParameter="{Binding .}" />
+
+                        <!-- Move to Bottom Button -->
+                        <ImageButton Grid.Column="4"
+                                     Source="arrow_down_double.png"
+                                     WidthRequest="40"
+                                     HeightRequest="44"
+                                     Padding="10"
+                                     Margin="0,0,8,0"
+                                     BackgroundColor="Transparent"
+                                     Clicked="OnMoveToBottomClicked"
+                                     CommandParameter="{Binding .}" />
 
                         <!-- Bottom separator line -->
-                        <BoxView Grid.ColumnSpan="2"
+                        <BoxView Grid.ColumnSpan="5"
                                  HeightRequest="0.5"
                                  VerticalOptions="End"
                                  HorizontalOptions="Fill"

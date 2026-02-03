@@ -84,9 +84,9 @@ public class OfflineStorageService
 
         await db.InsertAsync(session);
 
-        // Cache items
+        // Cache items - preserve the order from the backend (already sorted by custom aisle order)
         var sortOrder = 0;
-        foreach (var item in list.Items.OrderBy(i => i.Aisle).ThenBy(i => i.Department))
+        foreach (var item in list.Items)
         {
             var cachedItem = new CachedShoppingListItem
             {

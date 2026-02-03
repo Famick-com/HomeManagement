@@ -18,6 +18,7 @@ public partial class ShoppingSessionPage : ContentPage
     private Guid _listId;
     private ShoppingSession? _session;
     private bool _isPopulatingItems;
+    private bool _needsRefreshAfterAisleOrderChange;
 
     public string ListId
     {
@@ -73,8 +74,18 @@ public partial class ShoppingSessionPage : ContentPage
 
         try
         {
-            // Try to load from cache first
-            _session = await _offlineStorage.GetCachedSessionAsync(_listId);
+            // If returning from aisle order change, clear cache to get new sort order
+            if (_needsRefreshAfterAisleOrderChange && _connectivityService.IsOnline)
+            {
+                _needsRefreshAfterAisleOrderChange = false;
+                await _offlineStorage.ClearSessionAsync(_listId);
+                _session = null;
+            }
+            else
+            {
+                // Try to load from cache first
+                _session = await _offlineStorage.GetCachedSessionAsync(_listId);
+            }
 
             if (_session == null && _connectivityService.IsOnline)
             {
@@ -131,11 +142,12 @@ public partial class ShoppingSessionPage : ContentPage
             var unpurchased = _session.Items.Where(i => !i.IsPurchased).OrderBy(i => i.SortOrder).ToList();
             var purchased = _session.Items.Where(i => i.IsPurchased).OrderBy(i => i.SortOrder).ToList();
 
-            // Group unpurchased items by aisle/department
+            // Group unpurchased items by aisle/department, ordered by custom aisle order
             var groups = unpurchased
                 .GroupBy(i => string.IsNullOrEmpty(i.Aisle)
                     ? i.Department ?? "Other"
-                    : int.TryParse(i.Aisle, out _) ? $"Aisle {i.Aisle}" : i.Aisle);
+                    : int.TryParse(i.Aisle, out _) ? $"Aisle {i.Aisle}" : i.Aisle)
+                .OrderBy(g => g.Min(i => i.SortOrder)); // Order groups by their first item's sort order
 
             foreach (var group in groups)
             {
@@ -328,6 +340,9 @@ public partial class ShoppingSessionPage : ContentPage
             await DisplayAlertAsync("Error", "Shopping session not loaded", "OK");
             return;
         }
+
+        // Flag to refresh from API when returning (to apply new aisle order)
+        _needsRefreshAfterAisleOrderChange = true;
 
         var navigationParameter = new Dictionary<string, object>
         {

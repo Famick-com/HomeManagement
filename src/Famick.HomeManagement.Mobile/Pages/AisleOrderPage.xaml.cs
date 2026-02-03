@@ -121,9 +121,64 @@ public partial class AisleOrderPage : ContentPage
         }
     }
 
-    private void OnReorderCompleted(object? sender, EventArgs e)
+    private void OnMoveUpClicked(object? sender, EventArgs e)
     {
-        _hasChanges = true;
+        if (sender is ImageButton button && button.CommandParameter is AisleItem item)
+        {
+            var index = Aisles.IndexOf(item);
+            if (index > 0)
+            {
+                Aisles.Move(index, index - 1);
+                _hasChanges = true;
+                AisleList.ItemsSource = null;
+                AisleList.ItemsSource = Aisles;
+            }
+        }
+    }
+
+    private void OnMoveDownClicked(object? sender, EventArgs e)
+    {
+        if (sender is ImageButton button && button.CommandParameter is AisleItem item)
+        {
+            var index = Aisles.IndexOf(item);
+            if (index >= 0 && index < Aisles.Count - 1)
+            {
+                Aisles.Move(index, index + 1);
+                _hasChanges = true;
+                AisleList.ItemsSource = null;
+                AisleList.ItemsSource = Aisles;
+            }
+        }
+    }
+
+    private void OnMoveToTopClicked(object? sender, EventArgs e)
+    {
+        if (sender is ImageButton button && button.CommandParameter is AisleItem item)
+        {
+            var index = Aisles.IndexOf(item);
+            if (index > 0)
+            {
+                Aisles.Move(index, 0);
+                _hasChanges = true;
+                AisleList.ItemsSource = null;
+                AisleList.ItemsSource = Aisles;
+            }
+        }
+    }
+
+    private void OnMoveToBottomClicked(object? sender, EventArgs e)
+    {
+        if (sender is ImageButton button && button.CommandParameter is AisleItem item)
+        {
+            var index = Aisles.IndexOf(item);
+            if (index >= 0 && index < Aisles.Count - 1)
+            {
+                Aisles.Move(index, Aisles.Count - 1);
+                _hasChanges = true;
+                AisleList.ItemsSource = null;
+                AisleList.ItemsSource = Aisles;
+            }
+        }
     }
 
     private async void OnDoneClicked(object? sender, EventArgs e)
@@ -144,9 +199,11 @@ public partial class AisleOrderPage : ContentPage
 
         try
         {
+            var orderedList = Aisles.Select(a => a.Value).ToList();
+
             var request = new UpdateAisleOrderRequest
             {
-                OrderedAisles = Aisles.Select(a => a.Value).ToList()
+                OrderedAisles = orderedList
             };
 
             var result = await _apiClient.UpdateAisleOrderAsync(_locationId, request);
