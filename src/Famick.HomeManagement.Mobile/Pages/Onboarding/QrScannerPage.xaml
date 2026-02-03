@@ -18,24 +18,16 @@
 
         <!-- Overlay -->
         <Grid BackgroundColor="#80000000" IsVisible="{Binding ShowOverlay}">
-            <BoxView WidthRequest="250" HeightRequest="250"
-                     BackgroundColor="Transparent"
-                     CornerRadius="10"
-                     HorizontalOptions="Center"
-                     VerticalOptions="Center">
-                <BoxView.StrokeShape>
+            <Border WidthRequest="250" HeightRequest="250"
+                    BackgroundColor="Transparent"
+                    Stroke="White"
+                    StrokeThickness="3"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
                     <RoundRectangle CornerRadius="10" />
-                </BoxView.StrokeShape>
-                <BoxView.Stroke>
-                    <SolidColorBrush Color="White" />
-                </BoxView.Stroke>
-                <BoxView.StrokeThickness>
-                    <OnPlatform x:TypeArguments="x:Double">
-                        <On Platform="iOS" Value="3" />
-                        <On Platform="Android" Value="3" />
-                    </OnPlatform>
-                </BoxView.StrokeThickness>
-            </BoxView>
+                </Border.StrokeShape>
+            </Border>
         </Grid>
 
         <!-- Instructions -->

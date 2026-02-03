@@ -79,29 +79,17 @@ public class ApiSettings
 
     /// <summary>
     /// Gets or sets the current server mode.
-    /// In DEBUG builds, defaults to Cloud to test cloud flow with dev-local.famick.com.
-    /// Change to SelfHosted to test self-hosted flow.
+    /// Defaults to Cloud unless explicitly set (e.g., from QR code scan).
     /// </summary>
     public ServerMode Mode
     {
         get
         {
-#if DEBUG
-            // In DEBUG mode, use Cloud to test cloud detection logic
-            // Change this to ServerMode.SelfHosted to test self-hosted flow
-            return ServerMode.Cloud;
-#else
             var defaultMode = nameof(ServerMode.Cloud);
             var stored = Preferences.Default.Get(ServerModeKey, defaultMode);
             return Enum.TryParse<ServerMode>(stored, out var mode) ? mode : ServerMode.Cloud;
-#endif
         }
-        set
-        {
-#if !DEBUG
-            Preferences.Default.Set(ServerModeKey, value.ToString());
-#endif
-        }
+        set => Preferences.Default.Set(ServerModeKey, value.ToString());
     }
 
     /// <summary>
@@ -110,19 +98,26 @@ public class ApiSettings
     /// </summary>
     public string SelfHostedUrl
     {
+        get
+        {
+            // Check if we have a stored URL (from QR code scan)
+            var storedUrl = Preferences.Default.Get<string?>(SelfHostedUrlKey, null);
+            if (!string.IsNullOrEmpty(storedUrl))
+                return storedUrl;
+
 #if DEBUG
-        // In DEBUG mode, always use the compile-time default to avoid stale cached URLs
-        get => DefaultSelfHostedUrl;
-        set { } // Ignore sets in DEBUG mode
+            // In DEBUG mode, fall back to compile-time default only if no stored URL
+            return DefaultSelfHostedUrl;
 #else
-        get => Preferences.Default.Get(SelfHostedUrlKey, DefaultSelfHostedUrl);
-        set => Preferences.Default.Set(SelfHostedUrlKey, value);
+            return DefaultSelfHostedUrl;
 #endif
+        }
+        set => Preferences.Default.Set(SelfHostedUrlKey, value);
     }
 
     /// <summary>
     /// Gets the active API base URL based on current mode.
-    /// In DEBUG builds with Cloud mode, uses dev-local.famick.com for testing.
+    /// Uses stored URL for self-hosted, or cloud URL for cloud mode.
     /// </summary>
     public string BaseUrl
     {
@@ -131,13 +126,21 @@ public class ApiSettings
             var mode = Mode;
             string url;
 
+            if (mode == ServerMode.SelfHosted)
+            {
+                // Self-hosted: use the stored URL (from QR code or manual entry)
+                url = SelfHostedUrl;
+            }
+            else
+            {
 #if DEBUG
-            // In DEBUG mode, use local dev URLs
-            url = mode == ServerMode.Cloud ? DebugCloudUrl : SelfHostedUrl;
+                // In DEBUG mode with Cloud, use local dev URL for testing
+                url = DebugCloudUrl;
 #else
-            // In RELEASE mode, use production URLs
-            url = mode == ServerMode.Cloud ? CloudUrl : SelfHostedUrl;
+                // In RELEASE mode, use production cloud URL
+                url = CloudUrl;
 #endif
+            }
 
             Console.WriteLine($"[ApiSettings] BaseUrl called - Mode: {mode}, URL: {url}");
             return url;

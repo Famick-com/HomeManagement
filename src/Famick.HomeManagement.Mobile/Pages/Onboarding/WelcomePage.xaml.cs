@@ -87,6 +87,22 @@ public partial class WelcomePage : ContentPage
 
     private async void OnQrCodeClicked(object? sender, EventArgs e)
     {
+        // Request camera permission before opening scanner
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+
+        if (status != PermissionStatus.Granted)
+        {
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+        }
+
+        if (status != PermissionStatus.Granted)
+        {
+            await DisplayAlert("Camera Permission Required",
+                "Camera access is needed to scan QR codes. Please enable camera access in Settings.",
+                "OK");
+            return;
+        }
+
         await Navigation.PushAsync(new QrScannerPage(
             Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<ApiSettings>(),
             Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<ShoppingApiClient>()));

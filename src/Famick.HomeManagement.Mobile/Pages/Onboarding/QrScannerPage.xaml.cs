@@ -20,10 +20,44 @@ public partial class QrScannerPage : ContentPage
 
     public QrScannerPage(ApiSettings apiSettings, ShoppingApiClient apiClient)
     {
-        InitializeComponent();
         _apiSettings = apiSettings;
         _apiClient = apiClient;
-        BindingContext = this;
+
+        try
+        {
+            InitializeComponent();
+            BindingContext = this;
+        }
+        catch (Exception ex)
+        {
+            // Log the error and show a fallback UI
+            System.Diagnostics.Debug.WriteLine($"QrScannerPage initialization error: {ex}");
+            Content = new VerticalStackLayout
+            {
+                VerticalOptions = LayoutOptions.Center,
+                Padding = 20,
+                Children =
+                {
+                    new Label
+                    {
+                        Text = "Camera Error",
+                        FontSize = 24,
+                        HorizontalOptions = LayoutOptions.Center
+                    },
+                    new Label
+                    {
+                        Text = $"Unable to initialize camera scanner:\n{ex.Message}",
+                        HorizontalOptions = LayoutOptions.Center,
+                        HorizontalTextAlignment = TextAlignment.Center
+                    },
+                    new Button
+                    {
+                        Text = "Go Back",
+                        Command = new Command(async () => await Navigation.PopAsync())
+                    }
+                }
+            };
+        }
     }
 
     private async void OnBarcodesDetected(object? sender, BarcodeDetectionEventArgs e)
@@ -105,10 +139,10 @@ public partial class QrScannerPage : ContentPage
             if (qrValue.StartsWith("famick://setup", StringComparison.OrdinalIgnoreCase))
             {
                 var uri = new Uri(qrValue);
-                var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+                var queryParams = ParseQueryString(uri.Query);
 
-                var url = query["url"];
-                var name = query["name"];
+                var url = queryParams.GetValueOrDefault("url");
+                var name = queryParams.GetValueOrDefault("name");
 
                 if (!string.IsNullOrEmpty(url))
                 {
@@ -116,11 +150,30 @@ public partial class QrScannerPage : ContentPage
                 }
             }
 
-            // Handle direct URL (for backwards compatibility)
+            // Handle HTTP/HTTPS URLs (could be app-setup page with query params or direct server URL)
             if (qrValue.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 qrValue.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                return (qrValue, null);
+                var uri = new Uri(qrValue);
+
+                // Check if it's an app-setup URL with query parameters
+                if (!string.IsNullOrEmpty(uri.Query))
+                {
+                    var queryParams = ParseQueryString(uri.Query);
+                    var url = queryParams.GetValueOrDefault("url");
+                    var name = queryParams.GetValueOrDefault("name");
+
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        return (url, name);
+                    }
+                }
+
+                // Otherwise treat as direct server URL (strip any path/query)
+                var baseUrl = $"{uri.Scheme}://{uri.Host}";
+                if (!uri.IsDefaultPort)
+                    baseUrl += $":{uri.Port}";
+                return (baseUrl, null);
             }
 
             return null;
@@ -129,6 +182,32 @@ public partial class QrScannerPage : ContentPage
         {
             return null;
         }
+    }
+
+    private static Dictionary<string, string> ParseQueryString(string query)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrEmpty(query))
+            return result;
+
+        // Remove leading '?' if present
+        if (query.StartsWith("?"))
+            query = query[1..];
+
+        foreach (var pair in query.Split('&'))
+        {
+            var parts = pair.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                // Replace + with space before URL decoding (standard form encoding)
+                var key = Uri.UnescapeDataString(parts[0].Replace('+', ' '));
+                var value = Uri.UnescapeDataString(parts[1].Replace('+', ' '));
+                result[key] = value;
+            }
+        }
+
+        return result;
     }
 
     private void ShowStatus(string message, bool showLoading)

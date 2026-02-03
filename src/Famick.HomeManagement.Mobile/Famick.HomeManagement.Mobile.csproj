@@ -55,7 +55,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 
 		<!-- Barcode scanning -->
-		<PackageReference Include="ZXing.Net.Maui.Controls" Version="0.7.2" />
+		<PackageReference Include="ZXing.Net.Maui.Controls" Version="0.7.4" />
 
 		<!-- Offline SQLite storage -->
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />

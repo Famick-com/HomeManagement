@@ -182,12 +182,28 @@ public partial class App : Application
     {
         if (uri == null) return;
 
-        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var query = ParseQueryString(uri.Query);
+
+        // Handle setup deep link: famick://setup?url=...&name=...
+        if (uri.Host == "setup" || uri.AbsolutePath.Contains("setup"))
+        {
+            var serverUrl = query.GetValueOrDefault("url");
+            var serverName = query.GetValueOrDefault("name");
+
+            if (!string.IsNullOrEmpty(serverUrl))
+            {
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await ProcessSetupDeepLinkAsync(serverUrl, serverName);
+                });
+            }
+            return;
+        }
 
         // Handle verification deep link: famick://verify?token=...
         if (uri.Host == "verify" || uri.AbsolutePath.Contains("verify"))
         {
-            var token = query["token"];
+            var token = query.GetValueOrDefault("token");
             if (!string.IsNullOrEmpty(token))
             {
                 PendingVerificationToken = token;
@@ -208,8 +224,8 @@ public partial class App : Application
         }
 
         // Handle shopping deep link: famickshopping://shopping/session?ListId={guid}&ListName={name}
-        var listId = query["ListId"];
-        var listName = query["ListName"];
+        var listId = query.GetValueOrDefault("ListId");
+        var listName = query.GetValueOrDefault("ListName");
 
         if (!string.IsNullOrEmpty(listId) && Guid.TryParse(listId, out var parsedListId))
         {
@@ -228,6 +244,92 @@ public partial class App : Application
                 });
             }
         }
+    }
+
+    /// <summary>
+    /// Process setup deep link - configures server and navigates to login
+    /// </summary>
+    private static async Task ProcessSetupDeepLinkAsync(string serverUrl, string? serverName)
+    {
+        try
+        {
+            Console.WriteLine($"[App.ProcessSetupDeepLinkAsync] Processing setup: url={serverUrl}, name={serverName}");
+
+            var services = Current?.Handler?.MauiContext?.Services;
+            if (services == null)
+            {
+                Console.WriteLine("[App.ProcessSetupDeepLinkAsync] Services not available");
+                return;
+            }
+
+            var apiSettings = services.GetRequiredService<Services.ApiSettings>();
+            var apiClient = services.GetRequiredService<Services.ShoppingApiClient>();
+            var onboardingService = services.GetRequiredService<Services.OnboardingService>();
+
+            // Configure the server
+            apiSettings.ConfigureFromQrCode(serverUrl, serverName);
+
+            // Test connection
+            var isHealthy = await apiClient.CheckHealthAsync();
+            Console.WriteLine($"[App.ProcessSetupDeepLinkAsync] Health check: {isHealthy}");
+
+            if (isHealthy)
+            {
+                // Mark onboarding as complete and transition to login
+                onboardingService.MarkOnboardingCompleted();
+                TransitionToMainApp();
+            }
+            else
+            {
+                // Show error - server not reachable
+                if (Current?.MainPage != null)
+                {
+                    await Current.MainPage.DisplayAlert(
+                        "Connection Failed",
+                        $"Could not connect to server at {serverUrl}. Please check the URL and try again.",
+                        "OK");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[App.ProcessSetupDeepLinkAsync] Error: {ex.Message}");
+            if (Current?.MainPage != null)
+            {
+                await Current.MainPage.DisplayAlert(
+                    "Setup Error",
+                    $"Failed to configure server: {ex.Message}",
+                    "OK");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Parse query string with proper URL decoding (handles both %20 and + as space)
+    /// </summary>
+    private static Dictionary<string, string> ParseQueryString(string query)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrEmpty(query))
+            return result;
+
+        if (query.StartsWith("?"))
+            query = query[1..];
+
+        foreach (var pair in query.Split('&'))
+        {
+            var parts = pair.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                // Replace + with space before URL decoding (standard form encoding)
+                var key = Uri.UnescapeDataString(parts[0].Replace('+', ' '));
+                var value = Uri.UnescapeDataString(parts[1].Replace('+', ' '));
+                result[key] = value;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
