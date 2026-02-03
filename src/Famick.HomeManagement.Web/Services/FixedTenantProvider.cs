@@ -40,8 +40,9 @@ public class FixedTenantProvider : ITenantProvider
             if (userIdClaim == null)
             {
                 var claimTypes = string.Join(", ", user.Claims.Select(c => $"{c.Type}={c.Value}"));
-                _logger.LogWarning("Could not resolve UserId. IsAuthenticated={IsAuth}, Claims=[{Claims}]",
-                    user.Identity?.IsAuthenticated, claimTypes);
+                var authType = user.Identity?.AuthenticationType ?? "null";
+                _logger.LogError("Could not resolve UserId from JWT claims. IsAuthenticated={IsAuth}, AuthType={AuthType}, ClaimCount={ClaimCount}, Claims=[{Claims}]",
+                    user.Identity?.IsAuthenticated, authType, user.Claims.Count(), claimTypes);
             }
 
             return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
