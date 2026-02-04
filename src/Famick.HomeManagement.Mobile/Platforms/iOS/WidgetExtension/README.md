@@ -21,17 +21,46 @@ Tapping the widget opens the Famick Home app directly to the Quick Consume page.
 
 Since the `.xcodeproj` file is not included in version control, you need to create it in Xcode:
 
+### Option A: Create a New App Project with Widget Extension
+
 1. Open Xcode
 2. File > New > Project
-3. Choose "Widget Extension" template
-4. Configure:
-   - Product Name: `QuickConsumeWidgetExtension`
+3. Choose **iOS > App** template
+4. Configure the app:
+   - Product Name: `QuickConsumeWidgetHost`
    - Team: Your Apple Developer Team
+   - Organization Identifier: `com.famick.homemanagement`
+   - Interface: SwiftUI
+   - Language: Swift
+5. Save to this directory (`WidgetExtension/`)
+6. With the project selected, go to **File > New > Target**
+7. Choose **iOS > Widget Extension**
+8. Configure the widget:
+   - Product Name: `QuickConsumeWidgetExtension`
    - Bundle Identifier: `com.famick.homemanagement.QuickConsumeWidget`
    - Include Configuration App Intent: No
    - Include Live Activity: No
-5. Save to this directory (`WidgetExtension/`)
-6. Replace the generated Swift files with the ones in `QuickConsumeWidget/`
+9. Delete the auto-generated Swift files in the widget target
+10. Drag the files from `QuickConsumeWidget/` folder into the widget target in Xcode
+11. Delete the host app target (we only need the widget extension)
+
+### Option B: Simpler Alternative - Single Target Project
+
+1. Open Xcode
+2. File > New > Project
+3. Choose **macOS > Command Line Tool** (as a minimal host)
+4. Product Name: `QuickConsumeWidget`
+5. Save to this directory
+6. File > New > Target > **iOS > Widget Extension**
+7. Configure as above and replace generated files with `QuickConsumeWidget/` contents
+
+### After Project Creation
+
+1. Select the widget extension target
+2. Go to **Signing & Capabilities**
+3. Add **App Groups** capability
+4. Add group: `group.com.famick.homemanagement`
+5. Ensure the `QuickConsumeWidget.entitlements` file is used
 
 ## App Group Configuration
 
