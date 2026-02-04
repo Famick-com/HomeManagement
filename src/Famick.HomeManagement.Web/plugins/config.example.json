@@ -1,6 +1,17 @@
 {
   "plugins": [
     {
+      "id": "kroger",
+      "enabled": true,
+      "builtin": true,
+      "displayName": "Kroger Family of Stores",
+      "config": {
+        "clientId": "YOUR_KROGER_CLIENT_ID",
+        "clientSecret": "YOUR_KROGER_CLIENT_SECRET",
+        "scope": "product.compact"
+      }
+    },
+    {
       "id": "usda",
       "enabled": true,
       "builtin": true,
@@ -18,19 +29,6 @@
       "displayName": "Open Food Facts",
       "config": {
         "baseUrl": "https://world.openfoodfacts.org"
-      }
-    }
-  ],
-  "storeIntegrations": [
-    {
-      "id": "kroger",
-      "enabled": true,
-      "builtin": true,
-      "displayName": "Kroger",
-      "config": {
-        "clientId": "YOUR_KROGER_CLIENT_ID",
-        "clientSecret": "YOUR_KROGER_CLIENT_SECRET",
-        "scope": "product.compact"
       }
     }
   ]
