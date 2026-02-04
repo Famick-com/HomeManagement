@@ -35,12 +35,20 @@ public class CachedShoppingListItem
     public Guid? ProductId { get; set; }
     public string ProductName { get; set; } = "";
     public string? LocalImagePath { get; set; }
+    public string? ImageUrl { get; set; }
     public decimal Amount { get; set; }
     public string? QuantityUnitName { get; set; }
     public string? Note { get; set; }
     public bool IsPurchased { get; set; }
     public bool OriginalIsPurchased { get; set; }
     public DateTime? PurchasedAt { get; set; }
+    public DateTime? BestBeforeDate { get; set; }
+
+    // Product tracking fields for date prompting logic
+    public bool TracksBestBeforeDate { get; set; }
+    public int DefaultBestBeforeDays { get; set; }
+    public Guid? DefaultLocationId { get; set; }
+
     public string? Aisle { get; set; }
     public string? Shelf { get; set; }
     public string? Department { get; set; }

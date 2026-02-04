@@ -462,6 +462,9 @@ public partial class ShoppingSessionPage : ContentPage
             // Sync any pending offline operations first
             await _offlineStorage.SyncPendingOperationsAsync(_apiClient);
 
+            // Get the shopping location ID from the session
+            var shoppingLocationId = _session?.StoreId;
+
             var request = new MoveToInventoryRequest
             {
                 ShoppingListId = _listId,
@@ -472,7 +475,15 @@ public partial class ShoppingSessionPage : ContentPage
                     ProductName = i.ProductName,
                     Amount = i.Amount,
                     Price = i.Price,
-                    Barcode = i.Barcode
+                    Barcode = i.Barcode,
+                    ImageUrl = i.ImageUrl,
+                    BestBeforeDate = i.BestBeforeDate,
+                    LocationId = i.DefaultLocationId,
+                    ExternalProductId = i.ExternalProductId,
+                    ShoppingLocationId = shoppingLocationId,
+                    Aisle = i.Aisle,
+                    Shelf = i.Shelf,
+                    Department = i.Department
                 }).ToList()
             };
 

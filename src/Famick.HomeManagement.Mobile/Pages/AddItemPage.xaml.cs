@@ -257,6 +257,7 @@ public partial class AddItemPage : ContentPage
                 Aisle = _lookupResult?.Aisle,
                 Department = _lookupResult?.Department,
                 ExternalProductId = _lookupResult?.ExternalProductId,
+                ImageUrl = _lookupResult?.ImageUrl,
                 LocalImagePath = localImagePath
             };
 

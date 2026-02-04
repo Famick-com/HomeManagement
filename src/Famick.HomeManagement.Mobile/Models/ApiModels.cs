@@ -76,6 +76,13 @@ public class ShoppingListItemDto
     public string? Note { get; set; }
     public bool IsPurchased { get; set; }
     public DateTime? PurchasedAt { get; set; }
+    public DateTime? BestBeforeDate { get; set; }
+
+    // Product tracking fields for date prompting logic
+    public bool TracksBestBeforeDate { get; set; }
+    public int DefaultBestBeforeDays { get; set; }
+    public Guid? DefaultLocationId { get; set; }
+
     public string? Aisle { get; set; }
     public string? Shelf { get; set; }
     public string? Department { get; set; }
@@ -137,6 +144,46 @@ public class MoveToInventoryItem
     public decimal Amount { get; set; }
     public decimal? Price { get; set; }
     public string? Barcode { get; set; }
+
+    /// <summary>
+    /// Product image URL from store integration
+    /// </summary>
+    public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Best before / expiration date for inventory tracking
+    /// </summary>
+    public DateTime? BestBeforeDate { get; set; }
+
+    /// <summary>
+    /// Storage location ID for this item in inventory
+    /// </summary>
+    public Guid? LocationId { get; set; }
+
+    /// <summary>
+    /// External product ID from store integration (for linking product to store)
+    /// </summary>
+    public string? ExternalProductId { get; set; }
+
+    /// <summary>
+    /// Shopping location ID (store) for linking product to store metadata
+    /// </summary>
+    public Guid? ShoppingLocationId { get; set; }
+
+    /// <summary>
+    /// Aisle location in store
+    /// </summary>
+    public string? Aisle { get; set; }
+
+    /// <summary>
+    /// Shelf location in store
+    /// </summary>
+    public string? Shelf { get; set; }
+
+    /// <summary>
+    /// Department in store
+    /// </summary>
+    public string? Department { get; set; }
 }
 
 /// <summary>
