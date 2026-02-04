@@ -325,3 +325,11 @@ src/Famick.HomeManagement.Web/config/*
 # Uploaded files (product images, etc.)
 src/Famick.HomeManagement.Web/uploads/
 docs/session_checkpoint.md
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+
+# iOS Widget Extension build outputs and test host
+src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/XReleases/
+src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/QuickConsumeWidgetHost/
