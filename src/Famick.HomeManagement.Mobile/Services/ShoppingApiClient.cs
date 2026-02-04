@@ -1298,6 +1298,147 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region Quick Consume APIs
+
+    /// <summary>
+    /// Get a product by barcode from local inventory.
+    /// </summary>
+    public async Task<ApiResult<ProductDto>> GetProductByBarcodeAsync(string barcode)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync($"api/v1/products/by-barcode/{Uri.EscapeDataString(barcode)}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ProductDto>(content, options);
+                return result != null
+                    ? ApiResult<ProductDto>.Ok(result)
+                    : ApiResult<ProductDto>.Fail("Invalid response");
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return ApiResult<ProductDto>.Fail("Product not found in inventory");
+            }
+
+            return ApiResult<ProductDto>.Fail("Failed to lookup product");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ProductDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get all stock entries for a product (sorted by expiry - FEFO order).
+    /// </summary>
+    public async Task<ApiResult<List<StockEntryDto>>> GetStockByProductAsync(Guid productId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync($"api/v1/stock/by-product/{productId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<StockEntryDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<StockEntryDto>>.Ok(result)
+                    : ApiResult<List<StockEntryDto>>.Ok(new List<StockEntryDto>());
+            }
+
+            return ApiResult<List<StockEntryDto>>.Fail("Failed to load stock entries");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<StockEntryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Quick consume using FEFO (First Expired, First Out).
+    /// </summary>
+    public async Task<ApiResult<bool>> QuickConsumeAsync(QuickConsumeRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/stock/quick-consume", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to consume stock");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Consume a specific stock entry by ID.
+    /// </summary>
+    public async Task<ApiResult<bool>> ConsumeStockEntryAsync(Guid stockEntryId, decimal amount, bool spoiled = false, string? note = null)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var request = new ConsumeStockRequest
+            {
+                Amount = amount,
+                SpoiledOrExpired = spoiled,
+                Note = note
+            };
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/stock/{stockEntryId}/consume", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to consume stock");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Refresh widget data by fetching stock statistics.
+    /// This updates platform-specific widget data stores.
+    /// </summary>
+    public async Task RefreshWidgetDataAsync()
+    {
+        var result = await GetStockStatisticsAsync();
+        if (result.Success && result.Data != null)
+        {
+#if IOS
+            Platforms.iOS.WidgetDataService.UpdateWidgetData(
+                result.Data.ExpiredCount,
+                result.Data.DueSoonCount);
+#elif ANDROID
+            Platforms.Android.WidgetDataService.UpdateWidgetData(
+                Android.App.Application.Context,
+                result.Data.ExpiredCount,
+                result.Data.DueSoonCount);
+#endif
+        }
+    }
+
+    #endregion
+
     #region Property Link APIs
 
     public async Task<ApiResult<List<PropertyLinkDto>>> GetPropertyLinksAsync()

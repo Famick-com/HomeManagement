@@ -1,5 +1,6 @@
 using Foundation;
 using UIKit;
+using Intents;
 using Microsoft.Maui.Platform;
 
 namespace Famick.HomeManagement.Mobile;
@@ -8,6 +9,16 @@ namespace Famick.HomeManagement.Mobile;
 public class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+
+    public override bool FinishedLaunching(UIApplication application, NSDictionary launchOptions)
+    {
+        var result = base.FinishedLaunching(application, launchOptions);
+
+        // Donate Siri Shortcut for quick consume
+        DonateQuickConsumeShortcut();
+
+        return result;
+    }
 
     public override void OnActivated(UIApplication application)
     {
@@ -45,5 +56,65 @@ public class AppDelegate : MauiUIApplicationDelegate
         }
 
         return base.OpenUrl(application, url, options);
+    }
+
+    /// <summary>
+    /// Handle continuing user activity (for Siri Shortcuts)
+    /// </summary>
+    public override bool ContinueUserActivity(UIApplication application, NSUserActivity userActivity, UIApplicationRestorationHandler completionHandler)
+    {
+        if (userActivity.ActivityType == "QuickConsumeActivity" ||
+            userActivity.ActivityType == NSUserActivityType.BrowsingWeb.ToString())
+        {
+            // Check if this is our quick consume shortcut
+            if (userActivity.UserInfo?.ContainsKey(new NSString("action")) == true)
+            {
+                var action = userActivity.UserInfo["action"]?.ToString();
+                if (action == "quick-consume")
+                {
+                    App.PendingQuickConsume = true;
+                    return true;
+                }
+            }
+        }
+
+        return base.ContinueUserActivity(application, userActivity, completionHandler);
+    }
+
+    /// <summary>
+    /// Donates a Siri Shortcut for quick consume action
+    /// </summary>
+    private void DonateQuickConsumeShortcut()
+    {
+        try
+        {
+            // Create user activity for Siri Shortcuts (iOS 12+)
+            if (!UIDevice.CurrentDevice.CheckSystemVersion(12, 0))
+                return;
+
+            var activity = new NSUserActivity("QuickConsumeActivity")
+            {
+                Title = "Consume from Pantry",
+                EligibleForSearch = true,
+                EligibleForPrediction = true,
+            };
+
+            // Set suggested invocation phrase
+            activity.SuggestedInvocationPhrase = "Consume from pantry";
+
+            // Add custom user info
+            activity.UserInfo = NSDictionary.FromObjectAndKey(
+                new NSString("quick-consume"),
+                new NSString("action"));
+
+            // Make it current to donate to Siri
+            activity.BecomeCurrent();
+
+            Console.WriteLine("[AppDelegate] Donated Quick Consume Siri Shortcut");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppDelegate] Error donating Siri Shortcut: {ex.Message}");
+        }
     }
 }

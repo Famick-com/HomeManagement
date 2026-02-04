@@ -279,6 +279,104 @@ public class ChoreSummaryDto
 
 #endregion
 
+#region Quick Consume Models
+
+/// <summary>
+/// Product details from barcode lookup for quick consume.
+/// </summary>
+public class ProductDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public Guid LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
+    public Guid QuantityUnitIdPurchase { get; set; }
+    public string QuantityUnitPurchaseName { get; set; } = string.Empty;
+    public Guid QuantityUnitIdStock { get; set; }
+    public string QuantityUnitStockName { get; set; } = string.Empty;
+    public decimal QuantityUnitFactorPurchaseToStock { get; set; }
+    public decimal MinStockAmount { get; set; }
+    public int DefaultBestBeforeDays { get; set; }
+    public bool TracksBestBeforeDate { get; set; }
+    public bool IsActive { get; set; }
+    public decimal TotalStockAmount { get; set; }
+    public List<ProductBarcodeDto> Barcodes { get; set; } = new();
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// Product barcode information.
+/// </summary>
+public class ProductBarcodeDto
+{
+    public Guid Id { get; set; }
+    public string Barcode { get; set; } = string.Empty;
+    public string? Note { get; set; }
+}
+
+/// <summary>
+/// Stock entry with expiry, amount, and location info for quick consume selection.
+/// </summary>
+public class StockEntryDto
+{
+    public Guid Id { get; set; }
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string? ProductBarcode { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime? BestBeforeDate { get; set; }
+    public DateTime PurchasedDate { get; set; }
+    public string StockId { get; set; } = string.Empty;
+    public decimal? Price { get; set; }
+    public bool Open { get; set; }
+    public DateTime? OpenedDate { get; set; }
+    public decimal? OriginalAmount { get; set; }
+    public Guid? LocationId { get; set; }
+    public string? LocationName { get; set; }
+    public Guid? ShoppingLocationId { get; set; }
+    public string? ShoppingLocationName { get; set; }
+    public string? Note { get; set; }
+    public string QuantityUnitName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Indicates if the item is expired based on BestBeforeDate.
+    /// </summary>
+    public bool IsExpired => BestBeforeDate.HasValue && BestBeforeDate.Value.Date < DateTime.UtcNow.Date;
+
+    /// <summary>
+    /// Days until expiry (negative if expired).
+    /// </summary>
+    public int? DaysUntilExpiry => BestBeforeDate.HasValue
+        ? (int)(BestBeforeDate.Value.Date - DateTime.UtcNow.Date).TotalDays
+        : null;
+}
+
+/// <summary>
+/// Request for quick consume actions (FEFO-based consumption).
+/// </summary>
+public class QuickConsumeRequest
+{
+    public Guid ProductId { get; set; }
+    public decimal Amount { get; set; } = 1;
+    public bool ConsumeAll { get; set; }
+}
+
+/// <summary>
+/// Request to consume a specific stock entry.
+/// </summary>
+public class ConsumeStockRequest
+{
+    public decimal Amount { get; set; }
+    public bool SpoiledOrExpired { get; set; }
+    public string? Note { get; set; }
+}
+
+#endregion
+
 #region Registration Models
 
 /// <summary>

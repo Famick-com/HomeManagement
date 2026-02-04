@@ -18,6 +18,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(AddItemPage), typeof(AddItemPage));
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
+        Routing.RegisterRoute(nameof(QuickConsumePage), typeof(QuickConsumePage));
 
         // Wizard routes
         Routing.RegisterRoute(nameof(WizardHouseholdInfoPage), typeof(WizardHouseholdInfoPage));

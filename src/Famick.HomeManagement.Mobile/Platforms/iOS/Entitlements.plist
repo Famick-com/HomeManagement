@@ -12,5 +12,10 @@
 	<array>
 		<string>webcredentials:app.famick.com</string>
 	</array>
+	<!-- App Group for sharing data with widget extension -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.famick.homemanagement</string>
+	</array>
 </dict>
 </plist>

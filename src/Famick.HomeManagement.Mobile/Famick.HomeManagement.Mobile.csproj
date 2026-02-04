@@ -83,4 +83,48 @@
 	</ItemGroup>
 	-->
 
+	<!-- iOS Widget Extension Files -->
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
+		<!-- Exclude widget extension source files from MAUI build -->
+		<None Remove="Platforms\iOS\WidgetExtension\**" />
+		<Content Remove="Platforms\iOS\WidgetExtension\**" />
+		<Compile Remove="Platforms\iOS\WidgetExtension\**" />
+	</ItemGroup>
+
+	<!-- iOS Widget Extension - Only include when pre-built extension exists
+	     To build the widget extension:
+	     1. Open Xcode and create project from Platforms/iOS/WidgetExtension/
+	     2. Run ./build.sh in that directory
+	     3. Rebuild the MAUI app -->
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphoneos/QuickConsumeWidgetExtension.appex')">
+		<!-- Include pre-built widget extension for device -->
+		<Content Condition="'$(RuntimeIdentifier)' == 'ios-arm64' OR '$(ComputedPlatform)' == 'iPhone'"
+			Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphoneos\QuickConsumeWidgetExtension.appex\**"
+			Link="QuickConsumeWidgetExtension.appex\%(RecursiveDir)%(Filename)%(Extension)"
+			CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphonesimulator/QuickConsumeWidgetExtension.appex')">
+		<!-- Include pre-built widget extension for simulator -->
+		<Content Condition="'$(RuntimeIdentifier)' == 'iossimulator-arm64' OR '$(RuntimeIdentifier)' == 'iossimulator-x64' OR '$(ComputedPlatform)' == 'iPhoneSimulator'"
+			Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphonesimulator\QuickConsumeWidgetExtension.appex\**"
+			Link="QuickConsumeWidgetExtension.appex\%(RecursiveDir)%(Filename)%(Extension)"
+			CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<!-- iOS Widget Extension Bundle Configuration - Only when device build exists -->
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphoneos/QuickConsumeWidgetExtension.appex')">
+		<AdditionalAppExtensions Condition="'$(RuntimeIdentifier)' == 'ios-arm64' OR '$(ComputedPlatform)' == 'iPhone'" Include="$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension">
+			<Name>QuickConsumeWidgetExtension</Name>
+			<BuildOutput>XReleases/Release-iphoneos</BuildOutput>
+		</AdditionalAppExtensions>
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphonesimulator/QuickConsumeWidgetExtension.appex')">
+		<AdditionalAppExtensions Condition="'$(RuntimeIdentifier)' == 'iossimulator-arm64' OR '$(RuntimeIdentifier)' == 'iossimulator-x64' OR '$(ComputedPlatform)' == 'iPhoneSimulator'" Include="$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension">
+			<Name>QuickConsumeWidgetExtension</Name>
+			<BuildOutput>XReleases/Release-iphonesimulator</BuildOutput>
+		</AdditionalAppExtensions>
+	</ItemGroup>
+
 </Project>

@@ -61,6 +61,12 @@
 		</dict>
 	</dict>
 
+	<!-- Siri Shortcuts - User Activity Types -->
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>QuickConsumeActivity</string>
+	</array>
+
 	<!-- URL scheme for deep linking -->
 	<key>CFBundleURLTypes</key>
 	<array>

@@ -20,6 +20,11 @@ public partial class App : Application
     /// </summary>
     public static string? PendingVerificationToken { get; set; }
 
+    /// <summary>
+    /// Pending quick consume action from shortcut or widget
+    /// </summary>
+    public static bool PendingQuickConsume { get; set; }
+
     public App(OnboardingService onboardingService, TokenStorage tokenStorage, ApiSettings apiSettings)
     {
         InitializeComponent();
@@ -54,6 +59,11 @@ public partial class App : Application
             if (!string.IsNullOrEmpty(PendingVerificationToken))
             {
                 await ProcessPendingVerificationTokenAsync();
+            }
+            // Handle quick consume deep link if present
+            else if (PendingQuickConsume)
+            {
+                await ProcessPendingQuickConsumeAsync();
             }
             // Handle shopping deep link if present
             else if (PendingDeepLink != null)
@@ -113,11 +123,47 @@ public partial class App : Application
             {
                 await ProcessPendingVerificationTokenAsync();
             }
+            else if (PendingQuickConsume)
+            {
+                await ProcessPendingQuickConsumeAsync();
+            }
             else if (PendingDeepLink != null)
             {
                 await ProcessPendingDeepLinkAsync();
             }
         });
+    }
+
+    protected override void OnSleep()
+    {
+        base.OnSleep();
+
+        // Refresh widget data when app goes to background
+        // This ensures widgets show current data even if user hasn't consumed recently
+        _ = RefreshWidgetDataInBackgroundAsync();
+    }
+
+    /// <summary>
+    /// Refresh widget data in background - used when app goes to sleep or after login
+    /// </summary>
+    private static async Task RefreshWidgetDataInBackgroundAsync()
+    {
+        try
+        {
+            var services = Current?.Handler?.MauiContext?.Services;
+            var apiClient = services?.GetService<ShoppingApiClient>();
+
+            if (apiClient != null)
+            {
+                await apiClient.RefreshWidgetDataAsync();
+                Console.WriteLine("[App] Widget data refreshed in background");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Swallow errors - widget refresh is not critical
+            Console.WriteLine($"[App] Widget data refresh failed: {ex.Message}");
+        }
     }
 
     private static async Task ProcessPendingDeepLinkAsync()
@@ -141,6 +187,25 @@ public partial class App : Application
         catch (Exception ex)
         {
             Console.WriteLine($"Failed to process deep link: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Process pending quick consume action - navigates to QuickConsumePage
+    /// </summary>
+    private static async Task ProcessPendingQuickConsumeAsync()
+    {
+        if (!PendingQuickConsume) return;
+
+        PendingQuickConsume = false; // Clear to avoid re-processing
+
+        try
+        {
+            await Shell.Current.GoToAsync(nameof(QuickConsumePage));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to process quick consume: {ex.Message}");
         }
     }
 
@@ -195,6 +260,22 @@ public partial class App : Application
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     await ProcessSetupDeepLinkAsync(serverUrl, serverName);
+                });
+            }
+            return;
+        }
+
+        // Handle quick consume deep link: famick://quick-consume
+        if (uri.Host == "quick-consume" || uri.AbsolutePath.Contains("quick-consume"))
+        {
+            PendingQuickConsume = true;
+
+            // If the app is already running, process immediately
+            if (Current?.MainPage != null)
+            {
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await ProcessPendingQuickConsumeAsync();
                 });
             }
             return;
@@ -345,13 +426,16 @@ public partial class App : Application
         }
 
         Console.WriteLine("[App.TransitionToMainApp] Scheduling MainPage change on main thread");
-        MainThread.BeginInvokeOnMainThread(() =>
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
             try
             {
                 Console.WriteLine("[App.TransitionToMainApp] Setting MainPage to AppShell");
                 Current.MainPage = new AppShell();
                 Console.WriteLine("[App.TransitionToMainApp] MainPage set successfully");
+
+                // Refresh widget data after login/transition
+                await RefreshWidgetDataInBackgroundAsync();
             }
             catch (Exception ex)
             {
