@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Famick.HomeManagement.Web\Famick.HomeManagement.Web.csproj" />
+    <ProjectReference Include="..\..\..\homemanagement-shared\src\Famick.HomeManagement.Web.Shared\Famick.HomeManagement.Web.Shared.csproj" />
   </ItemGroup>
 
 </Project>

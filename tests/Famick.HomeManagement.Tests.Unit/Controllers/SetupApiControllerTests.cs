@@ -1,6 +1,6 @@
 using Famick.HomeManagement.Core.DTOs.Setup;
 using Famick.HomeManagement.Core.Interfaces;
-using Famick.HomeManagement.Web.Controllers;
+using Famick.HomeManagement.Web.Shared.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
