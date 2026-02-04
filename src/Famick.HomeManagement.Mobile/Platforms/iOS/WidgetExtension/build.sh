@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_DIR="$SCRIPT_DIR/QuickConsumeWidget.xcodeproj"
+PROJECT_DIR="$SCRIPT_DIR/QuickConsumeWidget/QuickConsumeWidget.xcodeproj"
 BUILD_DIR="$SCRIPT_DIR/XReleases"
 
 echo "=== Building QuickConsumeWidget iOS Widget Extension ==="
@@ -27,7 +27,7 @@ fi
 # Build for iOS device
 echo "Building for iOS device..."
 xcodebuild -project "$PROJECT_DIR" \
-    -scheme "QuickConsumeWidget" \
+    -scheme "QuickConsumeWidgetExtensionExtension" \
     -configuration Release \
     -sdk iphoneos \
     BUILD_DIR="$BUILD_DIR" \
@@ -36,12 +36,12 @@ xcodebuild -project "$PROJECT_DIR" \
 # Build for iOS simulator
 echo "Building for iOS simulator..."
 xcodebuild -project "$PROJECT_DIR" \
-    -scheme "QuickConsumeWidget" \
+    -scheme "QuickConsumeWidgetExtensionExtension" \
     -configuration Release \
     -sdk iphonesimulator \
     BUILD_DIR="$BUILD_DIR" \
     clean build
 
 echo "=== Build Complete ==="
-echo "Device build: $BUILD_DIR/Release-iphoneos/QuickConsumeWidgetExtension.appex"
-echo "Simulator build: $BUILD_DIR/Release-iphonesimulator/QuickConsumeWidgetExtension.appex"
+echo "Device build: $BUILD_DIR/Release-iphoneos/QuickConsumeWidgetExtensionExtension.appex"
+echo "Simulator build: $BUILD_DIR/Release-iphonesimulator/QuickConsumeWidgetExtensionExtension.appex"
