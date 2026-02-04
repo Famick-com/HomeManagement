@@ -302,6 +302,7 @@ public class ProductDto
     public bool IsActive { get; set; }
     public decimal TotalStockAmount { get; set; }
     public List<ProductBarcodeDto> Barcodes { get; set; } = new();
+    public List<ProductImageDto> Images { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -314,6 +315,22 @@ public class ProductBarcodeDto
     public Guid Id { get; set; }
     public string Barcode { get; set; } = string.Empty;
     public string? Note { get; set; }
+}
+
+/// <summary>
+/// Product image information for display.
+/// </summary>
+public class ProductImageDto
+{
+    public Guid Id { get; set; }
+    public Guid ProductId { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public string? ExternalUrl { get; set; }
+    public string? ExternalThumbnailUrl { get; set; }
+    public bool IsPrimary { get; set; }
+    public string DisplayUrl => !string.IsNullOrEmpty(ExternalUrl) ? ExternalUrl : Url;
+    public string ThumbnailDisplayUrl => !string.IsNullOrEmpty(ExternalThumbnailUrl)
+        ? ExternalThumbnailUrl : DisplayUrl;
 }
 
 /// <summary>
@@ -370,9 +387,9 @@ public class QuickConsumeRequest
 /// </summary>
 public class ConsumeStockRequest
 {
-    public decimal Amount { get; set; }
-    public bool SpoiledOrExpired { get; set; }
-    public string? Note { get; set; }
+    public decimal? Amount { get; set; }
+    public bool Spoiled { get; set; }
+    public Guid? RecipeId { get; set; }
 }
 
 #endregion

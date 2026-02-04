@@ -47,6 +47,11 @@
                                 Opacity="0.15" />
                     </Border.Shadow>
                     <VerticalStackLayout Spacing="10">
+                        <Image x:Name="ProductImage"
+                               HeightRequest="120"
+                               Aspect="AspectFit"
+                               HorizontalOptions="Center"
+                               IsVisible="False" />
                         <Label x:Name="ProductNameLabel"
                                Text="Product Name"
                                FontSize="22"
@@ -155,9 +160,9 @@
                 <!-- Consume Actions -->
                 <VerticalStackLayout x:Name="ConsumeActionsSection" IsVisible="False" Spacing="15">
 
-                    <!-- Consume Entire Item Button -->
-                    <Button x:Name="ConsumeEntireButton"
-                            Text="Consume Entire Item"
+                    <!-- Consume 1 Unit Button (default action) -->
+                    <Button x:Name="ConsumeOneButton"
+                            Text="Consume 1"
                             FontSize="16"
                             FontAttributes="Bold"
                             BackgroundColor="#4CAF50"
@@ -166,9 +171,9 @@
                             HeightRequest="50"
                             Clicked="OnConsumeEntireClicked" />
 
-                    <!-- Consume Part Button -->
+                    <!-- Consume More Button -->
                     <Button x:Name="ConsumePartButton"
-                            Text="Consume Part..."
+                            Text="Consume More..."
                             FontSize="16"
                             BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
                             TextColor="{AppThemeBinding Light=#333333, Dark=#EEEEEE}"

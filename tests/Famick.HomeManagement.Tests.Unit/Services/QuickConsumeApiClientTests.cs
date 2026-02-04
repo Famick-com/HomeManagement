@@ -406,7 +406,7 @@ public class QuickConsumeApiClientTests
     {
         try
         {
-            var request = new { Amount = amount, SpoiledOrExpired = spoiled };
+            var request = new { Amount = amount, Spoiled = spoiled };
             var json = JsonSerializer.Serialize(request);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync($"api/v1/stock/{stockEntryId}/consume", content);

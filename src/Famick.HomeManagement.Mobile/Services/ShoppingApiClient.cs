@@ -1388,7 +1388,7 @@ public class ShoppingApiClient
     /// <summary>
     /// Consume a specific stock entry by ID.
     /// </summary>
-    public async Task<ApiResult<bool>> ConsumeStockEntryAsync(Guid stockEntryId, decimal amount, bool spoiled = false, string? note = null)
+    public async Task<ApiResult<bool>> ConsumeStockEntryAsync(Guid stockEntryId, decimal amount, bool spoiled = false)
     {
         try
         {
@@ -1396,8 +1396,7 @@ public class ShoppingApiClient
             var request = new ConsumeStockRequest
             {
                 Amount = amount,
-                SpoiledOrExpired = spoiled,
-                Note = note
+                Spoiled = spoiled
             };
             var response = await _httpClient.PostAsJsonAsync($"api/v1/stock/{stockEntryId}/consume", request);
 

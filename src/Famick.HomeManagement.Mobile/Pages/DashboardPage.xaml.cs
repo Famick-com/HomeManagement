@@ -323,6 +323,11 @@ public partial class DashboardPage : ContentPage
         await Shell.Current.GoToAsync("//ListSelectionPage");
     }
 
+    private async void OnQuickConsumeClicked(object? sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(QuickConsumePage));
+    }
+
     private async void OnWizardBannerTapped(object? sender, EventArgs e)
     {
         var services = Application.Current?.Handler?.MauiContext?.Services;

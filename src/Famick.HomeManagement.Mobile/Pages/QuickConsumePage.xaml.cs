@@ -113,6 +113,20 @@ public partial class QuickConsumePage : ContentPage
         ProductLocationLabel.Text = $"Default Location: {_currentProduct.LocationName}";
         TotalStockLabel.Text = $"Total in stock: {_currentProduct.TotalStockAmount:F1} {_currentProduct.QuantityUnitStockName}";
 
+        // Load product image
+        ProductImage.IsVisible = false;
+        var primaryImage = _currentProduct.Images?.FirstOrDefault(i => i.IsPrimary)
+            ?? _currentProduct.Images?.FirstOrDefault();
+        if (primaryImage != null)
+        {
+            var imageUrl = primaryImage.ThumbnailDisplayUrl;
+            if (!string.IsNullOrEmpty(imageUrl))
+            {
+                ProductImage.Source = ImageSource.FromUri(new Uri(imageUrl));
+                ProductImage.IsVisible = true;
+            }
+        }
+
         if (_stockEntries.Count == 1)
         {
             // Single entry - auto-select and show consume actions
@@ -145,6 +159,7 @@ public partial class QuickConsumePage : ContentPage
         SelectedAmountLabel.Text = $"{_selectedEntry.Amount:F1}";
         SelectedUnitLabel.Text = _selectedEntry.QuantityUnitName;
         AmountUnitLabel.Text = _selectedEntry.QuantityUnitName;
+        ConsumeOneButton.Text = $"Consume 1 {_selectedEntry.QuantityUnitName}";
     }
 
     private void OnStockEntrySelected(object? sender, SelectionChangedEventArgs e)
@@ -162,7 +177,7 @@ public partial class QuickConsumePage : ContentPage
     {
         if (_selectedEntry == null || _currentProduct == null) return;
 
-        await ConsumeAsync(_selectedEntry.Amount);
+        await ConsumeAsync(1);
     }
 
     private void OnConsumePartClicked(object? sender, EventArgs e)
@@ -277,6 +292,8 @@ public partial class QuickConsumePage : ContentPage
         _currentProduct = null;
         _stockEntries.Clear();
         _selectedEntry = null;
+        ProductImage.IsVisible = false;
+        ProductImage.Source = null;
 
         await StartScanAsync();
     }

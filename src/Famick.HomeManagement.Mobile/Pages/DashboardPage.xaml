@@ -323,6 +323,14 @@
                                 TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
                                 HeightRequest="50"
                                 CornerRadius="10" />
+
+                        <Button Text="Quick Consume"
+                                Clicked="OnQuickConsumeClicked"
+                                BackgroundColor="#4CAF50"
+                                TextColor="White"
+                                FontAttributes="Bold"
+                                HeightRequest="50"
+                                CornerRadius="10" />
                     </VerticalStackLayout>
                 </Border>
 
