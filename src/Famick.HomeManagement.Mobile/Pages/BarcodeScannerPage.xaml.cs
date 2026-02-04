@@ -17,20 +17,44 @@ public partial class BarcodeScannerPage : ContentPage
 
     public BarcodeScannerPage()
     {
-        InitializeComponent();
-        BindingContext = this;
-    }
-
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-
-        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
-        if (status != PermissionStatus.Granted)
+        try
         {
-            BarcodeReader.IsDetecting = false;
-            InstructionLabel.Text = "Camera permission not granted";
-            InstructionLabel.TextColor = Colors.Red;
+            InitializeComponent();
+            BindingContext = this;
+        }
+        catch (Exception ex)
+        {
+            // Log the error and show a fallback UI
+            System.Diagnostics.Debug.WriteLine($"BarcodeScannerPage initialization error: {ex}");
+            Content = new VerticalStackLayout
+            {
+                VerticalOptions = LayoutOptions.Center,
+                Padding = 20,
+                Children =
+                {
+                    new Label
+                    {
+                        Text = "Camera Error",
+                        FontSize = 24,
+                        HorizontalOptions = LayoutOptions.Center
+                    },
+                    new Label
+                    {
+                        Text = $"Unable to initialize camera scanner:\n{ex.Message}",
+                        HorizontalOptions = LayoutOptions.Center,
+                        HorizontalTextAlignment = TextAlignment.Center
+                    },
+                    new Button
+                    {
+                        Text = "Go Back",
+                        Command = new Command(async () =>
+                        {
+                            _scanCompletionSource?.TrySetResult(null);
+                            await Navigation.PopAsync();
+                        })
+                    }
+                }
+            };
         }
     }
 
@@ -76,7 +100,7 @@ public partial class BarcodeScannerPage : ContentPage
             MainThread.BeginInvokeOnMainThread(async () =>
             {
                 _scanCompletionSource?.TrySetResult(barcode.Value);
-                await Navigation.PopModalAsync();
+                await Navigation.PopAsync();
             });
         }
         else
@@ -89,7 +113,7 @@ public partial class BarcodeScannerPage : ContentPage
     {
         BarcodeReader.IsDetecting = false;
         _scanCompletionSource?.TrySetResult(null);
-        await Navigation.PopModalAsync();
+        await Navigation.PopAsync();
     }
 
     protected override void OnDisappearing()

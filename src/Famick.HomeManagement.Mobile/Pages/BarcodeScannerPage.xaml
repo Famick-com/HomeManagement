@@ -4,46 +4,46 @@
              xmlns:zxing="clr-namespace:ZXing.Net.Maui.Controls;assembly=ZXing.Net.MAUI.Controls"
              x:Class="Famick.HomeManagement.Mobile.Pages.BarcodeScannerPage"
              Title="Scan Barcode"
-             Shell.NavBarIsVisible="True">
+             Shell.NavBarIsVisible="True"
+             Shell.FlyoutBehavior="Disabled">
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <!-- Camera view for barcode scanning -->
+        <!-- Scanner View - must be first, fills entire grid -->
         <zxing:CameraBarcodeReaderView
             x:Name="BarcodeReader"
-            Grid.Row="0"
-            IsDetecting="True"
-            IsTorchOn="False"
+            Options="{Binding BarcodeOptions}"
             BarcodesDetected="OnBarcodesDetected"
-            Options="{Binding BarcodeOptions}" />
+            IsDetecting="True"
+            IsEnabled="True" />
 
         <!-- Overlay with scanning frame -->
-        <Grid Grid.Row="0" InputTransparent="True">
-            <BoxView Color="#80000000" />
-            <Frame
-                BackgroundColor="Transparent"
-                BorderColor="White"
-                CornerRadius="10"
-                HeightRequest="200"
-                WidthRequest="280"
-                HorizontalOptions="Center"
-                VerticalOptions="Center" />
+        <Grid BackgroundColor="#80000000">
+            <Border WidthRequest="280" HeightRequest="200"
+                    BackgroundColor="Transparent"
+                    Stroke="White"
+                    StrokeThickness="3"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="10" />
+                </Border.StrokeShape>
+            </Border>
         </Grid>
 
-        <!-- Bottom panel with cancel button -->
-        <StackLayout Grid.Row="1"
-                     BackgroundColor="{AppThemeBinding Light=White, Dark=Black}"
-                     Padding="20">
-            <Label
-                x:Name="InstructionLabel"
-                Text="Point camera at barcode"
-                HorizontalOptions="Center"
-                FontSize="16"
-                Margin="0,0,0,10" />
+        <!-- Instructions at top -->
+        <VerticalStackLayout VerticalOptions="Start" Padding="20" Margin="0,50,0,0">
+            <Frame Padding="15" CornerRadius="10" HasShadow="False"
+                   BackgroundColor="#E0FFFFFF">
+                <Label x:Name="InstructionLabel"
+                       Text="Point camera at barcode"
+                       FontSize="14"
+                       HorizontalTextAlignment="Center"
+                       TextColor="Black" />
+            </Frame>
+        </VerticalStackLayout>
+
+        <!-- Cancel button at bottom -->
+        <VerticalStackLayout VerticalOptions="End" Padding="20" Margin="0,0,0,30">
             <Button
                 Text="Cancel"
                 Clicked="OnCancelClicked"
@@ -52,6 +52,6 @@
                 TextColor="White"
                 CornerRadius="20"
                 Padding="30,10" />
-        </StackLayout>
+        </VerticalStackLayout>
     </Grid>
 </ContentPage>

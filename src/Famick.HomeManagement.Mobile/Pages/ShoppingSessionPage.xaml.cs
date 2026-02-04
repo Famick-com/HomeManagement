@@ -379,7 +379,7 @@ public partial class ShoppingSessionPage : ContentPage
         }
 
         var scannerPage = new BarcodeScannerPage();
-        await Navigation.PushModalAsync(scannerPage);
+        await Navigation.PushAsync(scannerPage);
         var barcode = await scannerPage.ScanAsync();
 
         if (string.IsNullOrEmpty(barcode))
