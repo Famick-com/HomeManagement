@@ -3,20 +3,8 @@ import Security
 
 /// Reads JWT tokens and base URL from the shared keychain group written by the main MAUI app.
 enum KeychainHelper {
-    // IMPORTANT: Replace TEAMID with your actual Apple Team ID, or configure via build settings.
-    // The access group must match the keychain-access-groups entitlement.
-    private static let accessGroup = "\(teamId).com.famick.homemanagement.shared"
+    private static let accessGroup = "7A6WPZLCK9.com.famick.homemanagement.shared"
     private static let serviceName = "com.famick.homemanagement"
-
-    // Team ID - set via build setting or hardcode here
-    private static var teamId: String {
-        // Try reading from bundle's build settings first
-        if let id = Bundle.main.infoDictionary?["AppIdentifierPrefix"] as? String {
-            return id.trimmingCharacters(in: CharacterSet(charactersIn: "."))
-        }
-        // Fallback: read from the entitlements at runtime
-        return ""
-    }
 
     static func getAccessToken() -> String? {
         return readKeychainItem(account: "widget_access_token")

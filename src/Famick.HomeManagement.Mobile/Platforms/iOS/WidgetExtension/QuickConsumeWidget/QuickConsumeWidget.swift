@@ -15,6 +15,7 @@ struct QuickConsumeWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: QuickConsumeProvider()) { entry in
             QuickConsumeWidgetEntryView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Quick Consume")
         .description("Track and consume expiring items from your pantry")
@@ -174,19 +175,18 @@ struct QuickConsumeWidgetEntryView: View {
         let urgentCount = entry.expiringCount + entry.dueSoonCount
         return Group {
             if urgentCount > 0 {
-                VStack(spacing: 2) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 14))
+                ZStack {
+                    Image(systemName: "fork.knife.circle.fill")
+                        .font(.system(size: 32))
                     Text("\(urgentCount)")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(3)
+                        .background(Circle().fill(.red))
+                        .offset(x: 12, y: -12)
                 }
             } else {
-                VStack(spacing: 2) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14))
-                    Text("OK")
-                        .font(.system(size: 14, weight: .semibold))
-                }
+                Image(systemName: "fork.knife.circle")
+                    .font(.system(size: 32))
             }
         }
         .widgetURL(URL(string: "famick://quick-consume"))
