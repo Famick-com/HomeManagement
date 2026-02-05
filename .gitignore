@@ -333,3 +333,7 @@ xcuserdata/
 # iOS Widget Extension build outputs and test host
 src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/XReleases/
 src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/QuickConsumeWidgetHost/
+
+# TestFlight build environment
+scripts/.env
+.build-number

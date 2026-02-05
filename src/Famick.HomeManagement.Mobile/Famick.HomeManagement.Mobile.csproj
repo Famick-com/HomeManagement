@@ -30,6 +30,13 @@
 		<CodesignEntitlements Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">Platforms\iOS\Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 
+	<!-- Release iOS builds: enable archive and IPA generation.
+	     Pass signing properties at build time: /p:CodesignKey="..." /p:CodesignProvision="..." -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(TargetFramework.Contains('-ios'))">
+		<ArchiveOnBuild>true</ArchiveOnBuild>
+		<BuildIpa>true</BuildIpa>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
