@@ -12,6 +12,9 @@
 		2D456F662F33A561009002F9 /* QuickConsumeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F642F33A561009002F9 /* QuickConsumeProvider.swift */; };
 		2D456F672F33A561009002F9 /* QuickConsumeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F652F33A561009002F9 /* QuickConsumeWidget.swift */; };
 		2D456F682F33A561009002F9 /* QuickConsumeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F632F33A561009002F9 /* QuickConsumeEntry.swift */; };
+		2D456F6D2F33A600009002F9 /* WidgetProductItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F6A2F33A600009002F9 /* WidgetProductItem.swift */; };
+		2D456F6E2F33A600009002F9 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F6B2F33A600009002F9 /* KeychainHelper.swift */; };
+		2D456F6F2F33A600009002F9 /* ConsumeIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D456F6C2F33A600009002F9 /* ConsumeIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -35,6 +38,9 @@
 		2D456F642F33A561009002F9 /* QuickConsumeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickConsumeProvider.swift; sourceTree = "<group>"; };
 		2D456F652F33A561009002F9 /* QuickConsumeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickConsumeWidget.swift; sourceTree = "<group>"; };
 		2D456F692F33A5B9009002F9 /* QuickConsumeWidgetExtensionExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = QuickConsumeWidgetExtensionExtension.entitlements; sourceTree = "<group>"; };
+		2D456F6A2F33A600009002F9 /* WidgetProductItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetProductItem.swift; sourceTree = "<group>"; };
+		2D456F6B2F33A600009002F9 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		2D456F6C2F33A600009002F9 /* ConsumeIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsumeIntent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -69,9 +75,12 @@
 			isa = PBXGroup;
 			children = (
 				2D456F692F33A5B9009002F9 /* QuickConsumeWidgetExtensionExtension.entitlements */,
+				2D456F6C2F33A600009002F9 /* ConsumeIntent.swift */,
+				2D456F6B2F33A600009002F9 /* KeychainHelper.swift */,
 				2D456F632F33A561009002F9 /* QuickConsumeEntry.swift */,
 				2D456F642F33A561009002F9 /* QuickConsumeProvider.swift */,
 				2D456F652F33A561009002F9 /* QuickConsumeWidget.swift */,
+				2D456F6A2F33A600009002F9 /* WidgetProductItem.swift */,
 				2D456F432F33A397009002F9 /* QuickConsumeWidget */,
 				2D456F502F33A3C9009002F9 /* Frameworks */,
 				2D456F422F33A397009002F9 /* Products */,
@@ -204,6 +213,9 @@
 				2D456F662F33A561009002F9 /* QuickConsumeProvider.swift in Sources */,
 				2D456F672F33A561009002F9 /* QuickConsumeWidget.swift in Sources */,
 				2D456F682F33A561009002F9 /* QuickConsumeEntry.swift in Sources */,
+				2D456F6D2F33A600009002F9 /* WidgetProductItem.swift in Sources */,
+				2D456F6E2F33A600009002F9 /* KeychainHelper.swift in Sources */,
+				2D456F6F2F33A600009002F9 /* ConsumeIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
