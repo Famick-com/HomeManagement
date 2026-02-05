@@ -4,7 +4,11 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.famick.homemangement</string>
+		<string>group.com.famick.homemanagement</string>
+	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.famick.homemanagement.shared</string>
 	</array>
 </dict>
 </plist>

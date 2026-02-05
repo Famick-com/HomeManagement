@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 @main
 struct QuickConsumeWidgetBundle: WidgetBundle {
@@ -16,8 +17,8 @@ struct QuickConsumeWidget: Widget {
             QuickConsumeWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Quick Consume")
-        .description("Scan to consume from inventory")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .description("Track and consume expiring items from your pantry")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryCircular])
     }
 }
 
@@ -32,10 +33,16 @@ struct QuickConsumeWidgetEntryView: View {
             smallWidget
         case .systemMedium:
             mediumWidget
+        case .accessoryRectangular:
+            rectangularWidget
+        case .accessoryCircular:
+            circularWidget
         default:
             smallWidget
         }
     }
+
+    // MARK: - Home Screen Widgets
 
     var smallWidget: some View {
         VStack(spacing: 8) {
@@ -106,16 +113,122 @@ struct QuickConsumeWidgetEntryView: View {
         .padding()
         .widgetURL(URL(string: "famick://quick-consume"))
     }
+
+    // MARK: - Lock Screen Widgets
+
+    var rectangularWidget: some View {
+        Group {
+            if let product = entry.nextExpiringProduct {
+                rectangularProductView(product: product)
+            } else {
+                rectangularEmptyView
+            }
+        }
+    }
+
+    private func rectangularProductView(product: WidgetProductItem) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(product.productName)
+                    .font(.system(size: 14, weight: .bold))
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 10))
+                    Text(product.expiryDescription)
+                        .font(.system(size: 11))
+                    Text("(\(String(format: "%.1f", product.totalAmount)))")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if #available(iOS 17.0, *) {
+                Button(intent: ConsumeNextExpiringIntent()) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.system(size: 22))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var rectangularEmptyView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 16))
+            VStack(alignment: .leading) {
+                Text("Pantry")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("All items fresh")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    var circularWidget: some View {
+        let urgentCount = entry.expiringCount + entry.dueSoonCount
+        return Group {
+            if urgentCount > 0 {
+                VStack(spacing: 2) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 14))
+                    Text("\(urgentCount)")
+                        .font(.system(size: 18, weight: .bold))
+                }
+            } else {
+                VStack(spacing: 2) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14))
+                    Text("OK")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+            }
+        }
+        .widgetURL(URL(string: "famick://quick-consume"))
+    }
 }
 
 struct QuickConsumeWidget_Previews: PreviewProvider {
     static var previews: some View {
+        let sampleProduct = WidgetProductItem(
+            productId: "12345",
+            productName: "Whole Milk",
+            totalAmount: 2.0,
+            quantityUnit: "L",
+            bestBeforeDate: "2026-02-06",
+            daysUntilExpiry: 2,
+            isExpired: false
+        )
+
         Group {
-            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(date: Date(), expiringCount: 3, dueSoonCount: 7))
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 3, dueSoonCount: 7, nextExpiringProduct: sampleProduct))
                 .previewContext(WidgetPreviewContext(family: .systemSmall))
 
-            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(date: Date(), expiringCount: 3, dueSoonCount: 7))
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 3, dueSoonCount: 7, nextExpiringProduct: sampleProduct))
                 .previewContext(WidgetPreviewContext(family: .systemMedium))
+
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 3, dueSoonCount: 7, nextExpiringProduct: sampleProduct))
+                .previewContext(WidgetPreviewContext(family: .accessoryRectangular))
+
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 0, dueSoonCount: 0, nextExpiringProduct: nil))
+                .previewContext(WidgetPreviewContext(family: .accessoryRectangular))
+
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 3, dueSoonCount: 7, nextExpiringProduct: sampleProduct))
+                .previewContext(WidgetPreviewContext(family: .accessoryCircular))
+
+            QuickConsumeWidgetEntryView(entry: QuickConsumeEntry(
+                date: Date(), expiringCount: 0, dueSoonCount: 0, nextExpiringProduct: nil))
+                .previewContext(WidgetPreviewContext(family: .accessoryCircular))
         }
     }
 }

@@ -3,11 +3,19 @@ namespace Famick.HomeManagement.Mobile.Services;
 /// <summary>
 /// Secure token storage using MAUI SecureStorage.
 /// Provides platform-native secure storage for JWT tokens.
+/// On iOS, also writes tokens to a shared keychain for widget extension access.
 /// </summary>
 public class TokenStorage
 {
     private const string AccessTokenKey = "access_token";
     private const string RefreshTokenKey = "refresh_token";
+
+    private readonly ApiSettings _apiSettings;
+
+    public TokenStorage(ApiSettings apiSettings)
+    {
+        _apiSettings = apiSettings;
+    }
 
     public async Task<string?> GetAccessTokenAsync()
     {
@@ -55,6 +63,9 @@ public class TokenStorage
         {
             await SecureStorage.Default.SetAsync(AccessTokenKey, accessToken);
             await SecureStorage.Default.SetAsync(RefreshTokenKey, refreshToken);
+#if IOS
+            Platforms.iOS.SharedKeychainService.SetSharedTokens(accessToken, refreshToken, _apiSettings.BaseUrl);
+#endif
         }
         catch
         {
@@ -68,6 +79,9 @@ public class TokenStorage
         {
             SecureStorage.Default.Remove(AccessTokenKey);
             SecureStorage.Default.Remove(RefreshTokenKey);
+#if IOS
+            Platforms.iOS.SharedKeychainService.ClearSharedTokens();
+#endif
         }
         catch
         {

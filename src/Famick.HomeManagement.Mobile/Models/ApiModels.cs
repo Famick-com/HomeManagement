@@ -279,6 +279,25 @@ public class ChoreSummaryDto
 
 #endregion
 
+#region Stock Overview Models
+
+/// <summary>
+/// Stock overview item for widget data (maps to server-side StockOverviewItemDto).
+/// </summary>
+public class StockOverviewItemDto
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public string QuantityUnitName { get; set; } = string.Empty;
+    public DateTime? NextDueDate { get; set; }
+    public int? DaysUntilDue { get; set; }
+    public bool IsExpired { get; set; }
+    public bool IsDueSoon { get; set; }
+}
+
+#endregion
+
 #region Quick Consume Models
 
 /// <summary>

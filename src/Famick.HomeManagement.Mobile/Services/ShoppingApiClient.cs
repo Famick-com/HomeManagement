@@ -1415,7 +1415,7 @@ public class ShoppingApiClient
     }
 
     /// <summary>
-    /// Refresh widget data by fetching stock statistics.
+    /// Refresh widget data by fetching stock statistics and expiring products.
     /// This updates platform-specific widget data stores.
     /// </summary>
     public async Task RefreshWidgetDataAsync()
@@ -1424,9 +1424,12 @@ public class ShoppingApiClient
         if (result.Success && result.Data != null)
         {
 #if IOS
-            Platforms.iOS.WidgetDataService.UpdateWidgetData(
+            // Fetch expiring products for Lock Screen widget
+            var products = await GetExpiringProductsForWidgetAsync();
+            Platforms.iOS.WidgetDataService.UpdateWidgetDataWithProducts(
                 result.Data.ExpiredCount,
-                result.Data.DueSoonCount);
+                result.Data.DueSoonCount,
+                products);
 #elif ANDROID
             Platforms.Android.WidgetDataService.UpdateWidgetData(
                 Android.App.Application.Context,
@@ -1435,6 +1438,66 @@ public class ShoppingApiClient
 #endif
         }
     }
+
+#if IOS
+    /// <summary>
+    /// Fetches the top expiring products (expired first, then due-soon) for widget display.
+    /// </summary>
+    private async Task<List<Platforms.iOS.WidgetProductItem>> GetExpiringProductsForWidgetAsync()
+    {
+        var widgetProducts = new List<Platforms.iOS.WidgetProductItem>();
+
+        try
+        {
+            await SetAuthHeaderAsync();
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+            // Fetch expired items sorted by nearest due date
+            var expiredResponse = await _httpClient.GetAsync("api/v1/stock/overview?status=expired&sortBy=nextDueDate");
+            if (expiredResponse.IsSuccessStatusCode)
+            {
+                var content = await expiredResponse.Content.ReadAsStringAsync();
+                var items = System.Text.Json.JsonSerializer.Deserialize<List<StockOverviewItemDto>>(content, options);
+                if (items != null)
+                {
+                    widgetProducts.AddRange(items.Select(MapToWidgetProduct));
+                }
+            }
+
+            // Fetch due-soon items sorted by nearest due date
+            var dueSoonResponse = await _httpClient.GetAsync("api/v1/stock/overview?status=dueSoon&sortBy=nextDueDate");
+            if (dueSoonResponse.IsSuccessStatusCode)
+            {
+                var content = await dueSoonResponse.Content.ReadAsStringAsync();
+                var items = System.Text.Json.JsonSerializer.Deserialize<List<StockOverviewItemDto>>(content, options);
+                if (items != null)
+                {
+                    widgetProducts.AddRange(items.Select(MapToWidgetProduct));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ShoppingApiClient] Error fetching expiring products for widget: {ex.Message}");
+        }
+
+        return widgetProducts.Take(5).ToList();
+    }
+
+    private static Platforms.iOS.WidgetProductItem MapToWidgetProduct(StockOverviewItemDto item)
+    {
+        return new Platforms.iOS.WidgetProductItem
+        {
+            ProductId = item.ProductId.ToString(),
+            ProductName = item.ProductName,
+            TotalAmount = (double)item.TotalAmount,
+            QuantityUnit = item.QuantityUnitName,
+            BestBeforeDate = item.NextDueDate?.ToString("yyyy-MM-dd"),
+            DaysUntilExpiry = item.DaysUntilDue,
+            IsExpired = item.IsExpired
+        };
+    }
+#endif
 
     #endregion
 

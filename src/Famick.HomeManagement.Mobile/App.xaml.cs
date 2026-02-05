@@ -88,7 +88,7 @@ public partial class App : Application
                 Timeout = TimeSpan.FromSeconds(30)
             };
             return new NavigationPage(new WelcomePage(
-                new ShoppingApiClient(httpClient, new TokenStorage()),
+                new ShoppingApiClient(httpClient, new TokenStorage(_apiSettings)),
                 new OnboardingService()));
         }
 

@@ -5,7 +5,7 @@ struct QuickConsumeProvider: TimelineProvider {
     private let appGroupId = "group.com.famick.homemanagement"
 
     func placeholder(in context: Context) -> QuickConsumeEntry {
-        QuickConsumeEntry(date: Date(), expiringCount: 0, dueSoonCount: 0)
+        QuickConsumeEntry(date: Date(), expiringCount: 0, dueSoonCount: 0, nextExpiringProduct: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (QuickConsumeEntry) -> Void) {
@@ -25,16 +25,25 @@ struct QuickConsumeProvider: TimelineProvider {
 
     private func loadEntry() -> QuickConsumeEntry {
         guard let defaults = UserDefaults(suiteName: appGroupId) else {
-            return QuickConsumeEntry(date: Date(), expiringCount: 0, dueSoonCount: 0)
+            return QuickConsumeEntry(date: Date(), expiringCount: 0, dueSoonCount: 0, nextExpiringProduct: nil)
         }
 
         let expiringCount = defaults.integer(forKey: "ExpiringItemCount")
         let dueSoonCount = defaults.integer(forKey: "DueSoonItemCount")
 
+        // Parse expiring products JSON for Lock Screen widget
+        var nextProduct: WidgetProductItem? = nil
+        if let jsonString = defaults.string(forKey: "WidgetExpiringProducts"),
+           let jsonData = jsonString.data(using: .utf8) {
+            let products = try? JSONDecoder().decode([WidgetProductItem].self, from: jsonData)
+            nextProduct = products?.first
+        }
+
         return QuickConsumeEntry(
             date: Date(),
             expiringCount: expiringCount,
-            dueSoonCount: dueSoonCount
+            dueSoonCount: dueSoonCount,
+            nextExpiringProduct: nextProduct
         )
     }
 }
