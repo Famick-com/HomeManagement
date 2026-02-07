@@ -89,7 +89,80 @@ public class ShoppingListItemDto
     public string? ExternalProductId { get; set; }
     public decimal? Price { get; set; }
     public string? Barcode { get; set; }
+
+    // Parent/child product support
+    public bool IsParentProduct { get; set; }
+    public bool HasChildren { get; set; }
+    public int ChildProductCount { get; set; }
+    public bool HasChildrenAtStore { get; set; }
+    public decimal ChildPurchasedQuantity { get; set; }
+    public decimal RemainingQuantity => Amount - ChildPurchasedQuantity;
 }
+
+#region Child Product Models
+
+/// <summary>
+/// Child product option for a parent product on a shopping list.
+/// </summary>
+public class ChildProductDto
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? ExternalProductId { get; set; }
+    public decimal? LastKnownPrice { get; set; }
+    public string? PriceUnit { get; set; }
+    public string? Aisle { get; set; }
+    public string? Shelf { get; set; }
+    public string? Department { get; set; }
+    public bool? InStock { get; set; }
+    public string? ImageUrl { get; set; }
+    public bool HasStoreMetadata { get; set; }
+    public decimal PurchasedQuantity { get; set; }
+}
+
+/// <summary>
+/// Tracks a purchase of a specific child product.
+/// </summary>
+public class ChildPurchaseEntry
+{
+    public Guid ChildProductId { get; set; }
+    public string ChildProductName { get; set; } = string.Empty;
+    public decimal Quantity { get; set; }
+    public string? ExternalProductId { get; set; }
+    public DateTime PurchasedAt { get; set; }
+}
+
+/// <summary>
+/// Request to check off a child product.
+/// </summary>
+public class CheckOffChildRequest
+{
+    public Guid ChildProductId { get; set; }
+    public decimal Quantity { get; set; } = 1;
+    public DateTime? BestBeforeDate { get; set; }
+}
+
+/// <summary>
+/// Request to send a child product to cart.
+/// </summary>
+public class SendChildToCartRequest
+{
+    public Guid ChildProductId { get; set; }
+    public decimal Quantity { get; set; } = 1;
+}
+
+/// <summary>
+/// Result of sending a product to the cart.
+/// </summary>
+public class SendToCartResult
+{
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    public string? CartUrl { get; set; }
+}
+
+#endregion
 
 /// <summary>
 /// Shopping location (store) summary.

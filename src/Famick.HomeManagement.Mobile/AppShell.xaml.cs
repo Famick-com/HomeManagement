@@ -19,6 +19,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
         Routing.RegisterRoute(nameof(QuickConsumePage), typeof(QuickConsumePage));
+        Routing.RegisterRoute(nameof(ChildProductSelectionPage), typeof(ChildProductSelectionPage));
 
         // Wizard routes
         Routing.RegisterRoute(nameof(WizardHouseholdInfoPage), typeof(WizardHouseholdInfoPage));
@@ -46,14 +47,14 @@ public partial class AppShell : Shell
                 apiSettings = services?.GetService<ApiSettings>();
                 if (tenantStorage == null)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(100).ConfigureAwait(false);
                 }
             }
 
             if (tenantStorage != null)
             {
-                _appTitle = await tenantStorage.GetAppTitleAsync();
-                var tenantName = apiSettings?.TenantName ?? await tenantStorage.GetTenantNameAsync();
+                _appTitle = await tenantStorage.GetAppTitleAsync().ConfigureAwait(false);
+                var tenantName = apiSettings?.TenantName ?? await tenantStorage.GetTenantNameAsync().ConfigureAwait(false);
 
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
@@ -72,8 +73,9 @@ public partial class AppShell : Shell
                 });
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[AppShell] LoadTenantNameAsync error: {ex.Message}");
             // Ignore errors loading tenant name
         }
     }
@@ -128,6 +130,6 @@ public partial class AppShell : Shell
     /// </summary>
     public async Task RefreshTitleAsync()
     {
-        await LoadTenantNameAsync();
+        await LoadTenantNameAsync().ConfigureAwait(false);
     }
 }

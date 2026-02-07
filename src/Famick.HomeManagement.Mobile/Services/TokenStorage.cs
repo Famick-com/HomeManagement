@@ -21,7 +21,7 @@ public class TokenStorage
     {
         try
         {
-            return await SecureStorage.Default.GetAsync(AccessTokenKey);
+            return await SecureStorage.Default.GetAsync(AccessTokenKey).ConfigureAwait(false);
         }
         catch
         {
@@ -49,7 +49,7 @@ public class TokenStorage
     {
         try
         {
-            return await SecureStorage.Default.GetAsync(RefreshTokenKey);
+            return await SecureStorage.Default.GetAsync(RefreshTokenKey).ConfigureAwait(false);
         }
         catch
         {
@@ -61,8 +61,8 @@ public class TokenStorage
     {
         try
         {
-            await SecureStorage.Default.SetAsync(AccessTokenKey, accessToken);
-            await SecureStorage.Default.SetAsync(RefreshTokenKey, refreshToken);
+            await SecureStorage.Default.SetAsync(AccessTokenKey, accessToken).ConfigureAwait(false);
+            await SecureStorage.Default.SetAsync(RefreshTokenKey, refreshToken).ConfigureAwait(false);
 #if IOS
             Platforms.iOS.SharedKeychainService.SetSharedTokens(accessToken, refreshToken, _apiSettings.BaseUrl);
 #endif

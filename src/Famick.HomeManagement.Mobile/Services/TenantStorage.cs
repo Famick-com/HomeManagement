@@ -15,7 +15,7 @@ public class TenantStorage
     {
         try
         {
-            return await SecureStorage.Default.GetAsync(TenantNameKey);
+            return await SecureStorage.Default.GetAsync(TenantNameKey).ConfigureAwait(false);
         }
         catch
         {
@@ -36,7 +36,7 @@ public class TenantStorage
             }
             else
             {
-                await SecureStorage.Default.SetAsync(TenantNameKey, tenantName);
+                await SecureStorage.Default.SetAsync(TenantNameKey, tenantName).ConfigureAwait(false);
             }
         }
         catch
@@ -51,7 +51,7 @@ public class TenantStorage
     /// </summary>
     public async Task<string> GetAppTitleAsync()
     {
-        var tenantName = await GetTenantNameAsync();
+        var tenantName = await GetTenantNameAsync().ConfigureAwait(false);
         return string.IsNullOrWhiteSpace(tenantName)
             ? DefaultAppTitle
             : $"{tenantName} Shopping";

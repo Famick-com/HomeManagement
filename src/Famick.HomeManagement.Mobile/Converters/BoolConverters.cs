@@ -91,3 +91,92 @@ public class StringToBoolConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// Returns true if string is not null or empty.
+/// </summary>
+public class StringNotNullConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return !string.IsNullOrEmpty(value as string);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Returns true if string is null or empty.
+/// </summary>
+public class StringNullConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return string.IsNullOrEmpty(value as string);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Returns true if a nullable value has a value.
+/// </summary>
+public class NullableToBoolConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value != null;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Inverts a boolean value.
+/// </summary>
+public class InverseBoolConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is bool boolValue)
+            return !boolValue;
+        return true;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Returns true if decimal value is greater than zero.
+/// </summary>
+public class GreaterThanZeroConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        return value switch
+        {
+            decimal d => d > 0,
+            int i => i > 0,
+            double db => db > 0,
+            float f => f > 0,
+            _ => false
+        };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

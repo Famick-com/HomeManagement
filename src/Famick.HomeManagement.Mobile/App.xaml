@@ -17,6 +17,11 @@
             <converters:StringToBoolConverter x:Key="StringToBoolConverter" />
             <converters:BoolToSwipeTextConverter x:Key="BoolToSwipeTextConverter" />
             <converters:BoolToSwipeColorConverter x:Key="BoolToSwipeColorConverter" />
+            <converters:StringNotNullConverter x:Key="StringNotNullConverter" />
+            <converters:StringNullConverter x:Key="StringNullConverter" />
+            <converters:NullableToBoolConverter x:Key="NullableToBoolConverter" />
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

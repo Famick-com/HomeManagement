@@ -22,9 +22,9 @@ public class OfflineStorageService
         if (_database == null)
         {
             _database = new SQLiteAsyncConnection(_dbPath);
-            await _database.CreateTableAsync<ShoppingSession>();
-            await _database.CreateTableAsync<CachedShoppingListItem>();
-            await _database.CreateTableAsync<OfflineOperation>();
+            await _database.CreateTableAsync<ShoppingSession>().ConfigureAwait(false);
+            await _database.CreateTableAsync<CachedShoppingListItem>().ConfigureAwait(false);
+            await _database.CreateTableAsync<OfflineOperation>().ConfigureAwait(false);
         }
         return _database;
     }
@@ -34,16 +34,16 @@ public class OfflineStorageService
     /// </summary>
     public async Task<ShoppingSession?> GetCachedSessionAsync(Guid listId)
     {
-        var db = await GetDatabaseAsync();
+        var db = await GetDatabaseAsync().ConfigureAwait(false);
         var session = await db.Table<ShoppingSession>()
-            .FirstOrDefaultAsync(s => s.ShoppingListId == listId && s.IsActive);
+            .FirstOrDefaultAsync(s => s.ShoppingListId == listId && s.IsActive).ConfigureAwait(false);
 
         if (session != null)
         {
             session.Items = await db.Table<CachedShoppingListItem>()
                 .Where(i => i.SessionId == session.Id)
                 .OrderBy(i => i.SortOrder)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             // Fix for stale cached data: if OriginalIsPurchased wasn't set (old cache without the column),
             // set it to match IsPurchased so we treat the current state as the baseline
@@ -52,7 +52,7 @@ public class OfflineStorageService
                 if (!item.OriginalIsPurchased && item.IsPurchased)
                 {
                     item.OriginalIsPurchased = item.IsPurchased;
-                    await db.UpdateAsync(item);
+                    await db.UpdateAsync(item).ConfigureAwait(false);
                 }
             }
         }
@@ -65,10 +65,10 @@ public class OfflineStorageService
     /// </summary>
     public async Task<ShoppingSession> CacheShoppingSessionAsync(Guid listId, ShoppingListDetail list)
     {
-        var db = await GetDatabaseAsync();
+        var db = await GetDatabaseAsync().ConfigureAwait(false);
 
         // Clear any existing session for this list
-        await ClearSessionAsync(listId);
+        await ClearSessionAsync(listId).ConfigureAwait(false);
 
         // Create new session
         var session = new ShoppingSession
@@ -82,7 +82,7 @@ public class OfflineStorageService
             IsActive = true
         };
 
-        await db.InsertAsync(session);
+        await db.InsertAsync(session).ConfigureAwait(false);
 
         // Cache items - preserve the order from the backend (already sorted by custom aisle order)
         var sortOrder = 0;
@@ -112,10 +112,15 @@ public class OfflineStorageService
                 Price = item.Price,
                 Barcode = item.Barcode,
                 SortOrder = sortOrder++,
-                IsNewItem = false
+                IsNewItem = false,
+                // Parent/child product support
+                IsParentProduct = item.IsParentProduct,
+                ChildProductCount = item.ChildProductCount,
+                HasChildrenAtStore = item.HasChildrenAtStore,
+                ChildPurchasedQuantity = item.ChildPurchasedQuantity
             };
 
-            await db.InsertAsync(cachedItem);
+            await db.InsertAsync(cachedItem).ConfigureAwait(false);
             session.Items.Add(cachedItem);
         }
 
@@ -127,8 +132,8 @@ public class OfflineStorageService
     /// </summary>
     public async Task UpdateItemStateAsync(CachedShoppingListItem item)
     {
-        var db = await GetDatabaseAsync();
-        await db.UpdateAsync(item);
+        var db = await GetDatabaseAsync().ConfigureAwait(false);
+        await db.UpdateAsync(item).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -235,10 +240,10 @@ public class OfflineStorageService
     /// </summary>
     public async Task<Dictionary<Guid, (int total, int purchased)>> GetAllLocalPurchaseCountsAsync()
     {
-        var db = await GetDatabaseAsync();
+        var db = await GetDatabaseAsync().ConfigureAwait(false);
         var sessions = await db.Table<ShoppingSession>()
             .Where(s => s.IsActive)
-            .ToListAsync();
+            .ToListAsync().ConfigureAwait(false);
 
         var result = new Dictionary<Guid, (int total, int purchased)>();
 
@@ -246,7 +251,7 @@ public class OfflineStorageService
         {
             var items = await db.Table<CachedShoppingListItem>()
                 .Where(i => i.SessionId == session.Id)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             result[session.ShoppingListId] = (items.Count, items.Count(i => i.IsPurchased));
         }
@@ -345,26 +350,26 @@ public class OfflineStorageService
     /// </summary>
     public async Task ClearSessionAsync(Guid listId)
     {
-        var db = await GetDatabaseAsync();
+        var db = await GetDatabaseAsync().ConfigureAwait(false);
         var session = await db.Table<ShoppingSession>()
-            .FirstOrDefaultAsync(s => s.ShoppingListId == listId);
+            .FirstOrDefaultAsync(s => s.ShoppingListId == listId).ConfigureAwait(false);
 
         if (session != null)
         {
             await db.Table<CachedShoppingListItem>()
-                .DeleteAsync(i => i.SessionId == session.Id);
-            await db.DeleteAsync(session);
+                .DeleteAsync(i => i.SessionId == session.Id).ConfigureAwait(false);
+            await db.DeleteAsync(session).ConfigureAwait(false);
         }
 
         // Also clear completed operations for this list
         var listIdStr = listId.ToString();
         var operations = await db.Table<OfflineOperation>()
             .Where(o => o.IsCompleted && o.PayloadJson.Contains(listIdStr))
-            .ToListAsync();
+            .ToListAsync().ConfigureAwait(false);
 
         foreach (var op in operations)
         {
-            await db.DeleteAsync(op);
+            await db.DeleteAsync(op).ConfigureAwait(false);
         }
     }
 

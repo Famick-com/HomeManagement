@@ -58,6 +58,32 @@ public class CachedShoppingListItem
     public int SortOrder { get; set; }
     public bool IsNewItem { get; set; }
 
+    // Parent/child product support
+    /// <summary>
+    /// Whether this item's product is a parent product with child variants
+    /// </summary>
+    public bool IsParentProduct { get; set; }
+
+    /// <summary>
+    /// Number of child products under this parent
+    /// </summary>
+    public int ChildProductCount { get; set; }
+
+    /// <summary>
+    /// Whether any child products have store metadata for the current store
+    /// </summary>
+    public bool HasChildrenAtStore { get; set; }
+
+    /// <summary>
+    /// Total quantity checked off across all child products
+    /// </summary>
+    public decimal ChildPurchasedQuantity { get; set; }
+
+    /// <summary>
+    /// JSON tracking of child purchases (stored for offline sync)
+    /// </summary>
+    public string? ChildPurchasesJson { get; set; }
+
     [Ignore]
     public bool HasPrice => Price.HasValue;
 
@@ -66,6 +92,18 @@ public class CachedShoppingListItem
 
     [Ignore]
     public ImageSource? ImageSource => HasImage ? ImageSource.FromFile(LocalImagePath) : null;
+
+    /// <summary>
+    /// Remaining quantity to purchase (Amount - ChildPurchasedQuantity)
+    /// </summary>
+    [Ignore]
+    public decimal RemainingQuantity => Amount - ChildPurchasedQuantity;
+
+    /// <summary>
+    /// Whether this is a parent product that needs child selection
+    /// </summary>
+    [Ignore]
+    public bool NeedsChildSelection => IsParentProduct && HasChildrenAtStore && !IsPurchased;
 }
 
 /// <summary>

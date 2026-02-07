@@ -76,8 +76,8 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
-            var response = await _httpClient.GetAsync("api/v1/shoppinglists");
+            await SetAuthHeaderAsync().ConfigureAwait(false);
+            var response = await _httpClient.GetAsync("api/v1/shoppinglists").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
@@ -102,8 +102,8 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
-            var response = await _httpClient.GetAsync($"api/v1/shoppinglists/{listId}");
+            await SetAuthHeaderAsync().ConfigureAwait(false);
+            var response = await _httpClient.GetAsync($"api/v1/shoppinglists/{listId}").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
@@ -128,8 +128,7 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
-            var response = await _httpClient.GetAsync("api/v1/shoppinglocations");
+            await SetAuthHeaderAsync().ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {
@@ -1568,9 +1567,137 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region Child Product Operations
+
+    /// <summary>
+    /// Gets child products for a parent product on a shopping list item.
+    /// Only returns children with store metadata for the shopping list's store.
+    /// </summary>
+    public async Task<ApiResult<List<ChildProductDto>>> GetChildProductsAsync(Guid listId, Guid itemId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync($"api/v1/shoppinglists/{listId}/items/{itemId}/children");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ChildProductDto>>();
+                return result != null
+                    ? ApiResult<List<ChildProductDto>>.Ok(result)
+                    : ApiResult<List<ChildProductDto>>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<List<ChildProductDto>>.Fail(ParseErrorMessage(error) ?? "Failed to get child products");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ChildProductDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Checks off a specific child product with quantity.
+    /// </summary>
+    public async Task<ApiResult<ShoppingListItemDto>> CheckOffChildAsync(
+        Guid listId,
+        Guid itemId,
+        CheckOffChildRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}/check-off-child",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ShoppingListItemDto>();
+                return result != null
+                    ? ApiResult<ShoppingListItemDto>.Ok(result)
+                    : ApiResult<ShoppingListItemDto>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ShoppingListItemDto>.Fail(ParseErrorMessage(error) ?? "Failed to check off child");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ShoppingListItemDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Unchecks a child product purchase entry.
+    /// </summary>
+    public async Task<ApiResult<ShoppingListItemDto>> UncheckChildAsync(
+        Guid listId,
+        Guid itemId,
+        Guid childProductId)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}/uncheck-child/{childProductId}",
+                null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ShoppingListItemDto>();
+                return result != null
+                    ? ApiResult<ShoppingListItemDto>.Ok(result)
+                    : ApiResult<ShoppingListItemDto>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ShoppingListItemDto>.Fail(ParseErrorMessage(error) ?? "Failed to uncheck child");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ShoppingListItemDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Sends a specific child product to the store's online cart.
+    /// </summary>
+    public async Task<ApiResult<SendToCartResult>> SendChildToCartAsync(
+        Guid listId,
+        Guid itemId,
+        SendChildToCartRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}/send-child-to-cart",
+                request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<SendToCartResult>();
+                return result != null
+                    ? ApiResult<SendToCartResult>.Ok(result)
+                    : ApiResult<SendToCartResult>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<SendToCartResult>.Fail(ParseErrorMessage(error) ?? "Failed to send to cart");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<SendToCartResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     private async Task SetAuthHeaderAsync()
     {
-        var token = await _tokenStorage.GetAccessTokenAsync();
+        var token = await _tokenStorage.GetAccessTokenAsync().ConfigureAwait(false);
         if (!string.IsNullOrEmpty(token))
         {
             _httpClient.DefaultRequestHeaders.Authorization =
