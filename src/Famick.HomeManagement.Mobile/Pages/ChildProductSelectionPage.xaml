@@ -135,11 +135,11 @@
                                         <Label Text="✓ In Stock"
                                                FontSize="12"
                                                TextColor="#4CAF50"
-                                               IsVisible="{Binding InStock}" />
+                                               IsVisible="{Binding InStock, TargetNullValue=False}" />
                                         <Label Text="⚠ Out of Stock"
                                                FontSize="12"
                                                TextColor="#F44336"
-                                               IsVisible="{Binding InStock, Converter={StaticResource InverseBoolConverter}}" />
+                                               IsVisible="{Binding InStock, Converter={StaticResource InverseBoolConverter}, TargetNullValue=False}" />
                                         <Label Text="{Binding PurchasedQuantity, StringFormat='({0} purchased)'}"
                                                FontSize="12"
                                                TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
@@ -162,17 +162,6 @@
                                             Clicked="OnCheckOffClicked"
                                             CommandParameter="{Binding}" />
 
-                                    <!-- Send to Cart Button (if available) -->
-                                    <Button Text="🛒"
-                                            BackgroundColor="{AppThemeBinding Light=#FF9800, Dark=#F57C00}"
-                                            TextColor="White"
-                                            FontSize="14"
-                                            CornerRadius="20"
-                                            HeightRequest="40"
-                                            WidthRequest="40"
-                                            Clicked="OnSendToCartClicked"
-                                            CommandParameter="{Binding}"
-                                            IsVisible="{Binding ExternalProductId, Converter={StaticResource StringNotNullConverter}}" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Border>

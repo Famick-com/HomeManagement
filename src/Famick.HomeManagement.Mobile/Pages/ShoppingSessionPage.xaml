@@ -107,12 +107,24 @@
                                 </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
 
-                                    <!-- Checkbox -->
+                                    <!-- Checkbox (hidden for parent products needing child selection) -->
                                     <CheckBox Grid.Column="0"
                                               IsChecked="{Binding IsPurchased}"
                                               CheckedChanged="OnItemCheckedChanged"
                                               VerticalOptions="Center"
-                                              Color="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}" />
+                                              Color="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                                              IsVisible="{Binding NeedsChildSelection, Converter={StaticResource InverseBoolConverter}}" />
+
+                                    <!-- Chevron for parent products needing child selection -->
+                                    <Label Grid.Column="0"
+                                           Text="›"
+                                           FontSize="28"
+                                           FontAttributes="Bold"
+                                           TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                                           VerticalOptions="Center"
+                                           HorizontalOptions="Center"
+                                           WidthRequest="40"
+                                           IsVisible="{Binding NeedsChildSelection}" />
 
                                     <!-- Product Info -->
                                     <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
@@ -128,6 +140,24 @@
                                                    FontSize="12"
                                                    TextColor="Gray"
                                                    IsVisible="{Binding HasPrice}" />
+                                        </HorizontalStackLayout>
+
+                                        <!-- Child product progress (parent products only) -->
+                                        <HorizontalStackLayout Spacing="5"
+                                            IsVisible="{Binding IsParentProduct}">
+                                            <Label Text="{Binding ChildProductCount, StringFormat='{0} variants'}"
+                                                   FontSize="12"
+                                                   TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}" />
+                                            <Label Text="{Binding ChildPurchasedQuantity, StringFormat='({0:0.##} purchased)'}"
+                                                   FontSize="12"
+                                                   TextColor="Gray"
+                                                   IsVisible="{Binding ChildPurchasedQuantity, Converter={StaticResource GreaterThanZeroConverter}}" />
+                                            <!-- Warning: no children at this store -->
+                                            <Label Text="⚠"
+                                                   FontSize="12"
+                                                   TextColor="#FF9800"
+                                                   IsVisible="{Binding HasChildrenAtStore, Converter={StaticResource InverseBoolConverter}}"
+                                                   ToolTipProperties.Text="No variants available at this store" />
                                         </HorizontalStackLayout>
                                     </VerticalStackLayout>
 

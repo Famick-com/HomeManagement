@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.Messaging;
 using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -162,61 +163,6 @@ public partial class ChildProductSelectionPage : ContentPage
         }
     }
 
-    private async void OnSendToCartClicked(object? sender, EventArgs e)
-    {
-        if (sender is not Button button || button.CommandParameter is not ChildProductDto child)
-            return;
-
-        if (string.IsNullOrEmpty(child.ExternalProductId))
-        {
-            await DisplayAlertAsync("Not Available", "This product cannot be sent to cart", "OK");
-            return;
-        }
-
-        button.IsEnabled = false;
-
-        try
-        {
-            var request = new SendChildToCartRequest
-            {
-                ChildProductId = child.ProductId,
-                Quantity = 1
-            };
-
-            var result = await _apiClient.SendChildToCartAsync(_listId, _itemId, request);
-
-            if (result.Success && result.Data != null)
-            {
-                var message = result.Data.Message ?? "Added to cart";
-
-                if (!string.IsNullOrEmpty(result.Data.CartUrl))
-                {
-                    var openCart = await DisplayAlertAsync("Added to Cart", $"{message}\n\nOpen cart in browser?", "Open Cart", "Close");
-                    if (openCart)
-                    {
-                        await Launcher.OpenAsync(result.Data.CartUrl);
-                    }
-                }
-                else
-                {
-                    await DisplayAlertAsync("Added to Cart", message, "OK");
-                }
-            }
-            else
-            {
-                await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to add to cart", "OK");
-            }
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("Error", $"Connection error: {ex.Message}", "OK");
-        }
-        finally
-        {
-            button.IsEnabled = true;
-        }
-    }
-
     private async void OnCheckOffParentClicked(object? sender, EventArgs e)
     {
         var confirm = await DisplayAlertAsync(
@@ -227,16 +173,13 @@ public partial class ChildProductSelectionPage : ContentPage
 
         if (!confirm) return;
 
-        // Navigate back with a result indicating parent should be checked off
-        await Shell.Current.GoToAsync("..", new Dictionary<string, object>
-        {
-            { "CheckOffParent", true },
-            { "ItemId", _itemId.ToString() }
-        });
+        WeakReferenceMessenger.Default.Send(new CheckOffParentMessage(_itemId));
+        await Shell.Current.GoToAsync("..");
     }
 
     private async void OnDoneClicked(object? sender, EventArgs e)
     {
+        WeakReferenceMessenger.Default.Send(new ChildSelectionDoneMessage(_itemId));
         await Shell.Current.GoToAsync("..");
     }
 

@@ -1,10 +1,22 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
 namespace Famick.HomeManagement.Mobile.Pages;
+
+/// <summary>
+/// Message sent when the user taps "Check Off Parent Directly" on the child selection page.
+/// </summary>
+public sealed class CheckOffParentMessage(Guid itemId) : ValueChangedMessage<Guid>(itemId);
+
+/// <summary>
+/// Message sent when the user taps "Done" on the child selection page, indicating child quantities may have changed.
+/// </summary>
+public sealed class ChildSelectionDoneMessage(Guid itemId) : ValueChangedMessage<Guid>(itemId);
 
 [QueryProperty(nameof(ListId), "ListId")]
 [QueryProperty(nameof(ListName), "ListName")]
@@ -19,6 +31,7 @@ public partial class ShoppingSessionPage : ContentPage
     private ShoppingSession? _session;
     private bool _isPopulatingItems;
     private bool _needsRefreshAfterAisleOrderChange;
+    private bool _needsRefreshAfterChildSelection;
 
     public string ListId
     {
@@ -52,6 +65,20 @@ public partial class ShoppingSessionPage : ContentPage
         BindingContext = this;
 
         _connectivityService.ConnectivityChanged += OnConnectivityChanged;
+
+        WeakReferenceMessenger.Default.Register<CheckOffParentMessage>(this, async (recipient, message) =>
+        {
+            var item = _session?.Items.FirstOrDefault(i => i.Id == message.Value);
+            if (item != null && !item.IsPurchased)
+            {
+                await ToggleItemAsync(item);
+            }
+        });
+
+        WeakReferenceMessenger.Default.Register<ChildSelectionDoneMessage>(this, (recipient, message) =>
+        {
+            _needsRefreshAfterChildSelection = true;
+        });
     }
 
     protected override async void OnAppearing()
@@ -59,6 +86,15 @@ public partial class ShoppingSessionPage : ContentPage
         base.OnAppearing();
         PageTitleLabel.Text = ListName;
         UpdateConnectivityUI();
+
+        // If returning from child selection, force a refresh to get updated child purchased quantities
+        if (_needsRefreshAfterChildSelection && _connectivityService.IsOnline)
+        {
+            _needsRefreshAfterChildSelection = false;
+            await _offlineStorage.ClearSessionAsync(_listId);
+            _session = null;
+        }
+
         await LoadSessionAsync();
     }
 
@@ -66,6 +102,7 @@ public partial class ShoppingSessionPage : ContentPage
     {
         base.OnDisappearing();
         _connectivityService.ConnectivityChanged -= OnConnectivityChanged;
+        WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 
     private async Task LoadSessionAsync()
@@ -335,6 +372,13 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (item == null || _session == null) return;
 
+        // Parent products with children at this store navigate to child selection
+        if (item.NeedsChildSelection)
+        {
+            await NavigateToChildSelectionAsync(item);
+            return;
+        }
+
         item.IsPurchased = !item.IsPurchased;
         item.PurchasedAt = item.IsPurchased ? DateTime.UtcNow : null;
 
@@ -415,6 +459,14 @@ public partial class ShoppingSessionPage : ContentPage
 
         if (sender is not CheckBox checkBox || checkBox.BindingContext is not CachedShoppingListItem item)
             return;
+
+        // Parent products needing child selection: undo checkbox and navigate
+        if (item.NeedsChildSelection)
+        {
+            item.IsPurchased = false;
+            _ = NavigateToChildSelectionAsync(item);
+            return;
+        }
 
         item.PurchasedAt = e.Value ? DateTime.UtcNow : null;
 
@@ -685,6 +737,13 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (item == null) return;
 
+        // Any unpurchased parent product navigates to child selection
+        if (item.IsParentProduct && !item.IsPurchased)
+        {
+            _ = NavigateToChildSelectionAsync(item);
+            return;
+        }
+
         DetailProductName.Text = item.ProductName;
         DetailQuantity.Text = item.Amount.ToString("G");
 
@@ -734,6 +793,19 @@ public partial class ShoppingSessionPage : ContentPage
     private void OnDetailCloseClicked(object? sender, EventArgs e)
     {
         DetailOverlay.IsVisible = false;
+    }
+
+    private async Task NavigateToChildSelectionAsync(CachedShoppingListItem item)
+    {
+        var navigationParameter = new Dictionary<string, object>
+        {
+            { "ListId", _listId.ToString() },
+            { "ItemId", item.Id.ToString() },
+            { "ParentName", item.ProductName },
+            { "ParentAmount", item.Amount.ToString("G") },
+            { "ParentImageUrl", item.ImageUrl ?? "" }
+        };
+        await Shell.Current.GoToAsync(nameof(ChildProductSelectionPage), navigationParameter);
     }
 
     private void ShowLoading(bool show)
