@@ -35,28 +35,28 @@ public partial class ListSelectionPage : ContentPage
         base.OnAppearing();
 
         // Check if logged in
-        var token = await _tokenStorage.GetAccessTokenAsync();
+        var token = await _tokenStorage.GetAccessTokenAsync().ConfigureAwait(false);
         if (string.IsNullOrEmpty(token))
         {
             // Show login page modally
             var loginPage = Application.Current?.Handler?.MauiContext?.Services.GetService<LoginPage>();
             if (loginPage != null)
             {
-                await Navigation.PushModalAsync(new NavigationPage(loginPage));
+                await Navigation.PushModalAsync(new NavigationPage(loginPage)).ConfigureAwait(false);
             }
             return;
         }
 
         // Set page title with tenant name
-        Title = await _tenantStorage.GetAppTitleAsync();
+        Title = await _tenantStorage.GetAppTitleAsync().ConfigureAwait(false);
 
         // Refresh Shell title (tenant name may have changed after login)
         if (Shell.Current is AppShell appShell)
         {
-            await appShell.RefreshTitleAsync();
+            await appShell.RefreshTitleAsync().ConfigureAwait(false);
         }
 
-        await LoadShoppingListsAsync();
+        await LoadShoppingListsAsync().ConfigureAwait(false);
     }
 
     private async Task LoadShoppingListsAsync()

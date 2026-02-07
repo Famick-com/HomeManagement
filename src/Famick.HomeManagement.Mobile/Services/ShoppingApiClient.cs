@@ -129,6 +129,7 @@ public class ShoppingApiClient
         try
         {
             await SetAuthHeaderAsync().ConfigureAwait(false);
+            var response = await _httpClient.GetAsync("api/v1/shoppinglocations").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
             {

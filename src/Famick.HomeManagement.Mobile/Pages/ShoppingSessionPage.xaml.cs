@@ -172,6 +172,139 @@ public partial class ShoppingSessionPage : ContentPage
         }
     }
 
+    /// <summary>
+    /// Moves an item from its current group to the correct group (purchased or aisle)
+    /// without clearing and rebuilding the entire GroupedItems collection.
+    /// This preserves the CollectionView scroll position.
+    /// </summary>
+    private void MoveItemBetweenGroups(CachedShoppingListItem item)
+    {
+        _isPopulatingItems = true;
+        try
+        {
+            // Remove item from its current group
+            foreach (var group in GroupedItems)
+            {
+                if (group.Remove(item))
+                    break;
+            }
+
+            // Remove any now-empty groups
+            for (int i = GroupedItems.Count - 1; i >= 0; i--)
+            {
+                if (GroupedItems[i].Count == 0)
+                    GroupedItems.RemoveAt(i);
+            }
+
+            if (item.IsPurchased)
+            {
+                // Add to purchased group
+                var purchasedGroup = GroupedItems.FirstOrDefault(g => g.Key.StartsWith("Purchased"));
+                if (purchasedGroup != null)
+                {
+                    // Update the group key to reflect new count
+                    var purchasedCount = purchasedGroup.Count + 1;
+                    var idx = GroupedItems.IndexOf(purchasedGroup);
+                    purchasedGroup.Add(item);
+
+                    // Replace group to update the header text with new count
+                    GroupedItems[idx] = new ItemGroup($"Purchased ({purchasedCount})", purchasedGroup);
+                }
+                else
+                {
+                    GroupedItems.Add(new ItemGroup("Purchased (1)", new[] { item }));
+                }
+            }
+            else
+            {
+                // Determine the correct aisle/department group
+                var groupKey = string.IsNullOrEmpty(item.Aisle)
+                    ? item.Department ?? "Other"
+                    : int.TryParse(item.Aisle, out _) ? $"Aisle {item.Aisle}" : item.Aisle;
+
+                // Find existing group (exclude purchased group)
+                var targetGroup = GroupedItems.FirstOrDefault(g => g.Key == groupKey && !g.Key.StartsWith("Purchased"));
+                if (targetGroup != null)
+                {
+                    // Insert at correct sort position
+                    var insertIdx = 0;
+                    for (int i = 0; i < targetGroup.Count; i++)
+                    {
+                        if (targetGroup[i].SortOrder > item.SortOrder)
+                            break;
+                        insertIdx = i + 1;
+                    }
+                    targetGroup.Insert(insertIdx, item);
+                }
+                else
+                {
+                    // Create new group and insert before the Purchased group
+                    var newGroup = new ItemGroup(groupKey, new[] { item });
+                    var purchasedIdx = -1;
+                    for (int i = 0; i < GroupedItems.Count; i++)
+                    {
+                        if (GroupedItems[i].Key.StartsWith("Purchased"))
+                        {
+                            purchasedIdx = i;
+                            break;
+                        }
+                    }
+                    if (purchasedIdx >= 0)
+                        GroupedItems.Insert(purchasedIdx, newGroup);
+                    else
+                        GroupedItems.Add(newGroup);
+                }
+
+                // Update the purchased group header count if it still exists
+                var existingPurchasedGroup = GroupedItems.FirstOrDefault(g => g.Key.StartsWith("Purchased"));
+                if (existingPurchasedGroup != null)
+                {
+                    var idx = GroupedItems.IndexOf(existingPurchasedGroup);
+                    GroupedItems[idx] = new ItemGroup($"Purchased ({existingPurchasedGroup.Count})", existingPurchasedGroup);
+                }
+            }
+        }
+        finally
+        {
+            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+        }
+    }
+
+    /// <summary>
+    /// Removes an item from the GroupedItems without full rebuild.
+    /// </summary>
+    private void RemoveItemFromGroups(CachedShoppingListItem item)
+    {
+        _isPopulatingItems = true;
+        try
+        {
+            foreach (var group in GroupedItems)
+            {
+                if (group.Remove(item))
+                    break;
+            }
+
+            // Remove empty groups
+            for (int i = GroupedItems.Count - 1; i >= 0; i--)
+            {
+                if (GroupedItems[i].Count == 0)
+                    GroupedItems.RemoveAt(i);
+            }
+
+            // Update purchased group header count
+            var purchasedGroup = GroupedItems.FirstOrDefault(g => g.Key.StartsWith("Purchased"));
+            if (purchasedGroup != null)
+            {
+                var idx = GroupedItems.IndexOf(purchasedGroup);
+                GroupedItems[idx] = new ItemGroup($"Purchased ({purchasedGroup.Count})", purchasedGroup);
+            }
+        }
+        finally
+        {
+            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+        }
+    }
+
     private void UpdateSubtotal()
     {
         if (_session == null) return;
@@ -228,7 +361,7 @@ public partial class ShoppingSessionPage : ContentPage
             }
         }
 
-        PopulateItems();
+        MoveItemBetweenGroups(item);
         UpdateSubtotal();
     }
 
@@ -259,7 +392,7 @@ public partial class ShoppingSessionPage : ContentPage
             }
         }
 
-        PopulateItems();
+        RemoveItemFromGroups(item);
         UpdateSubtotal();
     }
 
@@ -310,8 +443,8 @@ public partial class ShoppingSessionPage : ContentPage
             }
         }
 
-        // Re-populate to move item between groups
-        PopulateItems();
+        // Move item between groups without clearing/rebuilding the entire list
+        MoveItemBetweenGroups(item);
         UpdateSubtotal();
     }
 
@@ -400,7 +533,7 @@ public partial class ShoppingSessionPage : ContentPage
             existingItem.IsPurchased = true;
             existingItem.PurchasedAt = DateTime.UtcNow;
             await _offlineStorage.UpdateItemStateAsync(existingItem);
-            PopulateItems();
+            MoveItemBetweenGroups(existingItem);
             UpdateSubtotal();
 
             await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
