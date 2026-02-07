@@ -299,6 +299,64 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Autocomplete search for tenant products.
+    /// </summary>
+    public async Task<ApiResult<List<ProductAutocompleteResult>>> AutocompleteProductsAsync(string query, int maxResults = 10)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var url = $"api/v1/products/autocomplete?q={Uri.EscapeDataString(query)}&maxResults={maxResults}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<ProductAutocompleteResult>>(content, options);
+                return result != null
+                    ? ApiResult<List<ProductAutocompleteResult>>.Ok(result)
+                    : ApiResult<List<ProductAutocompleteResult>>.Ok(new List<ProductAutocompleteResult>());
+            }
+
+            return ApiResult<List<ProductAutocompleteResult>>.Fail($"Search failed: {response.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ProductAutocompleteResult>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Create a product from external lookup data.
+    /// </summary>
+    public async Task<ApiResult<ProductCreatedResult>> CreateProductFromLookupAsync(CreateProductFromLookupMobileRequest request)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.PostAsJsonAsync("api/v1/products/from-lookup", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ProductCreatedResult>(content, options);
+                return result != null
+                    ? ApiResult<ProductCreatedResult>.Ok(result)
+                    : ApiResult<ProductCreatedResult>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ProductCreatedResult>.Fail(ParseErrorMessage(error) ?? "Failed to create product");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ProductCreatedResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Move purchased items to inventory.
     /// </summary>
     public async Task<ApiResult<MoveToInventoryResponse>> MoveToInventoryAsync(MoveToInventoryRequest request)

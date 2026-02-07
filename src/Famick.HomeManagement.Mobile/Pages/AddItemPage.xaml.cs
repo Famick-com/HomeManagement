@@ -17,8 +17,12 @@ public partial class AddItemPage : ContentPage
     private Guid _listId;
     private int _quantity = 1;
     private StoreProductResult? _lookupResult;
+    private Guid? _selectedProductId;
     private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _autocompleteCts;
+    private string? _currentSearchText;
 
+    public ObservableCollection<ProductAutocompleteResult> AutocompleteResults { get; } = new();
     public ObservableCollection<StoreProductResult> SearchResults { get; } = new();
 
     public string? Barcode
@@ -95,13 +99,90 @@ public partial class AddItemPage : ContentPage
         }
     }
 
-    private void OnSearchCompleted(object? sender, EventArgs e)
+    private void OnProductNameTextChanged(object? sender, TextChangedEventArgs e)
     {
-        _ = SearchProductsAsync();
+        _currentSearchText = e.NewTextValue?.Trim();
+
+        // Clear selected product when text changes
+        _selectedProductId = null;
+        _lookupResult = null;
+        LookupResultFrame.IsVisible = false;
+
+        // Update action buttons text and visibility
+        var hasText = !string.IsNullOrWhiteSpace(_currentSearchText) && _currentSearchText.Length >= 3;
+        ActionButtonsPanel.IsVisible = hasText;
+        if (hasText)
+        {
+            AddAsFreeTextButton.Text = $"Add \"{_currentSearchText}\" as new item";
+        }
+
+        // Debounced autocomplete
+        _autocompleteCts?.Cancel();
+        _autocompleteCts = new CancellationTokenSource();
+        var ct = _autocompleteCts.Token;
+
+        if (!hasText)
+        {
+            DismissSearchOverlay();
+            return;
+        }
+
+        _ = DebounceAutocompleteAsync(_currentSearchText!, ct);
     }
 
-    private void OnSearchClicked(object? sender, EventArgs e)
+    private async Task DebounceAutocompleteAsync(string query, CancellationToken ct)
     {
+        try
+        {
+            await Task.Delay(300, ct);
+            if (ct.IsCancellationRequested) return;
+            await AutocompleteSearchAsync(query, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Debounce cancelled, ignore
+        }
+    }
+
+    private async Task AutocompleteSearchAsync(string query, CancellationToken ct)
+    {
+        if (!_connectivityService.IsOnline)
+        {
+            var isReachable = await _connectivityService.CheckServerReachableAsync();
+            if (!isReachable) return;
+        }
+
+        try
+        {
+            var result = await _apiClient.AutocompleteProductsAsync(query);
+
+            if (ct.IsCancellationRequested) return;
+
+            AutocompleteResults.Clear();
+            if (result.Success && result.Data != null)
+            {
+                foreach (var product in result.Data)
+                {
+                    AutocompleteResults.Add(product);
+                }
+            }
+
+            SearchResultsView.ItemsSource = AutocompleteResults;
+            ShowSearchOverlay();
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled, ignore
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Autocomplete exception: {ex.Message}");
+        }
+    }
+
+    private void OnSearchCompleted(object? sender, EventArgs e)
+    {
+        // Enter key still triggers the external store search for broader results
         _ = SearchProductsAsync();
     }
 
@@ -110,21 +191,20 @@ public partial class AddItemPage : ContentPage
         var query = ProductNameEntry.Text?.Trim();
         if (string.IsNullOrEmpty(query) || query.Length < 2)
         {
-            SearchResultsView.IsVisible = false;
-            NoResultsLabel.IsVisible = false;
+            DismissSearchOverlay();
             return;
         }
 
         // Check connectivity - if marked offline, try to verify server is reachable
         if (!_connectivityService.IsOnline)
         {
-            // Try a fresh connectivity check
             var isReachable = await _connectivityService.CheckServerReachableAsync();
             if (!isReachable)
             {
                 NoResultsLabel.Text = "Server not reachable - search unavailable";
-                NoResultsLabel.IsVisible = true;
-                SearchResultsView.IsVisible = false;
+                SearchResults.Clear();
+                SearchResultsView.ItemsSource = SearchResults;
+                ShowSearchOverlay();
                 return;
             }
         }
@@ -137,30 +217,23 @@ public partial class AddItemPage : ContentPage
 
         try
         {
-            System.Diagnostics.Debug.WriteLine($"Searching for '{query}' on list {_listId}");
             var result = await _apiClient.SearchProductsAsync(_listId, query);
-            System.Diagnostics.Debug.WriteLine($"Search result: Success={result.Success}, Count={result.Data?.Count ?? 0}");
 
-            if (result.Success && result.Data != null && result.Data.Count > 0)
+            SearchResults.Clear();
+            if (result.Success && result.Data != null)
             {
-                SearchResults.Clear();
-                foreach (var product in result.Data.Take(10)) // Limit to 10 results
+                foreach (var product in result.Data.Take(10))
                 {
                     SearchResults.Add(product);
                 }
-                SearchResultsView.ItemsSource = SearchResults;
-                SearchResultsView.IsVisible = true;
-                NoResultsLabel.IsVisible = false;
             }
-            else
+            else if (!result.Success)
             {
-                SearchResultsView.IsVisible = false;
-                var message = result.Success
-                    ? "No products found in store. Enter name manually."
-                    : $"Search error: {result.ErrorMessage}";
-                NoResultsLabel.Text = message;
-                NoResultsLabel.IsVisible = true;
+                NoResultsLabel.Text = $"Search error: {result.ErrorMessage}";
             }
+
+            SearchResultsView.ItemsSource = SearchResults;
+            ShowSearchOverlay();
         }
         catch (OperationCanceledException)
         {
@@ -169,9 +242,10 @@ public partial class AddItemPage : ContentPage
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Search exception: {ex.Message}");
-            SearchResultsView.IsVisible = false;
             NoResultsLabel.Text = $"Search failed: {ex.Message}";
-            NoResultsLabel.IsVisible = true;
+            SearchResults.Clear();
+            SearchResultsView.ItemsSource = SearchResults;
+            ShowSearchOverlay();
         }
         finally
         {
@@ -181,24 +255,127 @@ public partial class AddItemPage : ContentPage
 
     private void OnSearchResultSelected(object? sender, SelectionChangedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is not StoreProductResult selectedProduct)
-            return;
+        var selection = e.CurrentSelection.FirstOrDefault();
+        if (selection == null) return;
 
         // Clear selection
         SearchResultsView.SelectedItem = null;
 
-        // Apply the selected product
-        _lookupResult = selectedProduct;
-        ProductNameEntry.Text = selectedProduct.ProductName;
+        if (selection is ProductAutocompleteResult autocompleteResult)
+        {
+            // From autocomplete - store product ID directly
+            _selectedProductId = autocompleteResult.Id;
+            _lookupResult = null;
+            ProductNameEntry.TextChanged -= OnProductNameTextChanged;
+            ProductNameEntry.Text = autocompleteResult.Name;
+            ProductNameEntry.TextChanged += OnProductNameTextChanged;
 
-        // Show the lookup result frame
-        LookupProductName.Text = selectedProduct.ProductName;
-        LookupPrice.Text = selectedProduct.Price.HasValue ? $"${selectedProduct.Price:F2}" : "";
-        LookupResultFrame.IsVisible = true;
+            LookupProductName.Text = autocompleteResult.Name;
+            LookupPrice.Text = "";
+            LookupResultFrame.IsVisible = true;
+        }
+        else if (selection is StoreProductResult storeResult)
+        {
+            // From external search
+            _lookupResult = storeResult;
+            _selectedProductId = null;
+            ProductNameEntry.TextChanged -= OnProductNameTextChanged;
+            ProductNameEntry.Text = storeResult.ProductName;
+            ProductNameEntry.TextChanged += OnProductNameTextChanged;
 
-        // Hide search results
-        SearchResultsView.IsVisible = false;
-        NoResultsLabel.IsVisible = false;
+            LookupProductName.Text = storeResult.ProductName;
+            LookupPrice.Text = storeResult.Price.HasValue ? $"${storeResult.Price:F2}" : "";
+            LookupResultFrame.IsVisible = true;
+        }
+
+        // Hide search overlay
+        DismissSearchOverlay();
+    }
+
+    private async void OnAddAsFreeTextClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_currentSearchText)) return;
+
+        SetLoading(true);
+
+        try
+        {
+            var request = new CreateProductFromLookupMobileRequest { Name = _currentSearchText.Trim() };
+            var result = await _apiClient.CreateProductFromLookupAsync(request);
+
+            if (result.Success && result.Data != null)
+            {
+                _selectedProductId = result.Data.Id;
+                _lookupResult = null;
+
+                ProductNameEntry.TextChanged -= OnProductNameTextChanged;
+                ProductNameEntry.Text = result.Data.Name;
+                ProductNameEntry.TextChanged += OnProductNameTextChanged;
+
+                LookupProductName.Text = result.Data.Name;
+                LookupPrice.Text = "";
+                LookupResultFrame.IsVisible = true;
+
+                DismissSearchOverlay();
+            }
+            else
+            {
+                await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to create product", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Error", $"Failed to create product: {ex.Message}", "OK");
+        }
+        finally
+        {
+            SetLoading(false);
+        }
+    }
+
+    private async void OnSearchExternalClicked(object? sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_currentSearchText)) return;
+
+        // Cancel autocomplete
+        _autocompleteCts?.Cancel();
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+
+        SetLoading(true);
+
+        try
+        {
+            var result = await _apiClient.SearchProductsAsync(_listId, _currentSearchText.Trim());
+
+            SearchResults.Clear();
+            if (result.Success && result.Data != null)
+            {
+                foreach (var product in result.Data.Take(10))
+                {
+                    SearchResults.Add(product);
+                }
+            }
+            else if (!result.Success)
+            {
+                NoResultsLabel.Text = $"Search error: {result.ErrorMessage}";
+            }
+
+            SearchResultsView.ItemsSource = SearchResults;
+            ShowSearchOverlay();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"External search exception: {ex.Message}");
+            NoResultsLabel.Text = $"Search failed: {ex.Message}";
+            SearchResults.Clear();
+            SearchResultsView.ItemsSource = SearchResults;
+            ShowSearchOverlay();
+        }
+        finally
+        {
+            SetLoading(false);
+        }
     }
 
     private void OnMinusClicked(object? sender, EventArgs e)
@@ -233,6 +410,18 @@ public partial class AddItemPage : ContentPage
         try
         {
             var isPurchased = MarkPurchasedCheckBox.IsChecked;
+
+            // If we have a selected product ID (from autocomplete or free-text creation),
+            // ensure the server knows about it. If not and online, auto-create via free-text.
+            if (!_selectedProductId.HasValue && _lookupResult == null && _connectivityService.IsOnline)
+            {
+                var createResult = await _apiClient.CreateProductFromLookupAsync(
+                    new CreateProductFromLookupMobileRequest { Name = productName });
+                if (createResult.Success && createResult.Data != null)
+                {
+                    _selectedProductId = createResult.Data.Id;
+                }
+            }
 
             // Cache product image if available
             string? localImagePath = null;
@@ -324,6 +513,25 @@ public partial class AddItemPage : ContentPage
     private async void OnCancelClicked(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
+    }
+
+    private void ShowSearchOverlay()
+    {
+        SearchOverlay.IsVisible = true;
+        FormScrollView.IsVisible = false;
+    }
+
+    private void DismissSearchOverlay()
+    {
+        SearchOverlay.IsVisible = false;
+        FormScrollView.IsVisible = true;
+        ActionButtonsPanel.IsVisible = false;
+    }
+
+    private void OnDismissSearchClicked(object? sender, EventArgs e)
+    {
+        _autocompleteCts?.Cancel();
+        DismissSearchOverlay();
     }
 
     private void SetLoading(bool loading)

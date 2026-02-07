@@ -195,6 +195,61 @@ public class StoreProductResult
     public string? Aisle { get; set; }
     public string? Department { get; set; }
     public string? ImageUrl { get; set; }
+
+    // Alias properties so the shared DataTemplate bindings work for both result types
+    public string? PrimaryImageUrl => ImageUrl;
+    public string? Description => Brand;
+    public string? ProductGroupName => null;
+    public string? PreferredStoreAisle => Aisle;
+    public string? PreferredStoreDepartment => Department;
+}
+
+/// <summary>
+/// Lightweight product result for autocomplete searches
+/// </summary>
+public class ProductAutocompleteResult
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? ProductGroupName { get; set; }
+    public string? PrimaryImageUrl { get; set; }
+    public string? PreferredStoreAisle { get; set; }
+    public string? PreferredStoreDepartment { get; set; }
+
+    public string ProductName => Name;
+}
+
+/// <summary>
+/// Request to create a product from external lookup data
+/// </summary>
+public class CreateProductFromLookupMobileRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Brand { get; set; }
+    public string? Description { get; set; }
+    public string? Barcode { get; set; }
+    public string? OriginalSearchBarcode { get; set; }
+    public string? Category { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public string? ExternalId { get; set; }
+    public string? SourceType { get; set; }
+    public string? PluginId { get; set; }
+    public Guid? ShoppingLocationId { get; set; }
+    public string? Aisle { get; set; }
+    public string? Shelf { get; set; }
+    public string? Department { get; set; }
+    public decimal? Price { get; set; }
+}
+
+/// <summary>
+/// Minimal product DTO returned from product creation
+/// </summary>
+public class ProductCreatedResult
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
 /// <summary>
