@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Famick.HomeManagement.Mobile.Models;
 
@@ -6,16 +5,15 @@ namespace Famick.HomeManagement.Mobile.Services;
 
 /// <summary>
 /// API client for shopping-related operations.
+/// Auth headers are attached centrally by AuthenticatingHttpHandler.
 /// </summary>
 public class ShoppingApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly TokenStorage _tokenStorage;
 
-    public ShoppingApiClient(HttpClient httpClient, TokenStorage tokenStorage)
+    public ShoppingApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _tokenStorage = tokenStorage;
     }
 
     /// <summary>
@@ -76,7 +74,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync().ConfigureAwait(false);
             var response = await _httpClient.GetAsync("api/v1/shoppinglists").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
@@ -102,7 +99,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync().ConfigureAwait(false);
             var response = await _httpClient.GetAsync($"api/v1/shoppinglists/{listId}").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
@@ -128,7 +124,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync().ConfigureAwait(false);
             var response = await _httpClient.GetAsync("api/v1/shoppinglocations").ConfigureAwait(false);
 
             if (response.IsSuccessStatusCode)
@@ -154,7 +149,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsync(
                 $"api/v1/shoppinglists/{listId}/items/{itemId}/toggle-purchased",
                 null);
@@ -194,7 +188,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/shoppinglists/quick-add", new
             {
                 shoppingListId = listId,
@@ -228,7 +221,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync(
                 $"api/v1/shoppinglists/{listId}/scan-barcode?barcode={Uri.EscapeDataString(barcode)}");
 
@@ -257,7 +249,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync(
                 $"api/v1/shoppinglists/{listId}/lookup-barcode?barcode={Uri.EscapeDataString(barcode)}");
 
@@ -284,7 +275,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var url = $"api/v1/shoppinglists/{listId}/search-products?query={Uri.EscapeDataString(query)}";
             System.Diagnostics.Debug.WriteLine($"SearchProducts URL: {_httpClient.BaseAddress}{url}");
 
@@ -334,7 +324,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var url = $"api/v1/products/autocomplete?q={Uri.EscapeDataString(query)}&maxResults={maxResults}";
             var response = await _httpClient.GetAsync(url);
 
@@ -363,7 +352,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/products/from-lookup", request);
 
             if (response.IsSuccessStatusCode)
@@ -392,7 +380,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync(
                 $"api/v1/shoppinglists/{request.ShoppingListId}/move-to-inventory",
                 request);
@@ -427,7 +414,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/tenant");
 
             if (response.IsSuccessStatusCode)
@@ -458,7 +444,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync($"api/v1/shoppinglocations/{locationId}/aisle-order");
 
             if (response.IsSuccessStatusCode)
@@ -484,7 +469,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
 
             // Debug: Log what we're sending
             var requestJson = System.Text.Json.JsonSerializer.Serialize(request);
@@ -522,7 +506,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.DeleteAsync(
                 $"api/v1/shoppinglocations/{locationId}/aisle-order");
 
@@ -543,7 +526,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.DeleteAsync(
                 $"api/v1/shoppinglists/{listId}/items/{itemId}");
 
@@ -569,7 +551,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/shoppinglists/dashboard");
 
             if (response.IsSuccessStatusCode)
@@ -600,7 +581,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/stock/statistics");
 
             if (response.IsSuccessStatusCode)
@@ -631,7 +611,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/chores/overdue");
 
             if (response.IsSuccessStatusCode)
@@ -662,7 +641,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync($"api/v1/chores/due-soon?daysAhead={daysAhead}");
 
             if (response.IsSuccessStatusCode)
@@ -1066,7 +1044,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/wizard/state");
             if (response.IsSuccessStatusCode)
             {
@@ -1089,7 +1066,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/household-info", dto);
             if (response.IsSuccessStatusCode)
                 return ApiResult<bool>.Ok(true);
@@ -1107,7 +1083,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/addresses/normalize", request);
             if (response.IsSuccessStatusCode)
             {
@@ -1134,7 +1109,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/home-statistics", dto);
             if (response.IsSuccessStatusCode)
                 return ApiResult<bool>.Ok(true);
@@ -1152,7 +1126,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/maintenance-items", dto);
             if (response.IsSuccessStatusCode)
                 return ApiResult<bool>.Ok(true);
@@ -1170,7 +1143,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/wizard/members");
             if (response.IsSuccessStatusCode)
             {
@@ -1193,7 +1165,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync("api/v1/wizard/members/me", request);
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1209,7 +1180,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/wizard/members", request);
             if (response.IsSuccessStatusCode)
             {
@@ -1233,7 +1203,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync($"api/v1/wizard/members/{contactId}", request);
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1249,7 +1218,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.DeleteAsync($"api/v1/wizard/members/{contactId}");
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1265,7 +1233,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/wizard/members/check-duplicate", request);
             if (response.IsSuccessStatusCode)
             {
@@ -1288,7 +1255,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsync("api/v1/wizard/complete", null);
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1308,7 +1274,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/vehicles");
             if (response.IsSuccessStatusCode)
             {
@@ -1331,7 +1296,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/vehicles", request);
             if (response.IsSuccessStatusCode)
             {
@@ -1355,7 +1319,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PutAsJsonAsync($"api/v1/vehicles/{id}", request);
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1371,7 +1334,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.DeleteAsync($"api/v1/vehicles/{id}");
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1394,7 +1356,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync($"api/v1/products/by-barcode/{Uri.EscapeDataString(barcode)}");
 
             if (response.IsSuccessStatusCode)
@@ -1427,7 +1388,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync($"api/v1/stock/by-product/{productId}");
 
             if (response.IsSuccessStatusCode)
@@ -1455,7 +1415,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/stock/quick-consume", request);
 
             if (response.IsSuccessStatusCode)
@@ -1479,7 +1438,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var request = new ConsumeStockRequest
             {
                 Amount = amount,
@@ -1536,7 +1494,6 @@ public class ShoppingApiClient
 
         try
         {
-            await SetAuthHeaderAsync();
             var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
             // Fetch expired items sorted by nearest due date
@@ -1594,7 +1551,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync("api/v1/home/property-links");
             if (response.IsSuccessStatusCode)
             {
@@ -1617,7 +1573,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync("api/v1/home/property-links", request);
             if (response.IsSuccessStatusCode)
             {
@@ -1641,7 +1596,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.DeleteAsync($"api/v1/home/property-links/{id}");
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
@@ -1665,7 +1619,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.GetAsync($"api/v1/shoppinglists/{listId}/items/{itemId}/children");
 
             if (response.IsSuccessStatusCode)
@@ -1695,7 +1648,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync(
                 $"api/v1/shoppinglists/{listId}/items/{itemId}/check-off-child",
                 request);
@@ -1727,7 +1679,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsync(
                 $"api/v1/shoppinglists/{listId}/items/{itemId}/uncheck-child/{childProductId}",
                 null);
@@ -1759,7 +1710,6 @@ public class ShoppingApiClient
     {
         try
         {
-            await SetAuthHeaderAsync();
             var response = await _httpClient.PostAsJsonAsync(
                 $"api/v1/shoppinglists/{listId}/items/{itemId}/send-child-to-cart",
                 request);
@@ -1783,15 +1733,6 @@ public class ShoppingApiClient
 
     #endregion
 
-    private async Task SetAuthHeaderAsync()
-    {
-        var token = await _tokenStorage.GetAccessTokenAsync().ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-        }
-    }
 
     /// <summary>
     /// Parses an error message from API error response JSON.

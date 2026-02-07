@@ -31,6 +31,33 @@ public partial class AppShell : Shell
 
         // Load tenant name and update title
         _ = LoadTenantNameAsync();
+
+        // Start periodic health checks for connectivity monitoring
+        _ = StartHealthChecksAsync();
+    }
+
+    private async Task StartHealthChecksAsync()
+    {
+        try
+        {
+            ConnectivityService? connectivityService = null;
+            for (int i = 0; i < 10 && connectivityService == null; i++)
+            {
+                var services = Application.Current?.Handler?.MauiContext?.Services;
+                connectivityService = services?.GetService<ConnectivityService>();
+                if (connectivityService == null)
+                {
+                    await Task.Delay(100).ConfigureAwait(false);
+                }
+            }
+
+            connectivityService?.StartHealthChecks(TimeSpan.FromSeconds(30));
+            Console.WriteLine("[AppShell] Health checks started");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] StartHealthChecksAsync error: {ex.Message}");
+        }
     }
 
     private async Task LoadTenantNameAsync()

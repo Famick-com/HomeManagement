@@ -30,12 +30,17 @@ public static class MauiProgram
         var apiSettings = new ApiSettings();
         builder.Services.AddSingleton(apiSettings);
 
-        // Configure HttpClient with dynamic base URL
+        // Configure HttpClient with dynamic base URL and automatic token refresh
         builder.Services.AddScoped(sp =>
         {
             var settings = sp.GetRequiredService<ApiSettings>();
-            var handler = new DynamicApiHttpHandler(settings);
-            return new HttpClient(handler)
+            var tokenStorage = sp.GetRequiredService<TokenStorage>();
+            var innerHandler = new DynamicApiHttpHandler(settings);
+            var authHandler = new AuthenticatingHttpHandler(tokenStorage, settings)
+            {
+                InnerHandler = innerHandler
+            };
+            return new HttpClient(authHandler)
             {
                 BaseAddress = new Uri(settings.BaseUrl),
                 Timeout = TimeSpan.FromSeconds(30)

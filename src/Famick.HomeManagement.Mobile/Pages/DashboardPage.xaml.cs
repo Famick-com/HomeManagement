@@ -9,6 +9,7 @@ public partial class DashboardPage : ContentPage
     private readonly ShoppingApiClient _apiClient;
     private readonly TokenStorage _tokenStorage;
     private readonly TenantStorage _tenantStorage;
+    private readonly ConnectivityService _connectivityService;
 
     private ShoppingListDashboardDto? _shoppingDashboard;
     private StockStatisticsDto? _stockStatistics;
@@ -19,17 +20,21 @@ public partial class DashboardPage : ContentPage
     public DashboardPage(
         ShoppingApiClient apiClient,
         TokenStorage tokenStorage,
-        TenantStorage tenantStorage)
+        TenantStorage tenantStorage,
+        ConnectivityService connectivityService)
     {
         InitializeComponent();
         _apiClient = apiClient;
         _tokenStorage = tokenStorage;
         _tenantStorage = tenantStorage;
+        _connectivityService = connectivityService;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        _connectivityService.ConnectivityChanged += OnConnectivityChanged;
 
         // Check if logged in
         var token = await _tokenStorage.GetAccessTokenAsync();
@@ -81,7 +86,58 @@ public partial class DashboardPage : ContentPage
         // Check if wizard needs to be shown (banner for re-run)
         CheckWizardBanner();
 
-        await LoadDashboardAsync();
+        // Check connectivity before loading data
+        var isOnline = await _connectivityService.CheckServerReachableAsync();
+        UpdateConnectivityUI(isOnline);
+
+        if (isOnline)
+        {
+            await LoadDashboardWithRetryAsync();
+        }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _connectivityService.ConnectivityChanged -= OnConnectivityChanged;
+    }
+
+    private async void OnConnectivityChanged(object? sender, bool isOnline)
+    {
+        UpdateConnectivityUI(isOnline);
+
+        if (isOnline)
+        {
+            await LoadDashboardAsync();
+        }
+    }
+
+    private void UpdateConnectivityUI(bool isOnline)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            OfflineBanner.IsVisible = !isOnline;
+        });
+    }
+
+    private async Task LoadDashboardWithRetryAsync()
+    {
+        const int maxAttempts = 3;
+        var delays = new[] { 1000, 2000, 4000 };
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                await LoadDashboardAsync();
+                return; // Success
+            }
+            catch (HttpRequestException) when (attempt < maxAttempts - 1)
+            {
+                Console.WriteLine($"[Dashboard] Load attempt {attempt + 1} failed, retrying in {delays[attempt]}ms");
+                await Task.Delay(delays[attempt]);
+            }
+        }
     }
 
     private void CheckWizardBanner()

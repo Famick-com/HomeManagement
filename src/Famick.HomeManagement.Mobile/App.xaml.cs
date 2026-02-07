@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Messaging;
+using Famick.HomeManagement.Mobile.Messages;
 using Famick.HomeManagement.Mobile.Pages;
 using Famick.HomeManagement.Mobile.Pages.Onboarding;
 using Famick.HomeManagement.Mobile.Services;
@@ -9,6 +11,7 @@ public partial class App : Application
     private readonly OnboardingService _onboardingService;
     private readonly TokenStorage _tokenStorage;
     private readonly ApiSettings _apiSettings;
+    private bool _isShowingLogin;
 
     /// <summary>
     /// Pending deep link to process when the app is ready
@@ -31,6 +34,36 @@ public partial class App : Application
         _onboardingService = onboardingService;
         _tokenStorage = tokenStorage;
         _apiSettings = apiSettings;
+
+        WeakReferenceMessenger.Default.Register<SessionExpiredMessage>(this, (_, msg) =>
+        {
+            Console.WriteLine($"[App] SessionExpired: {msg.Value}");
+            MainThread.BeginInvokeOnMainThread(async () => await ShowLoginForSessionExpiredAsync());
+        });
+    }
+
+    private async Task ShowLoginForSessionExpiredAsync()
+    {
+        if (_isShowingLogin) return;
+        _isShowingLogin = true;
+
+        try
+        {
+            var services = Current?.Handler?.MauiContext?.Services;
+            var loginPage = services?.GetService<LoginPage>();
+            if (loginPage != null && Current?.MainPage != null)
+            {
+                await Current.MainPage.Navigation.PushModalAsync(new NavigationPage(loginPage));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[App] ShowLoginForSessionExpired error: {ex.Message}");
+        }
+        finally
+        {
+            _isShowingLogin = false;
+        }
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
@@ -81,14 +114,18 @@ public partial class App : Application
         if (services == null)
         {
             // Fallback - create with properly configured dependencies
-            var handler = new DynamicApiHttpHandler(_apiSettings);
-            var httpClient = new HttpClient(handler)
+            var innerHandler = new DynamicApiHttpHandler(_apiSettings);
+            var authHandler = new AuthenticatingHttpHandler(_tokenStorage, _apiSettings)
+            {
+                InnerHandler = innerHandler
+            };
+            var httpClient = new HttpClient(authHandler)
             {
                 BaseAddress = new Uri(_apiSettings.BaseUrl),
                 Timeout = TimeSpan.FromSeconds(30)
             };
             return new NavigationPage(new WelcomePage(
-                new ShoppingApiClient(httpClient, new TokenStorage(_apiSettings)),
+                new ShoppingApiClient(httpClient),
                 new OnboardingService()));
         }
 

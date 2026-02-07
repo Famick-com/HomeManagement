@@ -5,9 +5,27 @@
              Title="Dashboard"
              Shell.NavBarIsVisible="True">
 
-    <RefreshView x:Name="RefreshContainer" Refreshing="OnRefreshing">
-        <ScrollView>
-            <Grid Padding="15" RowSpacing="15">
+    <Grid>
+        <!-- Offline Banner -->
+        <Border x:Name="OfflineBanner"
+                IsVisible="False"
+                Padding="10"
+                Margin="0"
+                StrokeShape="RoundRectangle 0"
+                Stroke="Transparent"
+                StrokeThickness="0"
+                BackgroundColor="#FFF3E0"
+                VerticalOptions="Start"
+                ZIndex="50">
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                <Label Text="Offline" FontAttributes="Bold" TextColor="#E65100" VerticalOptions="Center" />
+                <Label Text="Unable to reach server" FontSize="12" TextColor="#F57C00" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Border>
+
+        <RefreshView x:Name="RefreshContainer" Refreshing="OnRefreshing">
+            <ScrollView>
+                <Grid Padding="15" RowSpacing="15">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -400,6 +418,7 @@
                     </VerticalStackLayout>
                 </Border>
             </Grid>
-        </ScrollView>
-    </RefreshView>
+            </ScrollView>
+        </RefreshView>
+    </Grid>
 </ContentPage>
