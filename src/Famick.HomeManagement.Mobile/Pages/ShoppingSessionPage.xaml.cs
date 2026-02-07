@@ -30,8 +30,6 @@ public partial class ShoppingSessionPage : ContentPage
     private Guid _listId;
     private ShoppingSession? _session;
     private bool _isPopulatingItems;
-    private bool _needsRefreshAfterAisleOrderChange;
-    private bool _needsRefreshAfterChildSelection;
 
     public string ListId
     {
@@ -75,10 +73,7 @@ public partial class ShoppingSessionPage : ContentPage
             }
         });
 
-        WeakReferenceMessenger.Default.Register<ChildSelectionDoneMessage>(this, (recipient, message) =>
-        {
-            _needsRefreshAfterChildSelection = true;
-        });
+        // ChildSelectionDoneMessage no longer needed — LoadSessionAsync always fetches fresh data
     }
 
     protected override async void OnAppearing()
@@ -86,14 +81,6 @@ public partial class ShoppingSessionPage : ContentPage
         base.OnAppearing();
         PageTitleLabel.Text = ListName;
         UpdateConnectivityUI();
-
-        // If returning from child selection, force a refresh to get updated child purchased quantities
-        if (_needsRefreshAfterChildSelection && _connectivityService.IsOnline)
-        {
-            _needsRefreshAfterChildSelection = false;
-            await _offlineStorage.ClearSessionAsync(_listId);
-            _session = null;
-        }
 
         await LoadSessionAsync();
     }
@@ -111,22 +98,9 @@ public partial class ShoppingSessionPage : ContentPage
 
         try
         {
-            // If returning from aisle order change, clear cache to get new sort order
-            if (_needsRefreshAfterAisleOrderChange && _connectivityService.IsOnline)
+            if (_connectivityService.IsOnline)
             {
-                _needsRefreshAfterAisleOrderChange = false;
-                await _offlineStorage.ClearSessionAsync(_listId);
-                _session = null;
-            }
-            else
-            {
-                // Try to load from cache first
-                _session = await _offlineStorage.GetCachedSessionAsync(_listId);
-            }
-
-            if (_session == null && _connectivityService.IsOnline)
-            {
-                // Fetch from API and cache
+                // Always fetch fresh data from server when online
                 var result = await _apiClient.GetShoppingListAsync(_listId);
                 if (result.Success && result.Data != null)
                 {
@@ -141,10 +115,20 @@ public partial class ShoppingSessionPage : ContentPage
                 }
                 else
                 {
-                    await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to load list", "OK");
-                    await Shell.Current.GoToAsync("..");
-                    return;
+                    // Server fetch failed - fall back to cache
+                    _session = await _offlineStorage.GetCachedSessionAsync(_listId);
+                    if (_session == null)
+                    {
+                        await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to load list", "OK");
+                        await Shell.Current.GoToAsync("..");
+                        return;
+                    }
                 }
+            }
+            else
+            {
+                // Offline - use cached data
+                _session = await _offlineStorage.GetCachedSessionAsync(_listId);
             }
 
             if (_session != null)
@@ -525,9 +509,6 @@ public partial class ShoppingSessionPage : ContentPage
             await DisplayAlertAsync("Error", "Shopping session not loaded", "OK");
             return;
         }
-
-        // Flag to refresh from API when returning (to apply new aisle order)
-        _needsRefreshAfterAisleOrderChange = true;
 
         var navigationParameter = new Dictionary<string, object>
         {
