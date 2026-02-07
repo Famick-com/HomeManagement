@@ -577,20 +577,62 @@ public partial class ShoppingSessionPage : ContentPage
     {
         if (_session == null) return;
 
-        var existingItem = _session.Items.FirstOrDefault(i =>
-            i.Barcode?.Equals(barcode, StringComparison.OrdinalIgnoreCase) == true);
-
-        if (existingItem != null)
+        // First try server-side lookup which checks all barcode variants and child products
+        if (_connectivityService.IsOnline)
         {
-            existingItem.IsPurchased = true;
-            existingItem.PurchasedAt = DateTime.UtcNow;
-            await _offlineStorage.UpdateItemStateAsync(existingItem);
-            MoveItemBetweenGroups(existingItem);
-            UpdateSubtotal();
+            var scanResult = await _apiClient.ScanBarcodeAsync(_listId, barcode);
 
-            await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+            if (scanResult.Success && scanResult.Data != null && scanResult.Data.Found)
+            {
+                var result = scanResult.Data;
+
+                // Find the matching item in our cached session
+                var cachedItem = _session.Items.FirstOrDefault(i => i.Id == result.ItemId);
+
+                if (cachedItem != null)
+                {
+                    if (result.NeedsChildSelection)
+                    {
+                        // Navigate to child selection page
+                        await NavigateToChildSelectionAsync(cachedItem);
+                    }
+                    else if (!result.IsChildProduct)
+                    {
+                        // Direct match - toggle purchased via the standard flow
+                        await ToggleItemAsync(cachedItem);
+                        await DisplayAlertAsync("Found!", $"{result.ProductName} checked off", "OK");
+                    }
+                    else
+                    {
+                        // Child product match - navigate to child selection
+                        await NavigateToChildSelectionAsync(cachedItem);
+                    }
+                    return;
+                }
+            }
         }
         else
+        {
+            // Offline fallback: check cached items by barcode
+            var existingItem = _session.Items.FirstOrDefault(i =>
+                i.Barcode?.Equals(barcode, StringComparison.OrdinalIgnoreCase) == true);
+
+            if (existingItem != null)
+            {
+                await ToggleItemAsync(existingItem);
+                await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                return;
+            }
+        }
+
+        // Not found on the list - prompt to add
+        var addAction = await DisplayAlertAsync(
+            "Not Found",
+            "This product isn't on your shopping list. Would you like to add it?",
+            "Add Item",
+            "Cancel");
+
+        if (addAction)
         {
             var navigationParameter = new Dictionary<string, object>
             {

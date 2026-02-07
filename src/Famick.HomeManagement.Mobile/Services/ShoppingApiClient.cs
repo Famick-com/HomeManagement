@@ -222,6 +222,35 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Scan a barcode against a shopping list to find matching items (direct or child products).
+    /// </summary>
+    public async Task<ApiResult<BarcodeScanResult>> ScanBarcodeAsync(Guid listId, string barcode)
+    {
+        try
+        {
+            await SetAuthHeaderAsync();
+            var response = await _httpClient.GetAsync(
+                $"api/v1/shoppinglists/{listId}/scan-barcode?barcode={Uri.EscapeDataString(barcode)}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<BarcodeScanResult>(content, options);
+                return result != null
+                    ? ApiResult<BarcodeScanResult>.Ok(result)
+                    : ApiResult<BarcodeScanResult>.Fail("Invalid response");
+            }
+
+            return ApiResult<BarcodeScanResult>.Fail("Failed to scan barcode");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<BarcodeScanResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Lookup a product by barcode using store integration.
     /// </summary>
     public async Task<ApiResult<StoreProductResult>> LookupProductByBarcodeAsync(Guid listId, string barcode)

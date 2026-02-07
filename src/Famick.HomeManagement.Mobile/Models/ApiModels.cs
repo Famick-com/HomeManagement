@@ -244,6 +244,20 @@ public class CreateProductFromLookupMobileRequest
 }
 
 /// <summary>
+/// Result of scanning a barcode against a shopping list
+/// </summary>
+public class BarcodeScanResult
+{
+    public bool Found { get; set; }
+    public Guid? ItemId { get; set; }
+    public string? ProductName { get; set; }
+    public bool IsChildProduct { get; set; }
+    public Guid? ChildProductId { get; set; }
+    public string? ChildProductName { get; set; }
+    public bool NeedsChildSelection { get; set; }
+}
+
+/// <summary>
 /// Minimal product DTO returned from product creation
 /// </summary>
 public class ProductCreatedResult
