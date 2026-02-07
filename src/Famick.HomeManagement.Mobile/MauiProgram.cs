@@ -54,6 +54,7 @@ public static class MauiProgram
         builder.Services.AddScoped<ShoppingApiClient>();
         builder.Services.AddSingleton<LocationService>();
         builder.Services.AddSingleton<OfflineStorageService>();
+        builder.Services.AddSingleton<BleScannerService>();
         builder.Services.AddScoped<ImageCacheService>();
 
         // ConnectivityService needs ShoppingApiClient, register as scoped to match ShoppingApiClient's lifetime

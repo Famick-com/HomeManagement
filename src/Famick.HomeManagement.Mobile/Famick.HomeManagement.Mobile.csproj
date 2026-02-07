@@ -70,6 +70,9 @@
 
 		<!-- MVVM toolkit -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+		<!-- BLE barcode scanner support -->
+		<PackageReference Include="Plugin.BLE" Version="3.1.0" />
 	</ItemGroup>
 
 	<!-- Note: Native Google Sign-In SDK packages have compatibility issues with .NET 10 MAUI.

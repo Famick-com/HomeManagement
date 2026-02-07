@@ -153,6 +153,11 @@ public partial class App : Application
     {
         base.OnResume();
 
+        // Resume BLE scanner connection if disconnected
+        var bleService = Handler?.MauiContext?.Services.GetService<BleScannerService>();
+        if (bleService is { HasSavedScanner: true, IsConnected: false })
+            _ = bleService.ResumeConnectionAsync();
+
         // Check for pending deep links when app resumes
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -174,6 +179,10 @@ public partial class App : Application
     protected override void OnSleep()
     {
         base.OnSleep();
+
+        // Stop BLE scanner reconnection attempts in background to save battery
+        var bleService = Handler?.MauiContext?.Services.GetService<BleScannerService>();
+        bleService?.StopReconnecting();
 
         // Refresh widget data when app goes to background
         // This ensures widgets show current data even if user hasn't consumed recently

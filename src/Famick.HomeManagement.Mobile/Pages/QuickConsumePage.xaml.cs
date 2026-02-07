@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Messaging;
+using Famick.HomeManagement.Mobile.Messages;
 using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -20,6 +22,15 @@ public partial class QuickConsumePage : ContentPage
     {
         InitializeComponent();
         _apiClient = apiClient;
+
+        WeakReferenceMessenger.Default.Register<BleScannerBarcodeMessage>(this, async (recipient, message) =>
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                _lastScannedBarcode = message.Value;
+                await ProcessBarcodeAsync(message.Value);
+            });
+        });
     }
 
     protected override async void OnAppearing()
@@ -32,6 +43,12 @@ public partial class QuickConsumePage : ContentPage
             _isInitialized = true;
             await StartScanAsync();
         }
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 
     private async Task StartScanAsync()

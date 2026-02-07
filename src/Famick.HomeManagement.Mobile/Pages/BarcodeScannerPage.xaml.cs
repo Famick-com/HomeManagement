@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.Messaging;
+using Famick.HomeManagement.Mobile.Messages;
 using ZXing.Net.Maui;
 
 namespace Famick.HomeManagement.Mobile.Pages;
@@ -21,6 +23,22 @@ public partial class BarcodeScannerPage : ContentPage
         {
             InitializeComponent();
             BindingContext = this;
+
+            // BLE scanner dual-mode: if a BLE barcode arrives while camera scanner is open,
+            // treat it the same as a camera detection
+            WeakReferenceMessenger.Default.Register<BleScannerBarcodeMessage>(this, (recipient, message) =>
+            {
+                if (_isProcessing) return;
+                _isProcessing = true;
+
+                BarcodeReader.IsDetecting = false;
+
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    _scanCompletionSource?.TrySetResult(message.Value);
+                    await Navigation.PopAsync();
+                });
+            });
         }
         catch (Exception ex)
         {
@@ -119,6 +137,7 @@ public partial class BarcodeScannerPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        WeakReferenceMessenger.Default.UnregisterAll(this);
         BarcodeReader.IsDetecting = false;
         _scanCompletionSource?.TrySetResult(null);
     }

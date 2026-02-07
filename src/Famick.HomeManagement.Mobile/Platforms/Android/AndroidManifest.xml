@@ -22,4 +22,9 @@
 
 	<!-- Vibration for barcode scan feedback -->
 	<uses-permission android:name="android.permission.VIBRATE" />
+
+	<!-- Bluetooth for BLE barcode scanners -->
+	<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+	<uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
 </manifest>

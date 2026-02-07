@@ -1,3 +1,4 @@
+using System.Text.Json;
 using SQLite;
 
 namespace Famick.HomeManagement.Mobile.Models;
@@ -55,6 +56,13 @@ public class CachedShoppingListItem
     public string? ExternalProductId { get; set; }
     public decimal? Price { get; set; }
     public string? Barcode { get; set; }
+
+    /// <summary>
+    /// JSON-serialized list of all barcodes for the linked product.
+    /// SQLite cannot store lists directly.
+    /// </summary>
+    public string? BarcodesJson { get; set; }
+
     public int SortOrder { get; set; }
     public bool IsNewItem { get; set; }
 
@@ -83,6 +91,20 @@ public class CachedShoppingListItem
     /// JSON tracking of child purchases (stored for offline sync)
     /// </summary>
     public string? ChildPurchasesJson { get; set; }
+
+    /// <summary>
+    /// All barcodes for the linked product, deserialized from BarcodesJson.
+    /// </summary>
+    [Ignore]
+    public List<string> Barcodes
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(BarcodesJson)) return new();
+            try { return JsonSerializer.Deserialize<List<string>>(BarcodesJson) ?? new(); }
+            catch { return new(); }
+        }
+    }
 
     [Ignore]
     public bool HasPrice => Price.HasValue;

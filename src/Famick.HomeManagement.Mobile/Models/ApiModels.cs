@@ -90,6 +90,12 @@ public class ShoppingListItemDto
     public decimal? Price { get; set; }
     public string? Barcode { get; set; }
 
+    /// <summary>
+    /// All barcodes associated with the linked product (from ProductBarcodes).
+    /// Used for offline barcode matching.
+    /// </summary>
+    public List<string> Barcodes { get; set; } = new();
+
     // Parent/child product support
     public bool IsParentProduct { get; set; }
     public bool HasChildren { get; set; }

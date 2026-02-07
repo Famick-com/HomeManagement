@@ -35,6 +35,10 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Famick Shopping needs camera access to scan product barcodes while shopping.</string>
 
+	<!-- Bluetooth permission for BLE barcode scanners -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Famick Home uses Bluetooth to connect to barcode scanners for hands-free scanning while shopping.</string>
+
 	<!-- Location permission for store detection -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Famick Shopping uses your location to detect which store you're shopping at and organize your list accordingly.</string>

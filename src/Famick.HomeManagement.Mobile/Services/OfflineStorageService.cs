@@ -111,6 +111,9 @@ public class OfflineStorageService
                 ExternalProductId = item.ExternalProductId,
                 Price = item.Price,
                 Barcode = item.Barcode,
+                BarcodesJson = item.Barcodes.Count > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(item.Barcodes)
+                    : null,
                 SortOrder = sortOrder++,
                 IsNewItem = false,
                 // Parent/child product support

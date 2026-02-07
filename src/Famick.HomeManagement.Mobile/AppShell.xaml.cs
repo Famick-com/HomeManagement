@@ -34,6 +34,9 @@ public partial class AppShell : Shell
 
         // Start periodic health checks for connectivity monitoring
         _ = StartHealthChecksAsync();
+
+        // Auto-connect BLE scanner if previously paired
+        _ = AutoConnectBleScannerAsync();
     }
 
     private async Task StartHealthChecksAsync()
@@ -57,6 +60,32 @@ public partial class AppShell : Shell
         catch (Exception ex)
         {
             Console.WriteLine($"[AppShell] StartHealthChecksAsync error: {ex.Message}");
+        }
+    }
+
+    private async Task AutoConnectBleScannerAsync()
+    {
+        try
+        {
+            BleScannerService? bleService = null;
+            for (int i = 0; i < 10 && bleService == null; i++)
+            {
+                var services = Application.Current?.Handler?.MauiContext?.Services;
+                bleService = services?.GetService<BleScannerService>();
+                if (bleService == null)
+                    await Task.Delay(100).ConfigureAwait(false);
+            }
+
+            if (bleService is { HasSavedScanner: true })
+            {
+                await bleService.InitializeAsync();
+                await bleService.AutoConnectAsync();
+                Console.WriteLine($"[AppShell] BLE scanner auto-connect: {bleService.ConnectionState}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] AutoConnectBleScannerAsync error: {ex.Message}");
         }
     }
 

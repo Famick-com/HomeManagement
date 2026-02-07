@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using Famick.HomeManagement.Mobile.Messages;
 using Famick.HomeManagement.Mobile.Models;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -71,6 +72,14 @@ public partial class ShoppingSessionPage : ContentPage
             {
                 await ToggleItemAsync(item);
             }
+        });
+
+        WeakReferenceMessenger.Default.Register<BleScannerBarcodeMessage>(this, async (recipient, message) =>
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await HandleScannedBarcodeAsync(message.Value);
+            });
         });
 
         // ChildSelectionDoneMessage no longer needed — LoadSessionAsync always fetches fresh data
@@ -594,9 +603,10 @@ public partial class ShoppingSessionPage : ContentPage
         }
         else
         {
-            // Offline fallback: check cached items by barcode
+            // Offline fallback: check cached items by barcode (single barcode + all product barcodes)
             var existingItem = _session.Items.FirstOrDefault(i =>
-                i.Barcode?.Equals(barcode, StringComparison.OrdinalIgnoreCase) == true);
+                i.Barcode?.Equals(barcode, StringComparison.OrdinalIgnoreCase) == true
+                || i.Barcodes.Any(b => b.Equals(barcode, StringComparison.OrdinalIgnoreCase)));
 
             if (existingItem != null)
             {
@@ -606,21 +616,103 @@ public partial class ShoppingSessionPage : ContentPage
             }
         }
 
-        // Not found on the list - prompt to add
-        var addAction = await DisplayAlertAsync(
-            "Not Found",
-            "This product isn't on your shopping list. Would you like to add it?",
-            "Add Item",
-            "Cancel");
+        // Not found via barcode scan - look up the product and check if it's already on the list
+        string? resolvedProductName = null;
 
-        if (addAction)
+        if (_connectivityService.IsOnline)
         {
-            var navigationParameter = new Dictionary<string, object>
+            // 1. Check if product already exists in inventory by barcode
+            var productResult = await _apiClient.GetProductByBarcodeAsync(barcode);
+            if (productResult.Success && productResult.Data != null)
             {
-                { "Barcode", barcode },
-                { "ListId", _listId.ToString() }
-            };
-            await Shell.Current.GoToAsync(nameof(AddItemPage), navigationParameter);
+                var product = productResult.Data;
+
+                // Check if this product is already on the list (by ProductId or name)
+                var existingItem = _session.Items.FirstOrDefault(i =>
+                    (i.ProductId.HasValue && i.ProductId == product.Id) ||
+                    i.ProductName.Equals(product.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (existingItem != null && !existingItem.IsPurchased)
+                {
+                    await ToggleItemAsync(existingItem);
+                    await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                    return;
+                }
+
+                // Product exists in inventory but not on the list - add and check off
+                resolvedProductName = product.Name;
+            }
+
+            // 2. Try store integration lookup
+            if (resolvedProductName == null)
+            {
+                var storeResult = await _apiClient.LookupProductByBarcodeAsync(_listId, barcode);
+                if (storeResult.Success && storeResult.Data != null)
+                {
+                    var storeProduct = storeResult.Data;
+
+                    // Check if this product is already on the list by name
+                    var existingItem = _session.Items.FirstOrDefault(i =>
+                        i.ProductName.Equals(storeProduct.Name, StringComparison.OrdinalIgnoreCase));
+
+                    if (existingItem != null && !existingItem.IsPurchased)
+                    {
+                        await ToggleItemAsync(existingItem);
+                        await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                        return;
+                    }
+
+                    // Not on list - add with store data
+                    var addResult = await _apiClient.QuickAddItemAsync(
+                        _listId, storeProduct.Name, 1, barcode, null,
+                        isPurchased: true,
+                        aisle: storeProduct.Aisle,
+                        department: storeProduct.Department,
+                        externalProductId: storeProduct.ExternalProductId,
+                        price: storeProduct.Price,
+                        imageUrl: storeProduct.ImageUrl);
+
+                    if (addResult.Success)
+                    {
+                        await LoadSessionAsync();
+                        await DisplayAlertAsync("Added", $"{storeProduct.Name} added and checked off", "OK");
+                    }
+                    else
+                    {
+                        await DisplayAlertAsync("Error", addResult.ErrorMessage ?? "Failed to add item", "OK");
+                    }
+                    return;
+                }
+            }
+        }
+
+        // 3. Add with known product name, or prompt if unknown
+        if (resolvedProductName == null)
+        {
+            resolvedProductName = await DisplayPromptAsync(
+                "New Product",
+                $"Barcode: {barcode}\nEnter the product name:",
+                "Add",
+                "Cancel",
+                placeholder: "Product name");
+
+            if (string.IsNullOrWhiteSpace(resolvedProductName))
+                return;
+
+            resolvedProductName = resolvedProductName.Trim();
+        }
+
+        var quickAddResult = await _apiClient.QuickAddItemAsync(
+            _listId, resolvedProductName, 1, barcode, null, isPurchased: true);
+
+        if (quickAddResult.Success)
+        {
+            await LoadSessionAsync();
+            await DisplayAlertAsync("Added", $"{resolvedProductName} added and checked off", "OK");
+        }
+        else
+        {
+            await DisplayAlertAsync("Error", quickAddResult.ErrorMessage ?? "Failed to add item", "OK");
         }
     }
 
