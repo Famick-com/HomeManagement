@@ -43,6 +43,7 @@ public class CachedShoppingListItem
     public bool IsPurchased { get; set; }
     public bool OriginalIsPurchased { get; set; }
     public DateTime? PurchasedAt { get; set; }
+    public decimal PurchasedQuantity { get; set; }
     public DateTime? BestBeforeDate { get; set; }
 
     // Product tracking fields for date prompting logic
@@ -116,10 +117,14 @@ public class CachedShoppingListItem
     public ImageSource? ImageSource => HasImage ? ImageSource.FromFile(LocalImagePath) : null;
 
     /// <summary>
-    /// Remaining quantity to purchase (Amount - ChildPurchasedQuantity)
+    /// Remaining quantity to purchase.
+    /// Parent products: Amount - ChildPurchasedQuantity.
+    /// Non-parent products: Amount - PurchasedQuantity.
     /// </summary>
     [Ignore]
-    public decimal RemainingQuantity => Amount - ChildPurchasedQuantity;
+    public decimal RemainingQuantity => IsParentProduct
+        ? Amount - ChildPurchasedQuantity
+        : Amount - PurchasedQuantity;
 
     /// <summary>
     /// Whether this is a parent product that needs child selection

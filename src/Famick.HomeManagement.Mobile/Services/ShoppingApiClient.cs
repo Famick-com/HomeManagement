@@ -171,6 +171,44 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Increment purchased quantity for an item via scan (default +1).
+    /// </summary>
+    public async Task<ApiResult<ScanPurchaseResult>> ScanPurchaseAsync(
+        Guid listId,
+        Guid itemId,
+        decimal quantity = 1,
+        DateTime? bestBeforeDate = null)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}/scan-purchase",
+                new { Quantity = quantity, BestBeforeDate = bestBeforeDate });
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return ApiResult<ScanPurchaseResult>.Fail("Item not found");
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ScanPurchaseResult>(content, options);
+                return result != null
+                    ? ApiResult<ScanPurchaseResult>.Ok(result)
+                    : ApiResult<ScanPurchaseResult>.Fail("Invalid response");
+            }
+
+            return ApiResult<ScanPurchaseResult>.Fail("Failed to process scan purchase");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ScanPurchaseResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Quick add an item to a shopping list.
     /// </summary>
     public async Task<ApiResult<bool>> QuickAddItemAsync(

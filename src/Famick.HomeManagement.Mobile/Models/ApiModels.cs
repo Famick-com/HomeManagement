@@ -76,6 +76,7 @@ public class ShoppingListItemDto
     public string? Note { get; set; }
     public bool IsPurchased { get; set; }
     public DateTime? PurchasedAt { get; set; }
+    public decimal PurchasedQuantity { get; set; }
     public DateTime? BestBeforeDate { get; set; }
 
     // Product tracking fields for date prompting logic
@@ -102,7 +103,9 @@ public class ShoppingListItemDto
     public int ChildProductCount { get; set; }
     public bool HasChildrenAtStore { get; set; }
     public decimal ChildPurchasedQuantity { get; set; }
-    public decimal RemainingQuantity => Amount - ChildPurchasedQuantity;
+    public decimal RemainingQuantity => IsParentProduct
+        ? Amount - ChildPurchasedQuantity
+        : Amount - PurchasedQuantity;
 }
 
 #region Child Product Models
@@ -247,6 +250,16 @@ public class CreateProductFromLookupMobileRequest
     public string? Shelf { get; set; }
     public string? Department { get; set; }
     public decimal? Price { get; set; }
+}
+
+/// <summary>
+/// Result of a scan-purchase operation (incremental barcode scan)
+/// </summary>
+public class ScanPurchaseResult
+{
+    public ShoppingListItemDto Item { get; set; } = null!;
+    public bool IsCompleted { get; set; }
+    public decimal RemainingQuantity { get; set; }
 }
 
 /// <summary>

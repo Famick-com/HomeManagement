@@ -403,6 +403,64 @@ public partial class ShoppingSessionPage : ContentPage
         UpdateSubtotal();
     }
 
+    /// <summary>
+    /// Increments PurchasedQuantity by 1 for barcode scan flow.
+    /// Auto-completes when PurchasedQuantity >= Amount. No popup shown.
+    /// </summary>
+    private async Task ScanPurchaseItemAsync(CachedShoppingListItem item)
+    {
+        if (_session == null) return;
+
+        // Increment local purchased quantity
+        item.PurchasedQuantity += 1;
+
+        // Treat Amount <= 0 as 1 for completion logic
+        var effectiveAmount = item.Amount > 0 ? item.Amount : 1;
+
+        if (item.PurchasedQuantity >= effectiveAmount && !item.IsPurchased)
+        {
+            item.IsPurchased = true;
+            item.PurchasedAt = DateTime.UtcNow;
+        }
+
+        await _offlineStorage.UpdateItemStateAsync(item);
+
+        if (!item.IsNewItem)
+        {
+            if (_connectivityService.IsOnline)
+            {
+                var result = await _apiClient.ScanPurchaseAsync(_listId, item.Id);
+                if (result.Success)
+                {
+                    item.OriginalIsPurchased = item.IsPurchased;
+                    await _offlineStorage.UpdateItemStateAsync(item);
+                }
+                else
+                {
+                    await EnqueueScanPurchaseOperationAsync(item);
+                }
+            }
+            else
+            {
+                await EnqueueScanPurchaseOperationAsync(item);
+            }
+        }
+
+        MoveItemBetweenGroups(item);
+        UpdateSubtotal();
+    }
+
+    private async Task EnqueueScanPurchaseOperationAsync(CachedShoppingListItem item)
+    {
+        await _offlineStorage.EnqueueOperationAsync(new OfflineOperation
+        {
+            Id = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            OperationType = "ScanPurchase",
+            PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = item.Id, Quantity = 1m })
+        });
+    }
+
     private async Task RemoveItemAsync(CachedShoppingListItem? item)
     {
         if (item == null || _session == null) return;
@@ -589,9 +647,8 @@ public partial class ShoppingSessionPage : ContentPage
                     }
                     else if (!result.IsChildProduct)
                     {
-                        // Direct match - toggle purchased via the standard flow
-                        await ToggleItemAsync(cachedItem);
-                        await DisplayAlertAsync("Found!", $"{result.ProductName} checked off", "OK");
+                        // Direct match - increment purchased quantity (no popup)
+                        await ScanPurchaseItemAsync(cachedItem);
                     }
                     else
                     {
@@ -611,8 +668,8 @@ public partial class ShoppingSessionPage : ContentPage
 
             if (existingItem != null)
             {
-                await ToggleItemAsync(existingItem);
-                await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                // Offline match - increment purchased quantity (no popup)
+                await ScanPurchaseItemAsync(existingItem);
                 return;
             }
         }
@@ -635,8 +692,8 @@ public partial class ShoppingSessionPage : ContentPage
 
                 if (existingItem != null && !existingItem.IsPurchased)
                 {
-                    await ToggleItemAsync(existingItem);
-                    await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                    // Found on list - increment purchased quantity (no popup)
+                    await ScanPurchaseItemAsync(existingItem);
                     return;
                 }
 
@@ -658,8 +715,8 @@ public partial class ShoppingSessionPage : ContentPage
 
                     if (existingItem != null && !existingItem.IsPurchased)
                     {
-                        await ToggleItemAsync(existingItem);
-                        await DisplayAlertAsync("Found!", $"{existingItem.ProductName} checked off", "OK");
+                        // Found on list - increment purchased quantity (no popup)
+                        await ScanPurchaseItemAsync(existingItem);
                         return;
                     }
 

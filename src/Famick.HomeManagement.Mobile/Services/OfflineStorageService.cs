@@ -101,6 +101,7 @@ public class OfflineStorageService
                 IsPurchased = item.IsPurchased,
                 OriginalIsPurchased = item.IsPurchased,
                 PurchasedAt = item.PurchasedAt,
+                PurchasedQuantity = item.PurchasedQuantity,
                 BestBeforeDate = item.BestBeforeDate,
                 TracksBestBeforeDate = item.TracksBestBeforeDate,
                 DefaultBestBeforeDays = item.DefaultBestBeforeDays,
@@ -344,6 +345,15 @@ public class OfflineStorageService
                     return result.Success;
                 }
                 break;
+
+            case "ScanPurchase":
+                var scanData = JsonSerializer.Deserialize<ScanPurchasePayload>(operation.PayloadJson);
+                if (scanData != null)
+                {
+                    var result = await apiClient.ScanPurchaseAsync(scanData.ListId, scanData.ItemId, scanData.Quantity);
+                    return result.Success;
+                }
+                break;
         }
 
         return false;
@@ -426,5 +436,12 @@ public class OfflineStorageService
         public Guid ItemId { get; set; }
         public decimal Amount { get; set; }
         public string? Note { get; set; }
+    }
+
+    private class ScanPurchasePayload
+    {
+        public Guid ListId { get; set; }
+        public Guid ItemId { get; set; }
+        public decimal Quantity { get; set; }
     }
 }
