@@ -34,6 +34,7 @@ public partial class ShoppingSessionPage : ContentPage
     private Guid _listId;
     private ShoppingSession? _session;
     private bool _isPopulatingItems;
+    private Guid? _bestBeforePromptItemId; // guards against async CheckedChanged during prompt
     private CachedShoppingListItem? _detailItem;
 
     public string ListId
@@ -376,19 +377,48 @@ public partial class ShoppingSessionPage : ContentPage
             return;
         }
 
-        // When marking as purchased and product tracks best-before dates, show prompt
-        DateTime? bestBeforeDate = null;
+        // When marking as purchased and product tracks best-before dates, show popup
+        // then call API and reload list from server (same pattern as OnItemCheckedChanged)
         if (!item.IsPurchased && item.TracksBestBeforeDate)
         {
-            var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
-            if (!proceed) return;
-            bestBeforeDate = date;
+            _bestBeforePromptItemId = item.Id;
+            try
+            {
+                var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
+                if (!proceed) return;
+
+                // Always update local state first so offline cache is correct
+                item.IsPurchased = true;
+                item.PurchasedAt = DateTime.UtcNow;
+                if (date.HasValue) item.BestBeforeDate = date.Value;
+                await _offlineStorage.UpdateItemStateAsync(item);
+
+                // Sync to server or queue for later
+                if (!item.IsNewItem)
+                {
+                    if (_connectivityService.IsOnline)
+                    {
+                        await _apiClient.TogglePurchasedAsync(_listId, item.Id, date);
+                    }
+                    else
+                    {
+                        await EnqueueToggleOperationAsync(item);
+                    }
+                }
+
+                // Reload the list — from server when online, from cache when offline
+                await LoadSessionAsync();
+            }
+            finally
+            {
+                _bestBeforePromptItemId = null;
+            }
+            return;
         }
 
+        // Standard toggle (no best-before prompt) — fast local update
         item.IsPurchased = !item.IsPurchased;
         item.PurchasedAt = item.IsPurchased ? DateTime.UtcNow : null;
-        if (bestBeforeDate.HasValue)
-            item.BestBeforeDate = bestBeforeDate.Value;
 
         await _offlineStorage.UpdateItemStateAsync(item);
 
@@ -396,7 +426,7 @@ public partial class ShoppingSessionPage : ContentPage
         {
             if (_connectivityService.IsOnline)
             {
-                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id, bestBeforeDate);
+                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
                 if (result.Success)
                 {
                     item.OriginalIsPurchased = item.IsPurchased;
@@ -520,65 +550,78 @@ public partial class ShoppingSessionPage : ContentPage
     private async void OnItemCheckedChanged(object? sender, CheckedChangedEventArgs e)
     {
         // Skip during initial UI population - we only want to track user-initiated changes
-        if (_isPopulatingItems)
-        {
-            Console.WriteLine($"[BestBefore] OnItemCheckedChanged SKIPPED - _isPopulatingItems=true");
-            return;
-        }
+        if (_isPopulatingItems) return;
 
-        if (sender is not CheckBox checkBox || checkBox.BindingContext is not CachedShoppingListItem item)
-        {
-            Console.WriteLine($"[BestBefore] OnItemCheckedChanged SKIPPED - sender not CheckBox or no BindingContext");
-            return;
-        }
+        if (sender is not CheckBox checkBox || checkBox.BindingContext is not CachedShoppingListItem item) return;
 
-        Console.WriteLine($"[BestBefore] OnItemCheckedChanged: item={item.ProductName}, e.Value={e.Value}, IsPurchased={item.IsPurchased}, TracksBestBefore={item.TracksBestBeforeDate}, DefaultDays={item.DefaultBestBeforeDays}");
+        // Skip events fired while a best-before prompt is active
+        if (_bestBeforePromptItemId != null) return;
 
         // Parent products needing child selection: undo checkbox and navigate
         if (item.NeedsChildSelection)
         {
+            _isPopulatingItems = true;
+            checkBox.IsChecked = false;
             item.IsPurchased = false;
+            _isPopulatingItems = false;
             _ = NavigateToChildSelectionAsync(item);
             return;
         }
 
-        // When marking as purchased and product tracks best-before dates, show prompt
-        DateTime? bestBeforeDate = null;
+        // When marking as purchased and product tracks best-before dates, show popup
+        // then call the API and reload the list from the server (avoids async checkbox issues on iOS)
         if (e.Value && item.TracksBestBeforeDate)
         {
-            Console.WriteLine($"[BestBefore] Showing best-before date prompt for {item.ProductName}");
-            // Revert the checkbox immediately so the item doesn't move while the overlay is shown
+            // Immediately revert the checkbox while the popup is shown
             _isPopulatingItems = true;
-            item.IsPurchased = false;
             checkBox.IsChecked = false;
-            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+            item.IsPurchased = false;
+            _isPopulatingItems = false;
 
-            var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
-            if (!proceed)
-                return;
+            _bestBeforePromptItemId = item.Id;
+            try
+            {
+                var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
+                if (!proceed) return;
 
-            bestBeforeDate = date;
+                // Always update local state first so offline cache is correct
+                item.IsPurchased = true;
+                item.PurchasedAt = DateTime.UtcNow;
+                if (date.HasValue) item.BestBeforeDate = date.Value;
+                await _offlineStorage.UpdateItemStateAsync(item);
 
-            // Now apply the purchase
-            _isPopulatingItems = true;
-            item.IsPurchased = true;
-            checkBox.IsChecked = true;
-            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+                // Sync to server or queue for later
+                if (!item.IsNewItem)
+                {
+                    if (_connectivityService.IsOnline)
+                    {
+                        await _apiClient.TogglePurchasedAsync(_listId, item.Id, date);
+                    }
+                    else
+                    {
+                        await EnqueueToggleOperationAsync(item);
+                    }
+                }
+
+                // Reload the list — from server when online, from cache when offline
+                await LoadSessionAsync();
+            }
+            finally
+            {
+                _bestBeforePromptItemId = null;
+            }
+            return;
         }
 
+        // Standard toggle (no best-before prompt) — fast local update
         item.PurchasedAt = e.Value ? DateTime.UtcNow : null;
-        if (bestBeforeDate.HasValue)
-            item.BestBeforeDate = bestBeforeDate.Value;
-
-        // Update local storage first
         await _offlineStorage.UpdateItemStateAsync(item);
 
-        // For existing items (not new), try real-time sync
         if (!item.IsNewItem)
         {
             if (_connectivityService.IsOnline)
             {
-                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id, bestBeforeDate);
+                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
                 if (result.Success)
                 {
                     item.OriginalIsPurchased = item.IsPurchased;
@@ -595,7 +638,6 @@ public partial class ShoppingSessionPage : ContentPage
             }
         }
 
-        // Move item between groups without clearing/rebuilding the entire list
         MoveItemBetweenGroups(item);
         UpdateSubtotal();
     }
