@@ -8,6 +8,18 @@ public partial class BarcodeScannerPage : ContentPage
 {
     private TaskCompletionSource<string?>? _scanCompletionSource;
     private bool _isProcessing;
+    private bool _isTorchOn;
+
+    public bool IsTorchOn
+    {
+        get => _isTorchOn;
+        set
+        {
+            if (_isTorchOn == value) return;
+            _isTorchOn = value;
+            OnPropertyChanged();
+        }
+    }
 
     public BarcodeReaderOptions BarcodeOptions { get; } = new()
     {
@@ -124,6 +136,33 @@ public partial class BarcodeScannerPage : ContentPage
         else
         {
             _isProcessing = false;
+        }
+    }
+
+    private void OnTorchClicked(object? sender, EventArgs e)
+    {
+        IsTorchOn = !IsTorchOn;
+        TorchButton.BackgroundColor = IsTorchOn
+            ? Color.FromArgb("#FFC107")
+            : Color.FromArgb("#555555");
+    }
+
+    private async void OnManualEntryClicked(object? sender, EventArgs e)
+    {
+        var result = await DisplayPromptAsync(
+            "Enter Barcode",
+            "Type the barcode number:",
+            "OK",
+            "Cancel",
+            keyboard: Keyboard.Numeric);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            if (_isProcessing) return;
+            _isProcessing = true;
+            BarcodeReader.IsDetecting = false;
+            _scanCompletionSource?.TrySetResult(result.Trim());
+            await Navigation.PopAsync();
         }
     }
 
