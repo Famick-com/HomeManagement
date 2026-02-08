@@ -520,6 +520,30 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Update an item's quantity (and note) on a shopping list.
+    /// </summary>
+    public async Task<ApiResult<bool>> UpdateItemQuantityAsync(Guid listId, Guid itemId, decimal amount, string? note)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync(
+                $"api/v1/shoppinglists/{listId}/items/{itemId}",
+                new { Amount = amount, Note = note });
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return ApiResult<bool>.Ok(true);
+
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update item quantity");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Remove an item from a shopping list.
     /// </summary>
     public async Task<ApiResult<bool>> RemoveItemAsync(Guid listId, Guid itemId)

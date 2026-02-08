@@ -31,6 +31,7 @@ public partial class ShoppingSessionPage : ContentPage
     private Guid _listId;
     private ShoppingSession? _session;
     private bool _isPopulatingItems;
+    private CachedShoppingListItem? _detailItem;
 
     public string ListId
     {
@@ -859,6 +860,7 @@ public partial class ShoppingSessionPage : ContentPage
             return;
         }
 
+        _detailItem = item;
         DetailProductName.Text = item.ProductName;
         DetailQuantity.Text = item.Amount.ToString("G");
 
@@ -902,12 +904,85 @@ public partial class ShoppingSessionPage : ContentPage
 
     private void OnDetailOverlayTapped(object? sender, TappedEventArgs e)
     {
+        _detailItem = null;
         DetailOverlay.IsVisible = false;
     }
 
     private void OnDetailCloseClicked(object? sender, EventArgs e)
     {
+        _detailItem = null;
         DetailOverlay.IsVisible = false;
+    }
+
+    private async void OnDetailIncreaseQuantity(object? sender, EventArgs e)
+    {
+        var item = _detailItem;
+        if (item == null || _session == null) return;
+
+        // Update in memory + UI immediately (optimistic)
+        item.Amount += 1;
+        DetailQuantity.Text = item.Amount.ToString("G");
+        PopulateItems();
+        UpdateSubtotal();
+
+        // Persist in background
+        await PersistQuantityChangeAsync(item);
+    }
+
+    private async void OnDetailDecreaseQuantity(object? sender, EventArgs e)
+    {
+        var item = _detailItem;
+        if (item == null || _session == null) return;
+
+        if (item.Amount <= 1)
+        {
+            var confirm = await DisplayAlertAsync(
+                "Remove Item?",
+                $"Remove {item.ProductName} from the list?",
+                "Remove",
+                "Cancel");
+
+            if (!confirm) return;
+
+            _detailItem = null;
+            DetailOverlay.IsVisible = false;
+            await RemoveItemAsync(item);
+            return;
+        }
+
+        // Update in memory + UI immediately (optimistic)
+        item.Amount -= 1;
+        DetailQuantity.Text = item.Amount.ToString("G");
+        PopulateItems();
+        UpdateSubtotal();
+
+        // Persist in background
+        await PersistQuantityChangeAsync(item);
+    }
+
+    private async Task PersistQuantityChangeAsync(CachedShoppingListItem item)
+    {
+        // Update local cache
+        await _offlineStorage.UpdateItemStateAsync(item);
+
+        // Sync to server or queue offline
+        if (!item.IsNewItem)
+        {
+            if (_connectivityService.IsOnline)
+            {
+                await _apiClient.UpdateItemQuantityAsync(_listId, item.Id, item.Amount, item.Note);
+            }
+            else
+            {
+                await _offlineStorage.EnqueueOperationAsync(new OfflineOperation
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedAt = DateTime.UtcNow,
+                    OperationType = "UpdateQuantity",
+                    PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = item.Id, Amount = item.Amount, item.Note })
+                });
+            }
+        }
     }
 
     private async Task NavigateToChildSelectionAsync(CachedShoppingListItem item)

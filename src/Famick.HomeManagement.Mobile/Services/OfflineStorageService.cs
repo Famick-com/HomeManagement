@@ -334,6 +334,16 @@ public class OfflineStorageService
                     return result.Success;
                 }
                 break;
+
+            case "UpdateQuantity":
+                var updateQtyData = JsonSerializer.Deserialize<UpdateQuantityPayload>(operation.PayloadJson);
+                if (updateQtyData != null)
+                {
+                    var result = await apiClient.UpdateItemQuantityAsync(
+                        updateQtyData.ListId, updateQtyData.ItemId, updateQtyData.Amount, updateQtyData.Note);
+                    return result.Success;
+                }
+                break;
         }
 
         return false;
@@ -408,5 +418,13 @@ public class OfflineStorageService
     {
         public Guid ListId { get; set; }
         public Guid ItemId { get; set; }
+    }
+
+    private class UpdateQuantityPayload
+    {
+        public Guid ListId { get; set; }
+        public Guid ItemId { get; set; }
+        public decimal Amount { get; set; }
+        public string? Note { get; set; }
     }
 }

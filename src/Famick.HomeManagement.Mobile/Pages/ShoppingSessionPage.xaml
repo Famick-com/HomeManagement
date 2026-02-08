@@ -259,7 +259,8 @@
                     BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}"
                     VerticalOptions="Center"
                     HorizontalOptions="Fill"
-                    MaximumHeightRequest="500">
+                    MaximumHeightRequest="600">
+                <ScrollView>
                 <VerticalStackLayout Spacing="15">
 
                     <!-- Product Image (large) -->
@@ -333,15 +334,40 @@
 
                     <!-- Quantity & Price -->
                     <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
-                        <VerticalStackLayout HorizontalOptions="Center">
+                        <VerticalStackLayout HorizontalOptions="Center" Spacing="4">
                             <Label Text="Quantity"
                                    FontSize="11"
                                    TextColor="Gray"
                                    HorizontalOptions="Center" />
-                            <Label x:Name="DetailQuantity"
-                                   FontSize="18"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center" />
+                            <HorizontalStackLayout Spacing="12" HorizontalOptions="Center">
+                                <Button Text="-"
+                                        Clicked="OnDetailDecreaseQuantity"
+                                        BackgroundColor="{AppThemeBinding Light=#1976D2, Dark=#1565C0}"
+                                        TextColor="White"
+                                        FontSize="18"
+                                        FontAttributes="Bold"
+                                        CornerRadius="20"
+                                        HeightRequest="40"
+                                        WidthRequest="40"
+                                        Padding="0" />
+                                <Label x:Name="DetailQuantity"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       MinimumWidthRequest="30"
+                                       HorizontalTextAlignment="Center" />
+                                <Button Text="+"
+                                        Clicked="OnDetailIncreaseQuantity"
+                                        BackgroundColor="{AppThemeBinding Light=#1976D2, Dark=#1565C0}"
+                                        TextColor="White"
+                                        FontSize="18"
+                                        FontAttributes="Bold"
+                                        CornerRadius="20"
+                                        HeightRequest="40"
+                                        WidthRequest="40"
+                                        Padding="0" />
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                         <VerticalStackLayout x:Name="DetailPriceSection" HorizontalOptions="Center">
                             <Label Text="Price"
@@ -374,6 +400,7 @@
                             HorizontalOptions="Center"
                             WidthRequest="120" />
                 </VerticalStackLayout>
+                </ScrollView>
             </Border>
         </Grid>
     </Grid>
