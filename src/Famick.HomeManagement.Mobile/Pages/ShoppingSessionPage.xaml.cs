@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
+using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Extensions;
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Famick.HomeManagement.Mobile.Messages;
@@ -373,8 +376,19 @@ public partial class ShoppingSessionPage : ContentPage
             return;
         }
 
+        // When marking as purchased and product tracks best-before dates, show prompt
+        DateTime? bestBeforeDate = null;
+        if (!item.IsPurchased && item.TracksBestBeforeDate)
+        {
+            var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
+            if (!proceed) return;
+            bestBeforeDate = date;
+        }
+
         item.IsPurchased = !item.IsPurchased;
         item.PurchasedAt = item.IsPurchased ? DateTime.UtcNow : null;
+        if (bestBeforeDate.HasValue)
+            item.BestBeforeDate = bestBeforeDate.Value;
 
         await _offlineStorage.UpdateItemStateAsync(item);
 
@@ -382,7 +396,7 @@ public partial class ShoppingSessionPage : ContentPage
         {
             if (_connectivityService.IsOnline)
             {
-                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
+                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id, bestBeforeDate);
                 if (result.Success)
                 {
                     item.OriginalIsPurchased = item.IsPurchased;
@@ -507,10 +521,18 @@ public partial class ShoppingSessionPage : ContentPage
     {
         // Skip during initial UI population - we only want to track user-initiated changes
         if (_isPopulatingItems)
+        {
+            Console.WriteLine($"[BestBefore] OnItemCheckedChanged SKIPPED - _isPopulatingItems=true");
             return;
+        }
 
         if (sender is not CheckBox checkBox || checkBox.BindingContext is not CachedShoppingListItem item)
+        {
+            Console.WriteLine($"[BestBefore] OnItemCheckedChanged SKIPPED - sender not CheckBox or no BindingContext");
             return;
+        }
+
+        Console.WriteLine($"[BestBefore] OnItemCheckedChanged: item={item.ProductName}, e.Value={e.Value}, IsPurchased={item.IsPurchased}, TracksBestBefore={item.TracksBestBeforeDate}, DefaultDays={item.DefaultBestBeforeDays}");
 
         // Parent products needing child selection: undo checkbox and navigate
         if (item.NeedsChildSelection)
@@ -520,7 +542,33 @@ public partial class ShoppingSessionPage : ContentPage
             return;
         }
 
+        // When marking as purchased and product tracks best-before dates, show prompt
+        DateTime? bestBeforeDate = null;
+        if (e.Value && item.TracksBestBeforeDate)
+        {
+            Console.WriteLine($"[BestBefore] Showing best-before date prompt for {item.ProductName}");
+            // Revert the checkbox immediately so the item doesn't move while the overlay is shown
+            _isPopulatingItems = true;
+            item.IsPurchased = false;
+            checkBox.IsChecked = false;
+            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+
+            var (proceed, date) = await ShowBestBeforeDatePromptAsync(item);
+            if (!proceed)
+                return;
+
+            bestBeforeDate = date;
+
+            // Now apply the purchase
+            _isPopulatingItems = true;
+            item.IsPurchased = true;
+            checkBox.IsChecked = true;
+            MainThread.BeginInvokeOnMainThread(() => _isPopulatingItems = false);
+        }
+
         item.PurchasedAt = e.Value ? DateTime.UtcNow : null;
+        if (bestBeforeDate.HasValue)
+            item.BestBeforeDate = bestBeforeDate.Value;
 
         // Update local storage first
         await _offlineStorage.UpdateItemStateAsync(item);
@@ -530,7 +578,7 @@ public partial class ShoppingSessionPage : ContentPage
         {
             if (_connectivityService.IsOnline)
             {
-                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id);
+                var result = await _apiClient.TogglePurchasedAsync(_listId, item.Id, bestBeforeDate);
                 if (result.Success)
                 {
                     item.OriginalIsPurchased = item.IsPurchased;
@@ -565,7 +613,7 @@ public partial class ShoppingSessionPage : ContentPage
                 Id = Guid.NewGuid(),
                 CreatedAt = DateTime.UtcNow,
                 OperationType = "TogglePurchased",
-                PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = item.Id, item.IsPurchased })
+                PayloadJson = JsonSerializer.Serialize(new { ListId = _listId, ItemId = item.Id, item.IsPurchased, item.BestBeforeDate })
             });
         }
     }
@@ -904,6 +952,26 @@ public partial class ShoppingSessionPage : ContentPage
         OfflineBanner.IsVisible = !isOnline;
         CompleteButton.IsEnabled = isOnline;
         CompleteButton.Opacity = isOnline ? 1.0 : 0.5;
+    }
+
+    /// <summary>
+    /// Shows the best-before date popup and awaits the user's choice.
+    /// Returns (true, date) for confirm, (true, null) for skip, (false, null) for cancel.
+    /// </summary>
+    private async Task<(bool proceed, DateTime? date)> ShowBestBeforeDatePromptAsync(CachedShoppingListItem item)
+    {
+        var popup = new Popups.BestBeforeDatePopup(item.ProductName, item.DefaultBestBeforeDays);
+        var popupResult = await this.ShowPopupAsync<Popups.BestBeforeDateResult>(popup, PopupOptions.Empty, CancellationToken.None);
+
+        if (popupResult.WasDismissedByTappingOutsideOfPopup || popupResult.Result is null)
+        {
+            Console.WriteLine("[BestBefore] Popup cancelled");
+            return (false, null);
+        }
+
+        var dateResult = popupResult.Result;
+        Console.WriteLine($"[BestBefore] Popup result: HasDate={dateResult.HasDate}, Date={dateResult.Date}");
+        return (true, dateResult.Date);
     }
 
     private void ShowItemDetail(CachedShoppingListItem? item)

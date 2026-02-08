@@ -124,7 +124,7 @@ public class OfflineStorageService
                 ChildPurchasedQuantity = item.ChildPurchasedQuantity
             };
 
-            await db.InsertAsync(cachedItem).ConfigureAwait(false);
+            await db.InsertOrReplaceAsync(cachedItem).ConfigureAwait(false);
             session.Items.Add(cachedItem);
         }
 
@@ -307,7 +307,7 @@ public class OfflineStorageService
                 var toggleData = JsonSerializer.Deserialize<TogglePurchasedPayload>(operation.PayloadJson);
                 if (toggleData != null)
                 {
-                    var result = await apiClient.TogglePurchasedAsync(toggleData.ListId, toggleData.ItemId);
+                    var result = await apiClient.TogglePurchasedAsync(toggleData.ListId, toggleData.ItemId, toggleData.BestBeforeDate);
                     return result.Success;
                 }
                 break;
@@ -412,6 +412,7 @@ public class OfflineStorageService
         public Guid ListId { get; set; }
         public Guid ItemId { get; set; }
         public bool IsPurchased { get; set; }
+        public DateTime? BestBeforeDate { get; set; }
     }
 
     private class AddItemPayload

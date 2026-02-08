@@ -58,7 +58,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="14.0.0" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.30" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 
 		<!-- Barcode scanning -->
@@ -108,18 +109,12 @@
 	     3. Rebuild the MAUI app -->
 	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphoneos/QuickConsumeWidgetExtensionExtension.appex')">
 		<!-- Include pre-built widget extension for device -->
-		<Content Condition="'$(RuntimeIdentifier)' == 'ios-arm64' OR '$(ComputedPlatform)' == 'iPhone'"
-			Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphoneos\QuickConsumeWidgetExtensionExtension.appex\**"
-			Link="QuickConsumeWidgetExtensionExtension.appex\%(RecursiveDir)%(Filename)%(Extension)"
-			CopyToOutputDirectory="PreserveNewest" />
+		<Content Condition="'$(RuntimeIdentifier)' == 'ios-arm64' OR '$(ComputedPlatform)' == 'iPhone'" Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphoneos\QuickConsumeWidgetExtensionExtension.appex\**" Link="QuickConsumeWidgetExtensionExtension.appex\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup Condition="$(TargetFramework.Contains('-ios')) AND Exists('$(MSBuildProjectDirectory)/Platforms/iOS/WidgetExtension/XReleases/Release-iphonesimulator/QuickConsumeWidgetExtensionExtension.appex')">
 		<!-- Include pre-built widget extension for simulator -->
-		<Content Condition="'$(RuntimeIdentifier)' == 'iossimulator-arm64' OR '$(RuntimeIdentifier)' == 'iossimulator-x64' OR '$(ComputedPlatform)' == 'iPhoneSimulator'"
-			Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphonesimulator\QuickConsumeWidgetExtensionExtension.appex\**"
-			Link="QuickConsumeWidgetExtensionExtension.appex\%(RecursiveDir)%(Filename)%(Extension)"
-			CopyToOutputDirectory="PreserveNewest" />
+		<Content Condition="'$(RuntimeIdentifier)' == 'iossimulator-arm64' OR '$(RuntimeIdentifier)' == 'iossimulator-x64' OR '$(ComputedPlatform)' == 'iPhoneSimulator'" Include="Platforms\iOS\WidgetExtension\XReleases\Release-iphonesimulator\QuickConsumeWidgetExtensionExtension.appex\**" Link="QuickConsumeWidgetExtensionExtension.appex\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<!-- iOS Widget Extension Bundle Configuration - Only when device build exists -->

@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui;
 using Famick.HomeManagement.Mobile.Pages;
 using Famick.HomeManagement.Mobile.Pages.Onboarding;
 using Famick.HomeManagement.Mobile.Pages.Wizard;
@@ -14,6 +15,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiCommunityToolkit()
             .UseBarcodeReader()
             .ConfigureFonts(fonts =>
             {

@@ -145,13 +145,23 @@ public class ShoppingApiClient
     /// <summary>
     /// Toggle the purchased status of an item.
     /// </summary>
-    public async Task<ApiResult<bool>> TogglePurchasedAsync(Guid listId, Guid itemId)
+    public async Task<ApiResult<bool>> TogglePurchasedAsync(Guid listId, Guid itemId, DateTime? bestBeforeDate = null)
     {
         try
         {
-            var response = await _httpClient.PostAsync(
-                $"api/v1/shoppinglists/{listId}/items/{itemId}/toggle-purchased",
-                null);
+            HttpResponseMessage response;
+            if (bestBeforeDate.HasValue)
+            {
+                response = await _httpClient.PostAsJsonAsync(
+                    $"api/v1/shoppinglists/{listId}/items/{itemId}/toggle-purchased",
+                    new { BestBeforeDate = bestBeforeDate.Value.ToUniversalTime() });
+            }
+            else
+            {
+                response = await _httpClient.PostAsync(
+                    $"api/v1/shoppinglists/{listId}/items/{itemId}/toggle-purchased",
+                    null);
+            }
 
             // Treat 404 Not Found as success - item doesn't exist, nothing to toggle
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
