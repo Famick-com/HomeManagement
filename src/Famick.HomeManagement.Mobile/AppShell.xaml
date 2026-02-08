@@ -61,6 +61,20 @@
             Route="ListSelectionPage" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Take Inventory">
+        <ShellContent
+            Title="Take Inventory"
+            ContentTemplate="{DataTemplate pages:InventorySessionPage}"
+            Route="InventorySessionPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Stock Overview">
+        <ShellContent
+            Title="Stock Overview"
+            ContentTemplate="{DataTemplate pages:StockOverviewPage}"
+            Route="StockOverviewPage" />
+    </FlyoutItem>
+
     <!-- Menu Footer with Actions -->
     <Shell.FlyoutFooter>
         <VerticalStackLayout Padding="15" Spacing="8">

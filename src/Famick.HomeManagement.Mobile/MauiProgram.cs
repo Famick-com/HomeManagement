@@ -97,6 +97,8 @@ public static class MauiProgram
         builder.Services.AddTransient<SettingsPage>();
         builder.Services.AddTransient<QuickConsumePage>();
         builder.Services.AddTransient<ChildProductSelectionPage>();
+        builder.Services.AddTransient<InventorySessionPage>();
+        builder.Services.AddTransient<StockOverviewPage>();
 
         // Wizard Pages
         builder.Services.AddTransient<WizardHouseholdInfoPage>();

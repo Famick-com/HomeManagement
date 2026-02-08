@@ -1806,6 +1806,276 @@ public class ShoppingApiClient
     #endregion
 
 
+    #region Inventory Session APIs
+
+    /// <summary>
+    /// Get all locations.
+    /// </summary>
+    public async Task<ApiResult<List<LocationDto>>> GetLocationsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/locations");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<LocationDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<LocationDto>>.Ok(result)
+                    : ApiResult<List<LocationDto>>.Ok(new List<LocationDto>());
+            }
+            return ApiResult<List<LocationDto>>.Fail("Failed to load locations");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<LocationDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get stock overview with optional filters.
+    /// </summary>
+    public async Task<ApiResult<List<StockOverviewItemDto>>> GetStockOverviewAsync(
+        Guid? locationId = null, Guid? productGroupId = null,
+        string? status = null, string? searchTerm = null)
+    {
+        try
+        {
+            var parts = new List<string>();
+            if (locationId.HasValue) parts.Add($"locationId={locationId}");
+            if (productGroupId.HasValue) parts.Add($"productGroupId={productGroupId}");
+            if (!string.IsNullOrEmpty(status)) parts.Add($"status={status}");
+            if (!string.IsNullOrEmpty(searchTerm)) parts.Add($"searchTerm={Uri.EscapeDataString(searchTerm)}");
+            var query = parts.Count > 0 ? "?" + string.Join("&", parts) : "";
+
+            var response = await _httpClient.GetAsync($"api/v1/stock/overview{query}");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<StockOverviewItemDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<StockOverviewItemDto>>.Ok(result)
+                    : ApiResult<List<StockOverviewItemDto>>.Ok(new List<StockOverviewItemDto>());
+            }
+            return ApiResult<List<StockOverviewItemDto>>.Fail("Failed to load stock overview");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<StockOverviewItemDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get stock entries for a product at a specific location.
+    /// </summary>
+    public async Task<ApiResult<List<StockEntryDto>>> GetStockByProductAndLocationAsync(Guid productId, Guid locationId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/stock/by-product/{productId}/location/{locationId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<StockEntryDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<StockEntryDto>>.Ok(result)
+                    : ApiResult<List<StockEntryDto>>.Ok(new List<StockEntryDto>());
+            }
+            return ApiResult<List<StockEntryDto>>.Fail("Failed to load stock entries");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<StockEntryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Add a batch of stock entries with individual dates.
+    /// </summary>
+    public async Task<ApiResult<bool>> AddStockBatchAsync(AddStockBatchRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/stock/batch", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to add stock");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Adjust a stock entry's amount or details.
+    /// </summary>
+    public async Task<ApiResult<bool>> AdjustStockAsync(Guid stockEntryId, AdjustStockRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/stock/{stockEntryId}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to adjust stock");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Mark a stock entry as opened with tracking mode.
+    /// </summary>
+    public async Task<ApiResult<bool>> OpenStockEntryAsync(Guid stockEntryId, OpenProductRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/stock/{stockEntryId}/open", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to mark as opened");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Quick add 1 unit of stock using product defaults.
+    /// </summary>
+    public async Task<ApiResult<bool>> QuickAddStockAsync(Guid productId, decimal amount = 1)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"api/v1/stock/quick-add/{productId}?amount={amount}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to add stock");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Search products by name or description.
+    /// </summary>
+    public async Task<ApiResult<List<ProductDto>>> SearchProductsAsync(string query)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/products/search?q={Uri.EscapeDataString(query)}");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<ProductDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<ProductDto>>.Ok(result)
+                    : ApiResult<List<ProductDto>>.Ok(new List<ProductDto>());
+            }
+            return ApiResult<List<ProductDto>>.Fail("Search failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ProductDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Look up a product via external APIs (OpenFoodFacts, USDA, store integrations).
+    /// </summary>
+    public async Task<ApiResult<ProductLookupResponse>> ProductLookupAsync(ProductLookupRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/product-lookup", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ProductLookupResponse>(content, options);
+                return result != null
+                    ? ApiResult<ProductLookupResponse>.Ok(result)
+                    : ApiResult<ProductLookupResponse>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ProductLookupResponse>.Fail(ParseErrorMessage(error) ?? "Lookup failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ProductLookupResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Create a new product.
+    /// </summary>
+    public async Task<ApiResult<ProductDto>> CreateProductAsync(CreateProductRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/products", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<ProductDto>(content, options);
+                return result != null
+                    ? ApiResult<ProductDto>.Ok(result)
+                    : ApiResult<ProductDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ProductDto>.Fail(ParseErrorMessage(error) ?? "Failed to create product");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ProductDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Create a todo item (e.g., for reviewing a product created during inventory).
+    /// </summary>
+    public async Task<ApiResult<bool>> CreateTodoItemAsync(CreateTodoItemRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/todoitems", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<bool>.Fail(ParseErrorMessage(error) ?? "Failed to create todo item");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// Parses an error message from API error response JSON.
     /// Handles formats like {"error_message":"..."} or {"message":"..."} or plain text.

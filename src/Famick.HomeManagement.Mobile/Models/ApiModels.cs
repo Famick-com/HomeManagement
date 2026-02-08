@@ -449,12 +449,19 @@ public class StockOverviewItemDto
 {
     public Guid ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
+    public string? ProductGroupName { get; set; }
     public decimal TotalAmount { get; set; }
     public string QuantityUnitName { get; set; } = string.Empty;
     public DateTime? NextDueDate { get; set; }
     public int? DaysUntilDue { get; set; }
+    public decimal MinStockAmount { get; set; }
+    public bool IsBelowMinStock { get; set; }
     public bool IsExpired { get; set; }
     public bool IsDueSoon { get; set; }
+    public bool IsParentProduct { get; set; }
+    public int ChildProductCount { get; set; }
+    public int StockEntryCount { get; set; }
+    public string? PrimaryImageUrl { get; set; }
 }
 
 #endregion
@@ -560,6 +567,7 @@ public class QuickConsumeRequest
     public Guid ProductId { get; set; }
     public decimal Amount { get; set; } = 1;
     public bool ConsumeAll { get; set; }
+    public bool Spoiled { get; set; }
 }
 
 /// <summary>
@@ -649,6 +657,151 @@ public class UserInfo
     public string Email { get; set; } = "";
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
+}
+
+#endregion
+
+#region Inventory Session Models
+
+/// <summary>
+/// Location information.
+/// </summary>
+public class LocationDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsFreezer { get; set; }
+}
+
+/// <summary>
+/// Request to add a batch of stock entries with individual dates.
+/// Matches server-side AddStockBatchRequest contract.
+/// </summary>
+public class AddStockBatchRequest
+{
+    public Guid ProductId { get; set; }
+    public Guid LocationId { get; set; }
+    public Guid? ShoppingLocationId { get; set; }
+    public DateTime? PurchasedDate { get; set; }
+    public decimal? Price { get; set; }
+    public string? Note { get; set; }
+
+    /// <summary>
+    /// List of individual items with their own expiration dates.
+    /// Each item creates a StockEntry with Amount=1.
+    /// Mutually exclusive with BulkAmount.
+    /// </summary>
+    public List<IndividualStockItem>? IndividualItems { get; set; }
+
+    /// <summary>
+    /// Quantity of items without individual dates (creates single entry).
+    /// Mutually exclusive with IndividualItems.
+    /// </summary>
+    public decimal? BulkAmount { get; set; }
+
+    /// <summary>
+    /// Best before date for bulk items (used only when BulkAmount is set).
+    /// </summary>
+    public DateTime? BulkBestBeforeDate { get; set; }
+}
+
+/// <summary>
+/// Individual stock item with its own expiration date.
+/// Matches server-side IndividualStockItem contract.
+/// </summary>
+public class IndividualStockItem
+{
+    public DateTime? BestBeforeDate { get; set; }
+    public string? Note { get; set; }
+}
+
+/// <summary>
+/// Request to adjust a stock entry.
+/// </summary>
+public class AdjustStockRequest
+{
+    public decimal NewAmount { get; set; }
+    public DateTime? NewBestBeforeDate { get; set; }
+    public DateTime? NewPurchasedDate { get; set; }
+    public string? Note { get; set; }
+}
+
+/// <summary>
+/// Request to mark a stock entry as opened.
+/// </summary>
+public class OpenProductRequest
+{
+    public string TrackingMode { get; set; } = "percentage";
+    public decimal? RemainingPercentage { get; set; }
+    public decimal? RemainingCount { get; set; }
+}
+
+/// <summary>
+/// Product lookup request for external APIs.
+/// </summary>
+public class ProductLookupRequest
+{
+    public string Query { get; set; } = string.Empty;
+    public int MaxResults { get; set; } = 10;
+    public bool IncludeStoreResults { get; set; } = true;
+}
+
+/// <summary>
+/// Product lookup response containing results from external APIs.
+/// </summary>
+public class ProductLookupResponse
+{
+    public List<ProductLookupResultDto> Results { get; set; } = new();
+}
+
+/// <summary>
+/// Individual product lookup result from external source.
+/// </summary>
+public class ProductLookupResultDto
+{
+    public string PluginName { get; set; } = string.Empty;
+    public string PluginDisplayName { get; set; } = string.Empty;
+    public string SourceType { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Brand { get; set; }
+    public string? Description { get; set; }
+    public string? Barcode { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public decimal? Price { get; set; }
+    public string? ExternalProductId { get; set; }
+}
+
+/// <summary>
+/// Request to create a new product.
+/// </summary>
+public class CreateProductRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public Guid? LocationId { get; set; }
+    public Guid? ProductGroupId { get; set; }
+    public Guid? QuPurchaseId { get; set; }
+    public Guid? QuStockId { get; set; }
+    public decimal QuConversionFactor { get; set; } = 1;
+    public decimal MinStockAmount { get; set; }
+    public int DefaultBestBeforeDays { get; set; }
+    public bool TracksBestBeforeDate { get; set; } = true;
+    public List<string> Barcodes { get; set; } = new();
+    public string? ImageUrl { get; set; }
+}
+
+/// <summary>
+/// Request to create a todo item for product review.
+/// </summary>
+public class CreateTodoItemRequest
+{
+    public string TaskType { get; set; } = "ReviewProduct";
+    public string Reason { get; set; } = string.Empty;
+    public Guid? RelatedEntityId { get; set; }
+    public string? RelatedEntityType { get; set; }
+    public string? Description { get; set; }
 }
 
 #endregion
