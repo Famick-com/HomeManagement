@@ -18,6 +18,8 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(AddItemPage), typeof(AddItemPage));
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
         Routing.RegisterRoute(nameof(NotificationsPage), typeof(NotificationsPage));
+        Routing.RegisterRoute(nameof(NotificationSettingsPage), typeof(NotificationSettingsPage));
+        Routing.RegisterRoute(nameof(BarcodeScannerSettingsPage), typeof(BarcodeScannerSettingsPage));
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
         Routing.RegisterRoute(nameof(QuickConsumePage), typeof(QuickConsumePage));
         Routing.RegisterRoute(nameof(ChildProductSelectionPage), typeof(ChildProductSelectionPage));
@@ -41,6 +43,9 @@ public partial class AppShell : Shell
 
         // Start polling for unread notification count
         _ = StartNotificationPollingAsync();
+
+        // Register for push notifications
+        _ = RegisterPushNotificationsAsync();
     }
 
     private async Task StartHealthChecksAsync()
@@ -90,6 +95,31 @@ public partial class AppShell : Shell
         catch (Exception ex)
         {
             Console.WriteLine($"[AppShell] AutoConnectBleScannerAsync error: {ex.Message}");
+        }
+    }
+
+    private async Task RegisterPushNotificationsAsync()
+    {
+        try
+        {
+            PushNotificationRegistrationService? pushService = null;
+            for (int i = 0; i < 10 && pushService == null; i++)
+            {
+                var services = Application.Current?.Handler?.MauiContext?.Services;
+                pushService = services?.GetService<PushNotificationRegistrationService>();
+                if (pushService == null)
+                    await Task.Delay(100).ConfigureAwait(false);
+            }
+
+            if (pushService != null)
+            {
+                await pushService.RegisterAsync().ConfigureAwait(false);
+                Console.WriteLine("[AppShell] Push notification registration completed");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] RegisterPushNotificationsAsync error: {ex.Message}");
         }
     }
 
@@ -161,6 +191,20 @@ public partial class AppShell : Shell
 
         var services = Application.Current?.Handler?.MauiContext?.Services;
         if (services == null) return;
+
+        // Unregister push notification device token before clearing auth
+        try
+        {
+            var pushService = services.GetService<PushNotificationRegistrationService>();
+            if (pushService != null)
+            {
+                await pushService.UnregisterAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] Push unregister on sign-out error: {ex.Message}");
+        }
 
         // Clear tokens
         var tokenStorage = services.GetService<TokenStorage>();

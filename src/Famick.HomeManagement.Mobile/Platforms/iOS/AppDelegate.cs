@@ -2,6 +2,8 @@ using Foundation;
 using UIKit;
 using Intents;
 using Microsoft.Maui.Platform;
+using UserNotifications;
+using Famick.HomeManagement.Mobile.Platforms.iOS;
 
 namespace Famick.HomeManagement.Mobile;
 
@@ -14,10 +16,25 @@ public class AppDelegate : MauiUIApplicationDelegate
     {
         var result = base.FinishedLaunching(application, launchOptions);
 
+        // Set notification delegate for foreground presentation and tap handling
+        UNUserNotificationCenter.Current.Delegate = new ForegroundNotificationDelegate();
+
         // Donate Siri Shortcut for quick consume
         DonateQuickConsumeShortcut();
 
         return result;
+    }
+
+    [Export("application:didRegisterForRemoteNotificationsWithDeviceToken:")]
+    public void RegisteredForRemoteNotifications(UIApplication application, NSData deviceToken)
+    {
+        PushTokenProvider.HandleRegistration(deviceToken);
+    }
+
+    [Export("application:didFailToRegisterForRemoteNotificationsWithError:")]
+    public void FailedToRegisterForRemoteNotifications(UIApplication application, NSError error)
+    {
+        PushTokenProvider.HandleRegistrationFailure(error);
     }
 
     public override void OnActivated(UIApplication application)

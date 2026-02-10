@@ -22,5 +22,8 @@
 	<array>
 		<string>$(AppIdentifierPrefix)com.famick.homemanagement.shared</string>
 	</array>
+	<!-- Push Notifications -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

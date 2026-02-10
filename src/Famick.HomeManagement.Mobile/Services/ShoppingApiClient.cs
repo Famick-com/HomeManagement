@@ -2261,6 +2261,57 @@ public class ShoppingApiClient
         }
     }
 
+    /// <summary>
+    /// Register a push notification device token with the server.
+    /// </summary>
+    public async Task<ApiResult<DeviceTokenResult>> RegisterDeviceTokenAsync(string token, int platform)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/notifications/device", new
+            {
+                token,
+                platform
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var result = System.Text.Json.JsonSerializer.Deserialize<DeviceTokenResult>(content, options);
+                return result != null
+                    ? ApiResult<DeviceTokenResult>.Ok(result)
+                    : ApiResult<DeviceTokenResult>.Fail("Invalid response");
+            }
+            return ApiResult<DeviceTokenResult>.Fail("Failed to register device token");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<DeviceTokenResult>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Unregister a push notification device token from the server.
+    /// </summary>
+    public async Task<ApiResult<bool>> UnregisterDeviceTokenAsync(Guid tokenId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/notifications/device/{tokenId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to unregister device token");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
     #endregion
 
     /// <summary>

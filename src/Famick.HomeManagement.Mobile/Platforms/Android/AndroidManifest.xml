@@ -27,4 +27,7 @@
 	<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
 	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 	<uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
+	<!-- Push notifications (Android 13+) -->
+	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

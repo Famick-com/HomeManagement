@@ -79,6 +79,14 @@ public static class MauiProgram
         builder.Services.AddSingleton<IGoogleSignInService, Platforms.Android.GoogleSignInService>();
 #endif
 
+        // Platform-specific push notification token provider
+#if IOS
+        builder.Services.AddSingleton<IPushTokenProvider, Platforms.iOS.PushTokenProvider>();
+#elif ANDROID
+        builder.Services.AddSingleton<IPushTokenProvider, Platforms.Android.PushTokenProvider>();
+#endif
+        builder.Services.AddScoped<PushNotificationRegistrationService>();
+
         // Onboarding Pages (only those that can be resolved by DI)
         // Note: EmailVerificationPage and CreatePasswordPage have runtime parameters
         // and are created manually during navigation
@@ -97,6 +105,8 @@ public static class MauiProgram
         builder.Services.AddTransient<AisleOrderPage>();
         builder.Services.AddTransient<SettingsPage>();
         builder.Services.AddTransient<NotificationsPage>();
+        builder.Services.AddTransient<NotificationSettingsPage>();
+        builder.Services.AddTransient<BarcodeScannerSettingsPage>();
         builder.Services.AddTransient<QuickConsumePage>();
         builder.Services.AddTransient<ChildProductSelectionPage>();
         builder.Services.AddTransient<InventorySessionPage>();

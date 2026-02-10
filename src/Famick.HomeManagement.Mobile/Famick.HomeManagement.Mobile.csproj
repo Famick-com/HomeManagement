@@ -94,6 +94,12 @@
 	</ItemGroup>
 	-->
 
+	<!-- Firebase Cloud Messaging for Android push notifications -->
+	<ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+		<PackageReference Include="Xamarin.Firebase.Messaging" Version="124.*" />
+		<GoogleServicesJson Include="Platforms\Android\google-services.json" Condition="Exists('Platforms\Android\google-services.json')" />
+	</ItemGroup>
+
 	<!-- iOS Widget Extension Files -->
 	<ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
 		<!-- Exclude widget extension source files from MAUI build -->

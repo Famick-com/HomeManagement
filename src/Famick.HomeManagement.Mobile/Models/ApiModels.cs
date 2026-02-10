@@ -702,10 +702,22 @@ public class UnreadCountDto
 /// </summary>
 public class NotificationPreferenceItemDto
 {
-    public string NotificationType { get; set; } = "";
+    public int NotificationType { get; set; }
     public string DisplayName { get; set; } = "";
     public bool EmailEnabled { get; set; }
+    public bool PushEnabled { get; set; }
     public bool InAppEnabled { get; set; }
+}
+
+/// <summary>
+/// Response from registering a device token for push notifications.
+/// </summary>
+public class DeviceTokenResult
+{
+    public Guid Id { get; set; }
+    public int Platform { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastUsedAt { get; set; }
 }
 
 #endregion

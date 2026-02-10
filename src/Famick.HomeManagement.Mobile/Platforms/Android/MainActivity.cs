@@ -37,6 +37,17 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnCreate(savedInstanceState);
 
+        // Create notification channel for push notifications (Android 8+)
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+        {
+            var channel = new NotificationChannel(
+                "famick_default",
+                "Famick Notifications",
+                NotificationImportance.Default);
+            var manager = (NotificationManager?)GetSystemService(NotificationService);
+            manager?.CreateNotificationChannel(channel);
+        }
+
         // Handle deep link if app was opened via deep link
         if (Intent?.Data != null)
         {
