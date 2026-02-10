@@ -1,23 +1,28 @@
 {
-  "_comment": "PLACEHOLDER - Replace with real google-services.json from Firebase Console",
   "project_info": {
-    "project_number": "000000000000",
+    "project_number": "56385303033",
     "project_id": "famick-homemanagement",
-    "storage_bucket": "famick-homemanagement.appspot.com"
+    "storage_bucket": "famick-homemanagement.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
+        "mobilesdk_app_id": "1:56385303033:android:d68121f8a60596f645cd28",
         "android_client_info": {
           "package_name": "com.famick.homemanagement"
         }
       },
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "PLACEHOLDER_API_KEY"
+          "current_key": "AIzaSyAz7jaSL6K0C97mJ7OJds8Bo4w_RtyH6kA"
         }
-      ]
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
     }
   ],
   "configuration_version": "1"
