@@ -187,6 +187,18 @@ public partial class LoginPage : ContentPage
 
             if (result.Success)
             {
+                // Check if user must change password (unlikely for OAuth but handle it)
+                if (result.MustChangePassword)
+                {
+                    var services = Application.Current?.Handler?.MauiContext?.Services;
+                    if (services != null)
+                    {
+                        var forcePage = services.GetRequiredService<ForceChangePasswordPage>();
+                        await Navigation.PushAsync(forcePage);
+                    }
+                    return;
+                }
+
                 // Navigate to main app
                 await Shell.Current.GoToAsync("//DashboardPage");
             }
@@ -269,6 +281,19 @@ public partial class LoginPage : ContentPage
                 // Mark onboarding as complete and server as configured
                 _onboardingService.MarkOnboardingCompleted();
                 _apiSettings.MarkServerConfigured();
+
+                // Check if user must change password before accessing the app
+                if (result.Data.MustChangePassword)
+                {
+                    var services = Application.Current?.Handler?.MauiContext?.Services;
+                    if (services != null)
+                    {
+                        var forcePage = services.GetRequiredService<ForceChangePasswordPage>();
+                        forcePage.UserEmail = EmailEntry.Text?.Trim();
+                        await Navigation.PushAsync(forcePage);
+                    }
+                    return;
+                }
 
                 // Navigate to main app
                 await Shell.Current.GoToAsync("//DashboardPage");

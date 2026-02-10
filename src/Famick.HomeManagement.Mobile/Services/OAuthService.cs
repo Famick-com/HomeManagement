@@ -354,6 +354,7 @@ public class OAuthLoginResult
     public bool WasCancelled { get; private set; }
     public string? ErrorMessage { get; private set; }
     public LoginResponse? LoginResponse { get; private set; }
+    public bool MustChangePassword => LoginResponse?.MustChangePassword ?? false;
 
     private OAuthLoginResult() { }
 

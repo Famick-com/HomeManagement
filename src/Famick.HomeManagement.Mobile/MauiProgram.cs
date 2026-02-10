@@ -88,6 +88,7 @@ public static class MauiProgram
         // Main App Pages (registered for DI navigation)
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<LoginPage>();
+        builder.Services.AddTransient<ForceChangePasswordPage>();
         builder.Services.AddTransient<ServerConfigPage>();
         builder.Services.AddTransient<ListSelectionPage>();
         builder.Services.AddTransient<ShoppingSessionPage>();

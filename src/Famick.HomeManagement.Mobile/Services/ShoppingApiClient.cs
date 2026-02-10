@@ -68,6 +68,34 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Change the authenticated user's password.
+    /// </summary>
+    public async Task<ApiResult<object>> ChangePasswordAsync(string currentPassword, string newPassword, string confirmPassword)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/profile/change-password", new
+            {
+                currentPassword,
+                newPassword,
+                confirmPassword
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                return ApiResult<object>.Ok(new object());
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<object>.Fail(ParseErrorMessage(error) ?? "Failed to change password");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<object>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Get all shopping lists.
     /// </summary>
     public async Task<ApiResult<List<ShoppingListSummary>>> GetShoppingListsAsync()
