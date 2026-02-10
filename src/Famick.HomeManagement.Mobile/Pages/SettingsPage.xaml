@@ -32,6 +32,36 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Notification Preferences Section -->
+            <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Notifications" FontAttributes="Bold" FontSize="16"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label Text="Choose how you want to receive notifications."
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#666666, Dark=#999999}" />
+
+                    <!-- Loading -->
+                    <ActivityIndicator x:Name="NotifPrefsLoading" IsRunning="False" IsVisible="False"
+                                       HeightRequest="30"
+                                       Color="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}" />
+
+                    <!-- Preference Items -->
+                    <VerticalStackLayout x:Name="NotifPrefsContainer" Spacing="8" IsVisible="False">
+                        <!-- Dynamically populated in code-behind -->
+                    </VerticalStackLayout>
+
+                    <Button Text="View All Notifications"
+                            Clicked="OnViewNotificationsClicked"
+                            BackgroundColor="Transparent"
+                            BorderColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                            BorderWidth="2"
+                            TextColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                            CornerRadius="8" HeightRequest="44" />
+                </VerticalStackLayout>
+            </Border>
+
             <!-- Barcode Scanner Section -->
             <Border Padding="20" StrokeShape="RoundRectangle 12" Stroke="Transparent"
                     BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">

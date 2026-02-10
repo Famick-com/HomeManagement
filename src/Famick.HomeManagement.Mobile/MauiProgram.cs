@@ -96,6 +96,7 @@ public static class MauiProgram
         builder.Services.AddTransient<BarcodeScannerPage>();
         builder.Services.AddTransient<AisleOrderPage>();
         builder.Services.AddTransient<SettingsPage>();
+        builder.Services.AddTransient<NotificationsPage>();
         builder.Services.AddTransient<QuickConsumePage>();
         builder.Services.AddTransient<ChildProductSelectionPage>();
         builder.Services.AddTransient<InventorySessionPage>();

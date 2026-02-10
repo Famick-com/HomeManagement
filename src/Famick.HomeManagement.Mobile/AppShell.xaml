@@ -8,14 +8,44 @@
     FlyoutBehavior="Flyout"
     ios:NavigationPage.IsNavigationBarTranslucent="True">
 
-    <!-- Household name in navigation bar -->
+    <!-- Household name in navigation bar with notification bell -->
     <Shell.TitleView>
-        <Label x:Name="TitleLabel"
-               FontSize="18"
-               FontAttributes="Bold"
-               HorizontalOptions="Center"
-               VerticalOptions="Center"
-               TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+        <Grid ColumnDefinitions="*,Auto" Padding="0,0,5,0">
+            <Label x:Name="TitleLabel"
+                   Grid.Column="0"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <Grid Grid.Column="1" WidthRequest="40" HeightRequest="40">
+                <ImageButton x:Name="NotificationBellButton"
+                             Clicked="OnNotificationBellClicked"
+                             Source="notification_bell"
+                             Aspect="AspectFit"
+                             WidthRequest="24"
+                             HeightRequest="24"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             BackgroundColor="Transparent" />
+                <Border x:Name="NotificationBadge"
+                        IsVisible="False"
+                        WidthRequest="18"
+                        HeightRequest="18"
+                        StrokeShape="RoundRectangle 9"
+                        Stroke="Transparent"
+                        BackgroundColor="#E53935"
+                        HorizontalOptions="End"
+                        VerticalOptions="Start"
+                        Margin="0,2,2,0">
+                    <Label x:Name="NotificationBadgeLabel"
+                           Text="0"
+                           FontSize="10"
+                           TextColor="White"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+            </Grid>
+        </Grid>
     </Shell.TitleView>
 
     <Shell.Resources>

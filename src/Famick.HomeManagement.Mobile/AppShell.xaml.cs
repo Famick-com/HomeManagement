@@ -17,6 +17,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ShoppingSessionPage), typeof(ShoppingSessionPage));
         Routing.RegisterRoute(nameof(AddItemPage), typeof(AddItemPage));
         Routing.RegisterRoute(nameof(BarcodeScannerPage), typeof(BarcodeScannerPage));
+        Routing.RegisterRoute(nameof(NotificationsPage), typeof(NotificationsPage));
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
         Routing.RegisterRoute(nameof(QuickConsumePage), typeof(QuickConsumePage));
         Routing.RegisterRoute(nameof(ChildProductSelectionPage), typeof(ChildProductSelectionPage));
@@ -37,6 +38,9 @@ public partial class AppShell : Shell
 
         // Auto-connect BLE scanner if previously paired
         _ = AutoConnectBleScannerAsync();
+
+        // Start polling for unread notification count
+        _ = StartNotificationPollingAsync();
     }
 
     private async Task StartHealthChecksAsync()
@@ -178,6 +182,70 @@ public partial class AppShell : Shell
         if (loginPage != null)
         {
             await Navigation.PushModalAsync(new NavigationPage(loginPage));
+        }
+    }
+
+    private async Task StartNotificationPollingAsync()
+    {
+        try
+        {
+            // Wait for services to be available
+            ShoppingApiClient? apiClient = null;
+            for (int i = 0; i < 10 && apiClient == null; i++)
+            {
+                var services = Application.Current?.Handler?.MauiContext?.Services;
+                apiClient = services?.GetService<ShoppingApiClient>();
+                if (apiClient == null)
+                    await Task.Delay(100).ConfigureAwait(false);
+            }
+
+            if (apiClient == null) return;
+
+            // Poll every 60 seconds
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(60));
+
+            // Initial check
+            await UpdateNotificationBadgeAsync(apiClient).ConfigureAwait(false);
+
+            while (await timer.WaitForNextTickAsync().ConfigureAwait(false))
+            {
+                await UpdateNotificationBadgeAsync(apiClient).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] NotificationPolling error: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateNotificationBadgeAsync(ShoppingApiClient apiClient)
+    {
+        try
+        {
+            var result = await apiClient.GetUnreadNotificationCountAsync().ConfigureAwait(false);
+            if (result.Success && result.Data != null)
+            {
+                var count = result.Data.UnreadCount;
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    NotificationBadge.IsVisible = count > 0;
+                    NotificationBadgeLabel.Text = count > 99 ? "99+" : count.ToString();
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AppShell] UpdateNotificationBadge error: {ex.Message}");
+        }
+    }
+
+    private async void OnNotificationBellClicked(object? sender, EventArgs e)
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        var page = services?.GetService<NotificationsPage>();
+        if (page != null)
+        {
+            await Current.Navigation.PushAsync(page);
         }
     }
 

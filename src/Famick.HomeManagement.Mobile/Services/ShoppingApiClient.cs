@@ -2104,6 +2104,165 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region Notification APIs
+
+    /// <summary>
+    /// Get paginated notifications with optional read filter.
+    /// </summary>
+    public async Task<ApiResult<NotificationListResponseDto>> GetNotificationsAsync(
+        int page = 1, int pageSize = 20, string? readFilter = null)
+    {
+        try
+        {
+            var endpoint = $"api/v1/notifications?page={page}&pageSize={pageSize}";
+            if (!string.IsNullOrEmpty(readFilter))
+                endpoint += $"&readFilter={readFilter}";
+
+            var response = await _httpClient.GetAsync(endpoint);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<NotificationListResponseDto>(content, options);
+                return result != null
+                    ? ApiResult<NotificationListResponseDto>.Ok(result)
+                    : ApiResult<NotificationListResponseDto>.Fail("Invalid response");
+            }
+            return ApiResult<NotificationListResponseDto>.Fail("Failed to load notifications");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<NotificationListResponseDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get unread notification count.
+    /// </summary>
+    public async Task<ApiResult<UnreadCountDto>> GetUnreadNotificationCountAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/notifications/unread-count");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<UnreadCountDto>(content, options);
+                return result != null
+                    ? ApiResult<UnreadCountDto>.Ok(result)
+                    : ApiResult<UnreadCountDto>.Ok(new UnreadCountDto());
+            }
+            return ApiResult<UnreadCountDto>.Fail("Failed to get unread count");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<UnreadCountDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Mark a notification as read.
+    /// </summary>
+    public async Task<ApiResult<bool>> MarkNotificationReadAsync(Guid notificationId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/v1/notifications/{notificationId}/read", null);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to mark as read");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Mark all notifications as read.
+    /// </summary>
+    public async Task<ApiResult<bool>> MarkAllNotificationsReadAsync()
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync("api/v1/notifications/read-all", null);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to mark all as read");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Dismiss (delete) a notification.
+    /// </summary>
+    public async Task<ApiResult<bool>> DismissNotificationAsync(Guid notificationId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/notifications/{notificationId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to dismiss notification");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Get notification preferences.
+    /// </summary>
+    public async Task<ApiResult<List<NotificationPreferenceItemDto>>> GetNotificationPreferencesAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/notifications/preferences");
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<NotificationPreferenceItemDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<NotificationPreferenceItemDto>>.Ok(result)
+                    : ApiResult<List<NotificationPreferenceItemDto>>.Ok(new List<NotificationPreferenceItemDto>());
+            }
+            return ApiResult<List<NotificationPreferenceItemDto>>.Fail("Failed to load preferences");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<NotificationPreferenceItemDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Update notification preferences.
+    /// </summary>
+    public async Task<ApiResult<bool>> UpdateNotificationPreferencesAsync(List<NotificationPreferenceItemDto> preferences)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync("api/v1/notifications/preferences", new
+            {
+                preferences
+            });
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to save preferences");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// Parses an error message from API error response JSON.
     /// Handles formats like {"error_message":"..."} or {"message":"..."} or plain text.

@@ -22,9 +22,7 @@ services:
       - homemanagement-network
 
   web:
-    build:
-      context: ../..
-      dockerfile: homemanagement/docker/Dockerfile
+    image: mtherienfamick/famick:latest
     container_name: homemanagement-web
     environment:
       - ASPNETCORE_ENVIRONMENT=Production

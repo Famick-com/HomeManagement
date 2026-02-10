@@ -246,6 +246,9 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddHttpClient();
 
+// Add notification background service
+builder.Services.AddHostedService<NotificationBackgroundService>();
+
 // Build the application
 var app = builder.Build();
 

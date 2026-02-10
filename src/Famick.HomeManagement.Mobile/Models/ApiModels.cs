@@ -662,6 +662,54 @@ public class UserInfo
 
 #endregion
 
+#region Notification Models
+
+/// <summary>
+/// Notification item from the API.
+/// </summary>
+public class NotificationItemDto
+{
+    public Guid Id { get; set; }
+    public string Type { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public string? DeepLinkUrl { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>
+/// Paginated notification list response.
+/// </summary>
+public class NotificationListResponseDto
+{
+    public List<NotificationItemDto> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+}
+
+/// <summary>
+/// Unread notification count response.
+/// </summary>
+public class UnreadCountDto
+{
+    public int UnreadCount { get; set; }
+}
+
+/// <summary>
+/// Notification preference for a notification type.
+/// </summary>
+public class NotificationPreferenceItemDto
+{
+    public string NotificationType { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public bool EmailEnabled { get; set; }
+    public bool InAppEnabled { get; set; }
+}
+
+#endregion
+
 #region Inventory Session Models
 
 /// <summary>

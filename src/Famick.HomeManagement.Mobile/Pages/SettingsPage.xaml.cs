@@ -22,6 +22,7 @@ public partial class SettingsPage : ContentPage
     {
         base.OnAppearing();
         UpdateScannerUI();
+        _ = LoadNotificationPreferencesAsync();
     }
 
     protected override void OnDisappearing()
@@ -283,6 +284,132 @@ public partial class SettingsPage : ContentPage
             "A companion app for managing your home." +
             (string.IsNullOrEmpty(tenantName) ? "" : $"\n\nHousehold: {tenantName}"),
             "OK");
+    }
+
+    private List<NotificationPreferenceItemDto> _notifPrefs = new();
+
+    private async Task LoadNotificationPreferencesAsync()
+    {
+        NotifPrefsLoading.IsVisible = true;
+        NotifPrefsLoading.IsRunning = true;
+        NotifPrefsContainer.IsVisible = false;
+
+        try
+        {
+            var services = Application.Current?.Handler?.MauiContext?.Services;
+            var apiClient = services?.GetService<ShoppingApiClient>();
+            if (apiClient == null) return;
+
+            var result = await apiClient.GetNotificationPreferencesAsync();
+            if (result.Success && result.Data != null)
+            {
+                _notifPrefs = result.Data;
+                BuildPreferenceUI();
+                NotifPrefsContainer.IsVisible = true;
+            }
+        }
+        catch
+        {
+            // Silently fail - preferences section just won't show items
+        }
+        finally
+        {
+            NotifPrefsLoading.IsVisible = false;
+            NotifPrefsLoading.IsRunning = false;
+        }
+    }
+
+    private void BuildPreferenceUI()
+    {
+        NotifPrefsContainer.Children.Clear();
+
+        foreach (var pref in _notifPrefs)
+        {
+            var container = new VerticalStackLayout { Spacing = 4 };
+
+            var typeLabel = new Label
+            {
+                Text = pref.DisplayName,
+                FontSize = 14,
+                FontAttributes = FontAttributes.Bold
+            };
+            typeLabel.SetAppThemeColor(Label.TextColorProperty,
+                Color.FromArgb("#000000"), Color.FromArgb("#FFFFFF"));
+            container.Children.Add(typeLabel);
+
+            // Email toggle
+            var emailRow = new HorizontalStackLayout { Spacing = 8 };
+            var emailLabel = new Label { Text = "Email", FontSize = 13, VerticalOptions = LayoutOptions.Center };
+            emailLabel.SetAppThemeColor(Label.TextColorProperty,
+                Color.FromArgb("#666666"), Color.FromArgb("#999999"));
+            var emailSwitch = new Switch
+            {
+                IsToggled = pref.EmailEnabled,
+                OnColor = Color.FromArgb("#1976D2")
+            };
+            var capturedPref = pref;
+            emailSwitch.Toggled += async (_, e) =>
+            {
+                capturedPref.EmailEnabled = e.Value;
+                await SaveNotificationPreferencesAsync();
+            };
+            emailRow.Children.Add(emailLabel);
+            emailRow.Children.Add(emailSwitch);
+            container.Children.Add(emailRow);
+
+            // In-App toggle
+            var inAppRow = new HorizontalStackLayout { Spacing = 8 };
+            var inAppLabel = new Label { Text = "In-App", FontSize = 13, VerticalOptions = LayoutOptions.Center };
+            inAppLabel.SetAppThemeColor(Label.TextColorProperty,
+                Color.FromArgb("#666666"), Color.FromArgb("#999999"));
+            var inAppSwitch = new Switch
+            {
+                IsToggled = pref.InAppEnabled,
+                OnColor = Color.FromArgb("#1976D2")
+            };
+            inAppSwitch.Toggled += async (_, e) =>
+            {
+                capturedPref.InAppEnabled = e.Value;
+                await SaveNotificationPreferencesAsync();
+            };
+            inAppRow.Children.Add(inAppLabel);
+            inAppRow.Children.Add(inAppSwitch);
+            container.Children.Add(inAppRow);
+
+            // Separator
+            var separator = new BoxView { HeightRequest = 1, Margin = new Thickness(0, 4) };
+            separator.SetAppThemeColor(BoxView.BackgroundColorProperty,
+                Color.FromArgb("#E0E0E0"), Color.FromArgb("#424242"));
+
+            NotifPrefsContainer.Children.Add(container);
+            NotifPrefsContainer.Children.Add(separator);
+        }
+    }
+
+    private async Task SaveNotificationPreferencesAsync()
+    {
+        try
+        {
+            var services = Application.Current?.Handler?.MauiContext?.Services;
+            var apiClient = services?.GetService<ShoppingApiClient>();
+            if (apiClient == null) return;
+
+            await apiClient.UpdateNotificationPreferencesAsync(_notifPrefs);
+        }
+        catch
+        {
+            // Silently fail
+        }
+    }
+
+    private async void OnViewNotificationsClicked(object? sender, EventArgs e)
+    {
+        var services = Application.Current?.Handler?.MauiContext?.Services;
+        var page = services?.GetService<NotificationsPage>();
+        if (page != null)
+        {
+            await Navigation.PushAsync(page);
+        }
     }
 
     private async void OnRerunWizardClicked(object? sender, EventArgs e)
