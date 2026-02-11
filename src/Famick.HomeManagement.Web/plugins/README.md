@@ -68,20 +68,90 @@ External plugins are DLL files placed in the `external/` subfolder. To add an ex
 
 ## Developing Plugins
 
-To create a custom plugin, implement the `IProductLookupPlugin` interface:
+To create a custom plugin, implement the `IProductLookupPlugin` interface.
+
+### Pipeline Architecture
+
+The plugin pipeline runs in two phases for optimal performance:
+
+1. **Parallel Lookup** - All plugins fetch data from their external APIs concurrently via `LookupAsync`. Each plugin receives the search query and returns a list of `ProductLookupResult`. Plugins must NOT access the pipeline context during this phase.
+
+2. **Sequential Enrichment** - After all lookups complete, each plugin's `EnrichPipelineAsync` is called in config.json order. This phase merges lookup results into the shared pipeline context using the "first plugin wins" pattern (`??=`).
+
+### Interface
 
 ```csharp
-public interface IProductLookupPlugin
+public interface IProductLookupPlugin : IPlugin
 {
-    string PluginId { get; }
-    string DisplayName { get; }
-    string Version { get; }
-    int Priority { get; }
-    bool IsAvailable { get; }
+    // Properties from IPlugin:
+    // string PluginId { get; }
+    // string DisplayName { get; }
+    // string Version { get; }
+    // bool IsAvailable { get; }
+    // Task InitAsync(JsonElement? pluginConfig, CancellationToken ct = default);
 
-    Task InitAsync(JsonElement? pluginConfig, CancellationToken ct = default);
-    Task<List<ProductLookupResult>> SearchByBarcodeAsync(string barcode, CancellationToken ct = default);
-    Task<List<ProductLookupResult>> SearchByNameAsync(string query, int maxResults = 20, CancellationToken ct = default);
+    /// Fetch product data from the external source.
+    /// Runs in parallel across all plugins.
+    Task<List<ProductLookupResult>> LookupAsync(
+        string query,
+        ProductLookupSearchType searchType,
+        int maxResults = 20,
+        CancellationToken ct = default);
+
+    /// Merge this plugin's lookup results into the shared pipeline context.
+    /// Called sequentially in config.json order after all lookups complete.
+    Task EnrichPipelineAsync(
+        ProductLookupPipelineContext context,
+        List<ProductLookupResult> lookupResults,
+        CancellationToken ct = default);
+}
+```
+
+### Quick Start Example
+
+```csharp
+public class MyNutritionPlugin : IProductLookupPlugin
+{
+    public string PluginId => "mynutrition";
+    public string DisplayName => "My Nutrition API";
+    public string Version => "1.0.0";
+    public bool IsAvailable => true;
+    public PluginAttribution? Attribution => null;
+
+    public Task InitAsync(JsonElement? pluginConfig, CancellationToken ct = default)
+        => Task.CompletedTask;
+
+    public async Task<List<ProductLookupResult>> LookupAsync(
+        string query, ProductLookupSearchType searchType,
+        int maxResults = 20, CancellationToken ct = default)
+    {
+        // Call your external API here — this runs in parallel with other plugins
+        var apiResults = await _httpClient.GetAsync($"/search?q={query}", ct);
+        // Map API response to List<ProductLookupResult> and return
+        return mappedResults;
+    }
+
+    public Task EnrichPipelineAsync(
+        ProductLookupPipelineContext context,
+        List<ProductLookupResult> lookupResults,
+        CancellationToken ct = default)
+    {
+        foreach (var result in lookupResults)
+        {
+            var existing = context.FindMatchingResult(barcode: result.Barcode);
+            if (existing != null)
+            {
+                // Enrich existing result (first plugin wins via ??=)
+                existing.Nutrition ??= result.Nutrition;
+                existing.DataSources.TryAdd(DisplayName, result.Barcode ?? "");
+            }
+            else
+            {
+                context.AddResult(result);
+            }
+        }
+        return Task.CompletedTask;
+    }
 }
 ```
 
@@ -90,7 +160,8 @@ public interface IProductLookupPlugin
 1. Reference `Famick.HomeManagement.Core` to get the interface definition
 2. Implement a parameterless constructor (DI is not available for external plugins)
 3. Handle your own HTTP client creation and configuration
-4. Return empty list on errors (don't throw exceptions)
+4. Return empty list from `LookupAsync` on errors (don't throw exceptions)
+5. Do NOT access the pipeline context from `LookupAsync` - it runs in parallel
 
 ## Docker Mounting
 
