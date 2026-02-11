@@ -116,7 +116,12 @@ public class MyNutritionPlugin : IProductLookupPlugin
     public string DisplayName => "My Nutrition API";
     public string Version => "1.0.0";
     public bool IsAvailable => true;
-    public PluginAttribution? Attribution => null;
+
+    public PluginAttribution? Attribution => new()
+    {
+        Url = "https://mynutritionapi.example.com",
+        LicenseText = "CC BY 4.0"
+    };
 
     public Task InitAsync(JsonElement? pluginConfig, CancellationToken ct = default)
         => Task.CompletedTask;
@@ -128,6 +133,8 @@ public class MyNutritionPlugin : IProductLookupPlugin
         // Call your external API here — this runs in parallel with other plugins
         var apiResults = await _httpClient.GetAsync($"/search?q={query}", ct);
         // Map API response to List<ProductLookupResult> and return
+        // Set AttributionMarkdown on each result:
+        // result.AttributionMarkdown = $"Data from [{DisplayName}]({Attribution!.Url}) ({Attribution.LicenseText}).";
         return mappedResults;
     }
 
@@ -144,6 +151,14 @@ public class MyNutritionPlugin : IProductLookupPlugin
                 // Enrich existing result (first plugin wins via ??=)
                 existing.Nutrition ??= result.Nutrition;
                 existing.DataSources.TryAdd(DisplayName, result.Barcode ?? "");
+
+                // Merge attribution markdown
+                if (!string.IsNullOrEmpty(result.AttributionMarkdown))
+                {
+                    existing.AttributionMarkdown = existing.AttributionMarkdown != null
+                        ? existing.AttributionMarkdown + "\n\n" + result.AttributionMarkdown
+                        : result.AttributionMarkdown;
+                }
             }
             else
             {
