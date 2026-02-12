@@ -9,44 +9,13 @@
     FlyoutBehavior="Flyout"
     ios:NavigationPage.IsNavigationBarTranslucent="True">
 
-    <!-- Household name in navigation bar with notification bell -->
+    <!-- Household name in navigation bar -->
     <Shell.TitleView>
-        <Grid ColumnDefinitions="*,Auto" Padding="0,0,5,0">
-            <Label x:Name="TitleLabel"
-                   Grid.Column="0"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   VerticalOptions="Center"
-                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
-            <Grid Grid.Column="1" WidthRequest="24" HeightRequest="24">
-                <ImageButton x:Name="NotificationBellButton"
-                             Clicked="OnNotificationBellClicked"
-                             Source="notification_bell"
-                             Aspect="AspectFit"
-                             WidthRequest="16"
-                             HeightRequest="16"
-                             HorizontalOptions="Center"
-                             VerticalOptions="Center"
-                             BackgroundColor="Transparent" />
-                <Border x:Name="NotificationBadge"
-                        IsVisible="False"
-                        WidthRequest="14"
-                        HeightRequest="14"
-                        StrokeShape="RoundRectangle 7"
-                        Stroke="Transparent"
-                        BackgroundColor="#E53935"
-                        HorizontalOptions="End"
-                        VerticalOptions="Start"
-                        Margin="0,0,0,0">
-                    <Label x:Name="NotificationBadgeLabel"
-                           Text="0"
-                           FontSize="8"
-                           TextColor="White"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                </Border>
-            </Grid>
-        </Grid>
+        <Label x:Name="TitleLabel"
+               FontSize="18"
+               FontAttributes="Bold"
+               VerticalOptions="Center"
+               TextColor="{AppThemeBinding Light=Black, Dark=White}" />
     </Shell.TitleView>
 
     <Shell.Resources>

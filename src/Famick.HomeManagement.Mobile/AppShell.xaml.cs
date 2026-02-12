@@ -8,10 +8,22 @@ namespace Famick.HomeManagement.Mobile;
 public partial class AppShell : Shell
 {
     private string _appTitle = "Famick Home";
+    private ToolbarItem _notificationBellToolbarItem = null!;
+    private bool _hasUnreadNotifications;
 
     public AppShell()
     {
         InitializeComponent();
+
+        _notificationBellToolbarItem = new ToolbarItem
+        {
+            Text = "Notifications",
+            IconImageSource = "notification_bell",
+            Order = ToolbarItemOrder.Primary,
+            AutomationId = "NotificationBellToolbarItem"
+        };
+        _notificationBellToolbarItem.Clicked += OnNotificationBellClicked;
+        ToolbarItems.Add(_notificationBellToolbarItem);
 
         // Register routes for navigation (LoginPage is shown modally, not via Shell routing)
         Routing.RegisterRoute(nameof(ServerConfigPage), typeof(ServerConfigPage));
@@ -276,12 +288,17 @@ public partial class AppShell : Shell
             var result = await apiClient.GetUnreadNotificationCountAsync().ConfigureAwait(false);
             if (result.Success && result.Data != null)
             {
-                var count = result.Data.UnreadCount;
-                MainThread.BeginInvokeOnMainThread(() =>
+                var hasUnread = result.Data.Count > 0;
+                if (hasUnread != _hasUnreadNotifications)
                 {
-                    NotificationBadge.IsVisible = count > 0;
-                    NotificationBadgeLabel.Text = count > 99 ? "99+" : count.ToString();
-                });
+                    _hasUnreadNotifications = hasUnread;
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        _notificationBellToolbarItem.IconImageSource = hasUnread
+                            ? "notification_bell_unread"
+                            : "notification_bell";
+                    });
+                }
             }
         }
         catch (Exception ex)

@@ -670,7 +670,7 @@ public class UserInfo
 public class NotificationItemDto
 {
     public Guid Id { get; set; }
-    public string Type { get; set; } = "";
+    public int Type { get; set; }
     public string Title { get; set; } = "";
     public string Summary { get; set; } = "";
     public string? DeepLinkUrl { get; set; }
@@ -694,7 +694,7 @@ public class NotificationListResponseDto
 /// </summary>
 public class UnreadCountDto
 {
-    public int UnreadCount { get; set; }
+    public int Count { get; set; }
 }
 
 /// <summary>

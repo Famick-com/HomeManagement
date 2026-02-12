@@ -27,6 +27,44 @@ public static class MauiProgram
 #if IOS
         // Disable iOS Password AutoFill floating button
         Platforms.iOS.DisableAutoFillHandler.Register();
+
+        // Render notification bell icon with original colors so the red dot is visible
+        Microsoft.Maui.Handlers.ToolbarHandler.Mapper.AppendToMapping(
+            "PreserveNotificationBellColors", (handler, view) =>
+            {
+                if (handler.PlatformView is UIKit.UINavigationBar navBar)
+                {
+                    foreach (var item in navBar.TopItem?.RightBarButtonItems ?? [])
+                    {
+                        if (item.Image != null)
+                        {
+                            item.Image = item.Image.ImageWithRenderingMode(
+                                UIKit.UIImageRenderingMode.AlwaysOriginal);
+                        }
+                    }
+                }
+            });
+#endif
+
+#if ANDROID
+        // Disable icon tinting for toolbar so the notification bell red dot is visible
+        Microsoft.Maui.Handlers.ToolbarHandler.Mapper.AppendToMapping(
+            "PreserveNotificationBellColors", (handler, view) =>
+            {
+                if (handler.PlatformView is AndroidX.AppCompat.Widget.Toolbar toolbar)
+                {
+                    toolbar.Post(() =>
+                    {
+                        var menu = toolbar.Menu;
+                        if (menu == null) return;
+                        for (int i = 0; i < menu.Size(); i++)
+                        {
+                            var menuItem = menu.GetItem(i);
+                            menuItem?.Icon?.SetTintList(null);
+                        }
+                    });
+                }
+            });
 #endif
 
         // API Settings (singleton - configures server URL)

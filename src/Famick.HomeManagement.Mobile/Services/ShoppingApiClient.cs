@@ -2135,13 +2135,13 @@ public class ShoppingApiClient
     /// Get paginated notifications with optional read filter.
     /// </summary>
     public async Task<ApiResult<NotificationListResponseDto>> GetNotificationsAsync(
-        int page = 1, int pageSize = 20, string? readFilter = null)
+        int page = 1, int pageSize = 20, bool? readFilter = null)
     {
         try
         {
             var endpoint = $"api/v1/notifications?page={page}&pageSize={pageSize}";
-            if (!string.IsNullOrEmpty(readFilter))
-                endpoint += $"&readFilter={readFilter}";
+            if (readFilter.HasValue)
+                endpoint += $"&readFilter={readFilter.Value.ToString().ToLowerInvariant()}";
 
             var response = await _httpClient.GetAsync(endpoint);
             if (response.IsSuccessStatusCode)

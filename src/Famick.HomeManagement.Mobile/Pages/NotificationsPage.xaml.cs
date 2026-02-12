@@ -41,7 +41,7 @@ public partial class NotificationsPage : ContentPage
 
         try
         {
-            var readFilter = _showUnreadOnly ? "unread" : "";
+            bool? readFilter = _showUnreadOnly ? false : null;
             var result = await _apiClient.GetNotificationsAsync(_currentPage, PageSize, readFilter);
 
             if (result.Success && result.Data != null)
@@ -235,7 +235,7 @@ public partial class NotificationsPage : ContentPage
 public class NotificationDisplayItem : BindableObject
 {
     public Guid Id { get; init; }
-    public string Type { get; init; } = "";
+    public int Type { get; init; }
     public string Title { get; init; } = "";
     public string Summary { get; init; } = "";
     public string? DeepLinkUrl { get; init; }
@@ -244,10 +244,10 @@ public class NotificationDisplayItem : BindableObject
 
     public string TypeIcon => Type switch
     {
-        "ExpiryLowStock" => "\u26A0\uFE0F",  // Warning
-        "TaskSummary" => "\u2705",             // Check mark
-        "NewFeatures" => "\U0001F389",         // Party popper
-        _ => "\U0001F514"                      // Bell
+        1 => "\u26A0\uFE0F",      // ExpiryLowStock - Warning
+        2 => "\u2705",             // TaskSummary - Check mark
+        3 => "\U0001F389",         // NewFeatures - Party popper
+        _ => "\U0001F514"          // Default - Bell
     };
 
     public string TitleFontAttributes => IsUnread ? "Bold" : "None";
