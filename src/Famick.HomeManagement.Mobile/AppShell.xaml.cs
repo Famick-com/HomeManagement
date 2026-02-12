@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Mobile.Pages;
+using Famick.HomeManagement.Mobile.Pages.Recipes;
 using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -23,6 +24,12 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(AisleOrderPage), typeof(AisleOrderPage));
         Routing.RegisterRoute(nameof(QuickConsumePage), typeof(QuickConsumePage));
         Routing.RegisterRoute(nameof(ChildProductSelectionPage), typeof(ChildProductSelectionPage));
+
+        // Recipe routes
+        Routing.RegisterRoute(nameof(RecipeDetailPage), typeof(RecipeDetailPage));
+        Routing.RegisterRoute(nameof(RecipeEditPage), typeof(RecipeEditPage));
+        Routing.RegisterRoute(nameof(RecipeStepsPage), typeof(RecipeStepsPage));
+        Routing.RegisterRoute(nameof(AddIngredientPage), typeof(AddIngredientPage));
 
         // Wizard routes
         Routing.RegisterRoute(nameof(WizardHouseholdInfoPage), typeof(WizardHouseholdInfoPage));

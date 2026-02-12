@@ -2353,4 +2353,347 @@ public class ShoppingApiClient
             return errorResponse.Length > 200 ? errorResponse[..200] + "..." : errorResponse;
         }
     }
+
+    #region Recipe APIs
+
+    public async Task<ApiResult<List<RecipeSummary>>> GetRecipesAsync(string? searchTerm = null, string? sortBy = null)
+    {
+        try
+        {
+            var query = "api/v1/recipes";
+            var parameters = new List<string>();
+            if (!string.IsNullOrEmpty(searchTerm)) parameters.Add($"searchTerm={Uri.EscapeDataString(searchTerm)}");
+            if (!string.IsNullOrEmpty(sortBy)) parameters.Add($"sortBy={Uri.EscapeDataString(sortBy)}");
+            if (parameters.Count > 0) query += "?" + string.Join("&", parameters);
+
+            var response = await _httpClient.GetAsync(query).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<RecipeSummary>>();
+                return result != null
+                    ? ApiResult<List<RecipeSummary>>.Ok(result)
+                    : ApiResult<List<RecipeSummary>>.Fail("Invalid response");
+            }
+            return ApiResult<List<RecipeSummary>>.Fail("Failed to load recipes");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<RecipeSummary>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeDetail>> GetRecipeAsync(Guid id)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/recipes/{id}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeDetail>();
+                return result != null
+                    ? ApiResult<RecipeDetail>.Ok(result)
+                    : ApiResult<RecipeDetail>.Fail("Invalid response");
+            }
+            return ApiResult<RecipeDetail>.Fail("Failed to load recipe");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeDetail>> CreateRecipeAsync(CreateRecipeRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/recipes", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeDetail>();
+                return result != null
+                    ? ApiResult<RecipeDetail>.Ok(result)
+                    : ApiResult<RecipeDetail>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeDetail>.Fail(ParseErrorMessage(error) ?? "Failed to create recipe");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeDetail>> UpdateRecipeAsync(Guid id, UpdateRecipeRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/recipes/{id}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeDetail>();
+                return result != null
+                    ? ApiResult<RecipeDetail>.Ok(result)
+                    : ApiResult<RecipeDetail>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeDetail>.Fail(ParseErrorMessage(error) ?? "Failed to update recipe");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteRecipeAsync(Guid id)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/recipes/{id}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete recipe");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeStep>> CreateRecipeStepAsync(Guid recipeId, CreateRecipeStepRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/recipes/{recipeId}/steps", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeStep>();
+                return result != null
+                    ? ApiResult<RecipeStep>.Ok(result)
+                    : ApiResult<RecipeStep>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeStep>.Fail(ParseErrorMessage(error) ?? "Failed to create step");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeStep>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeStep>> UpdateRecipeStepAsync(Guid recipeId, Guid stepId, UpdateRecipeStepRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/recipes/{recipeId}/steps/{stepId}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeStep>();
+                return result != null
+                    ? ApiResult<RecipeStep>.Ok(result)
+                    : ApiResult<RecipeStep>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeStep>.Fail(ParseErrorMessage(error) ?? "Failed to update step");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeStep>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteRecipeStepAsync(Guid recipeId, Guid stepId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/recipes/{recipeId}/steps/{stepId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete step");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> ReorderRecipeStepsAsync(Guid recipeId, ReorderStepsRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/recipes/{recipeId}/steps/reorder", request);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to reorder steps");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeIngredient>> CreateRecipeIngredientAsync(Guid recipeId, Guid stepId, CreateRecipeIngredientRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/recipes/{recipeId}/steps/{stepId}/ingredients", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeIngredient>();
+                return result != null
+                    ? ApiResult<RecipeIngredient>.Ok(result)
+                    : ApiResult<RecipeIngredient>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeIngredient>.Fail(ParseErrorMessage(error) ?? "Failed to add ingredient");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeIngredient>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteRecipeIngredientAsync(Guid recipeId, Guid stepId, Guid ingredientId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/recipes/{recipeId}/steps/{stepId}/ingredients/{ingredientId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete ingredient");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeImage>> UploadRecipeImageAsync(Guid recipeId, Stream imageStream, string fileName)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            using var streamContent = new StreamContent(imageStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            content.Add(streamContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync($"api/v1/recipes/{recipeId}/images", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeImage>();
+                return result != null
+                    ? ApiResult<RecipeImage>.Ok(result)
+                    : ApiResult<RecipeImage>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeImage>.Fail(ParseErrorMessage(error) ?? "Failed to upload image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeImage>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteRecipeImageAsync(Guid recipeId, Guid imageId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/recipes/{recipeId}/images/{imageId}");
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeShareToken>> GenerateRecipeShareAsync(Guid recipeId)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"api/v1/recipes/{recipeId}/share", null);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeShareToken>();
+                return result != null
+                    ? ApiResult<RecipeShareToken>.Ok(result)
+                    : ApiResult<RecipeShareToken>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeShareToken>.Fail(ParseErrorMessage(error) ?? "Failed to generate share link");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeShareToken>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<ProductSearchResult>>> SearchProductsForRecipeAsync(string searchTerm)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/products?searchTerm={Uri.EscapeDataString(searchTerm)}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ProductSearchResult>>();
+                return result != null
+                    ? ApiResult<List<ProductSearchResult>>.Ok(result)
+                    : ApiResult<List<ProductSearchResult>>.Fail("Invalid response");
+            }
+            return ApiResult<List<ProductSearchResult>>.Fail("Failed to search products");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ProductSearchResult>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<QuantityUnitSummary>>> GetQuantityUnitsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/quantity-units").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<QuantityUnitSummary>>();
+                return result != null
+                    ? ApiResult<List<QuantityUnitSummary>>.Ok(result)
+                    : ApiResult<List<QuantityUnitSummary>>.Fail("Invalid response");
+            }
+            return ApiResult<List<QuantityUnitSummary>>.Fail("Failed to load quantity units");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<QuantityUnitSummary>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeStep>> UploadStepImageAsync(Guid recipeId, Guid stepId, Stream imageStream, string fileName)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            using var streamContent = new StreamContent(imageStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            content.Add(streamContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync($"api/v1/recipes/{recipeId}/steps/{stepId}/image", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeStep>();
+                return result != null
+                    ? ApiResult<RecipeStep>.Ok(result)
+                    : ApiResult<RecipeStep>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeStep>.Fail(ParseErrorMessage(error) ?? "Failed to upload step image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeStep>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

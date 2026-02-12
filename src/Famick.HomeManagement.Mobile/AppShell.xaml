@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:pages="clr-namespace:Famick.HomeManagement.Mobile.Pages"
+    xmlns:recipes="clr-namespace:Famick.HomeManagement.Mobile.Pages.Recipes"
     FlyoutBehavior="Flyout"
     ios:NavigationPage.IsNavigationBarTranslucent="True">
 
@@ -105,11 +106,18 @@
             Route="StockOverviewPage" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Recipes">
+        <ShellContent
+            Title="Recipes"
+            ContentTemplate="{DataTemplate recipes:RecipeListPage}"
+            Route="RecipeListPage" />
+    </FlyoutItem>
+
     <!-- Menu Footer with Actions -->
     <Shell.FlyoutFooter>
         <VerticalStackLayout Padding="15" Spacing="8">
-            <!-- Coming Soon Note -->
-            <Label Text="More features coming soon!"
+            <!-- App Note -->
+            <Label Text="Famick Home Management"
                    FontSize="12"
                    TextColor="{AppThemeBinding Light=#757575, Dark=#9E9E9E}"
                    HorizontalOptions="Center"

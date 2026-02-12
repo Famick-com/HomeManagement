@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui;
 using Famick.HomeManagement.Mobile.Pages;
 using Famick.HomeManagement.Mobile.Pages.Onboarding;
+using Famick.HomeManagement.Mobile.Pages.Recipes;
 using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 using Microsoft.Extensions.Logging;
@@ -111,6 +112,13 @@ public static class MauiProgram
         builder.Services.AddTransient<ChildProductSelectionPage>();
         builder.Services.AddTransient<InventorySessionPage>();
         builder.Services.AddTransient<StockOverviewPage>();
+
+        // Recipe Pages
+        builder.Services.AddTransient<RecipeListPage>();
+        builder.Services.AddTransient<RecipeDetailPage>();
+        builder.Services.AddTransient<RecipeEditPage>();
+        builder.Services.AddTransient<RecipeStepsPage>();
+        builder.Services.AddTransient<AddIngredientPage>();
 
         // Wizard Pages
         builder.Services.AddTransient<WizardHouseholdInfoPage>();

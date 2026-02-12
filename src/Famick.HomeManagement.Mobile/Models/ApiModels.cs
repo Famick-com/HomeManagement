@@ -843,12 +843,13 @@ public class CreateProductRequest
     public string? Description { get; set; }
     public Guid? LocationId { get; set; }
     public Guid? ProductGroupId { get; set; }
-    public Guid? QuPurchaseId { get; set; }
-    public Guid? QuStockId { get; set; }
-    public decimal QuConversionFactor { get; set; } = 1;
+    public Guid? QuantityUnitIdPurchase { get; set; }
+    public Guid? QuantityUnitIdStock { get; set; }
+    public decimal QuantityUnitFactorPurchaseToStock { get; set; } = 1;
     public decimal MinStockAmount { get; set; }
     public int DefaultBestBeforeDays { get; set; }
     public bool TracksBestBeforeDate { get; set; } = true;
+    public bool IsActive { get; set; } = true;
     public List<string> Barcodes { get; set; } = new();
     public string? ImageUrl { get; set; }
 }
