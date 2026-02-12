@@ -17,6 +17,31 @@ public class ShoppingApiClient
     }
 
     /// <summary>
+    /// Gets the base URL of the server (e.g. http://192.168.1.5:5000).
+    /// </summary>
+    public string BaseUrl => _httpClient.BaseAddress?.ToString().TrimEnd('/') ?? string.Empty;
+
+    /// <summary>
+    /// Downloads an image through the authenticated HttpClient and returns an ImageSource.
+    /// Use for images served from authenticated API endpoints (e.g. recipe/product images).
+    /// </summary>
+    public async Task<ImageSource?> LoadImageAsync(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return null;
+
+        try
+        {
+            // If URL is relative, it will resolve against HttpClient.BaseAddress
+            var bytes = await _httpClient.GetByteArrayAsync(url);
+            return ImageSource.FromStream(() => new MemoryStream(bytes));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Check if the server is reachable.
     /// </summary>
     public async Task<bool> CheckHealthAsync()
@@ -2601,6 +2626,59 @@ public class ShoppingApiClient
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
                 : ApiResult<bool>.Fail("Failed to delete image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SetPrimaryImageAsync(Guid recipeId, Guid imageId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/v1/recipes/{recipeId}/images/{imageId}/primary", null);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to set primary image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<RecipeFulfillment>> GetRecipeFulfillmentAsync(Guid recipeId, int? servings = null)
+    {
+        try
+        {
+            var url = $"api/v1/recipes/{recipeId}/fulfillment";
+            if (servings.HasValue) url += $"?servings={servings.Value}";
+            var response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RecipeFulfillment>();
+                return result != null
+                    ? ApiResult<RecipeFulfillment>.Ok(result)
+                    : ApiResult<RecipeFulfillment>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<RecipeFulfillment>.Fail(ParseErrorMessage(error) ?? "Failed to load fulfillment");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<RecipeFulfillment>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> AddRecipeToShoppingListAsync(Guid recipeId, AddToShoppingListRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/recipes/{recipeId}/add-to-shopping-list", request);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to add to shopping list");
         }
         catch (Exception ex)
         {

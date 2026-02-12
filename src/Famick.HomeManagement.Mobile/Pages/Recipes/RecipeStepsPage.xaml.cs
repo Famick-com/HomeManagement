@@ -214,8 +214,10 @@ public partial class RecipeStepsPage : ContentPage
         });
         expandContent.Children.Add(new Label { Text = "Media", FontSize = 14, FontAttributes = FontAttributes.Bold });
 
-        // Step image
-        if (!string.IsNullOrEmpty(step.DisplayImageUrl))
+        // Step image — use pre-loaded source for auth'd URLs, or external URL directly
+        var stepImgSource = step.LoadedImageSource
+            ?? (!string.IsNullOrEmpty(step.ImageExternalUrl) ? ImageSource.FromUri(new Uri(step.ImageExternalUrl)) : null);
+        if (stepImgSource != null)
         {
             var stepImage = new Border
             {
@@ -225,12 +227,37 @@ public partial class RecipeStepsPage : ContentPage
                 HorizontalOptions = LayoutOptions.Start,
                 Content = new Image
                 {
-                    Source = step.DisplayImageUrl,
+                    Source = stepImgSource,
                     HeightRequest = 120,
                     Aspect = Aspect.AspectFill
                 }
             };
             expandContent.Children.Add(stepImage);
+        }
+        else if (!string.IsNullOrEmpty(step.DisplayImageUrl))
+        {
+            // Load through authenticated client and update in-place
+            var img = new Image { HeightRequest = 120, Aspect = Aspect.AspectFill };
+            var stepImage = new Border
+            {
+                HeightRequest = 120,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 },
+                Stroke = Colors.Transparent,
+                HorizontalOptions = LayoutOptions.Start,
+                Content = img
+            };
+            expandContent.Children.Add(stepImage);
+
+            var url = step.DisplayImageUrl;
+            _ = Task.Run(async () =>
+            {
+                var source = await _apiClient.LoadImageAsync(url);
+                if (source != null)
+                {
+                    step.LoadedImageSource = source;
+                    MainThread.BeginInvokeOnMainThread(() => img.Source = source);
+                }
+            });
         }
 
         var addImageBtn = new Button

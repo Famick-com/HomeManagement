@@ -69,10 +69,26 @@ public partial class RecipeListPage : ContentPage
                     ShowError(result.ErrorMessage ?? "Failed to load recipes");
                 }
             });
+
+            // Load thumbnails in background after list renders
+            if (result.Success && result.Data != null)
+                _ = LoadThumbnailsAsync(result.Data);
         }
         catch (Exception ex)
         {
             MainThread.BeginInvokeOnMainThread(() => ShowError($"Connection error: {ex.Message}"));
+        }
+    }
+
+    private async Task LoadThumbnailsAsync(List<RecipeSummary> recipes)
+    {
+        foreach (var recipe in recipes)
+        {
+            if (string.IsNullOrEmpty(recipe.PrimaryImageUrl)) continue;
+
+            var source = await _apiClient.LoadImageAsync(recipe.PrimaryImageUrl);
+            if (source != null)
+                MainThread.BeginInvokeOnMainThread(() => recipe.ThumbnailSource = source);
         }
     }
 

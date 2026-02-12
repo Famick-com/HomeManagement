@@ -202,6 +202,37 @@ public partial class RecipeEditPage : ContentPage
 
         foreach (var image in _recipe.Images.OrderBy(i => i.SortOrder))
         {
+            var img = new Image
+            {
+                Aspect = Aspect.AspectFill,
+                WidthRequest = 80,
+                HeightRequest = 80
+            };
+
+            // Use pre-loaded source or load asynchronously for auth'd URLs
+            if (image.LoadedImageSource != null)
+            {
+                img.Source = image.LoadedImageSource;
+            }
+            else if (!string.IsNullOrEmpty(image.ExternalThumbnailUrl) || !string.IsNullOrEmpty(image.ExternalUrl))
+            {
+                img.Source = image.ThumbnailDisplayUrl;
+            }
+            else
+            {
+                // Load through authenticated HttpClient
+                var url = image.ThumbnailDisplayUrl;
+                _ = Task.Run(async () =>
+                {
+                    var source = await _apiClient.LoadImageAsync(url);
+                    if (source != null)
+                    {
+                        image.LoadedImageSource = source;
+                        MainThread.BeginInvokeOnMainThread(() => img.Source = source);
+                    }
+                });
+            }
+
             var imgBorder = new Border
             {
                 WidthRequest = 80,
@@ -210,26 +241,32 @@ public partial class RecipeEditPage : ContentPage
                 StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 },
                 Stroke = image.IsPrimary ? Color.FromArgb("#1976D2") : Colors.Transparent,
                 StrokeThickness = image.IsPrimary ? 2 : 0,
-                Content = new Image
-                {
-                    Source = image.ThumbnailDisplayUrl,
-                    Aspect = Aspect.AspectFill,
-                    WidthRequest = 80,
-                    HeightRequest = 80
-                }
+                Content = img
             };
 
             var imageId = image.Id;
+            var isPrimary = image.IsPrimary;
             var tapGesture = new TapGestureRecognizer();
             tapGesture.Tapped += async (_, _) =>
             {
-                var action = await DisplayActionSheetAsync("Image Options", "Cancel", "Delete");
+                var action = isPrimary
+                    ? await DisplayActionSheetAsync("Image Options", "Cancel", "Delete")
+                    : await DisplayActionSheetAsync("Image Options", "Cancel", "Delete", "Set as Primary");
                 if (action == "Delete")
                 {
                     var result = await _apiClient.DeleteRecipeImageAsync(_recipe.Id, imageId);
                     if (result.Success)
                     {
                         _recipe.Images.RemoveAll(i => i.Id == imageId);
+                        RenderImages();
+                    }
+                }
+                else if (action == "Set as Primary")
+                {
+                    var result = await _apiClient.SetPrimaryImageAsync(_recipe.Id, imageId);
+                    if (result.Success)
+                    {
+                        foreach (var img2 in _recipe.Images) img2.IsPrimary = img2.Id == imageId;
                         RenderImages();
                     }
                 }

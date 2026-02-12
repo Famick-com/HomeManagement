@@ -70,11 +70,33 @@
                            FontAttributes="Bold" />
 
                     <HorizontalStackLayout Spacing="15">
-                        <HorizontalStackLayout Spacing="4">
-                            <Label Text="Servings:" FontSize="13" TextColor="Gray" />
-                            <Label x:Name="ServingsLabel" FontSize="13" FontAttributes="Bold" />
+                        <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                            <Label Text="Servings:" FontSize="13" TextColor="Gray" VerticalOptions="Center" />
+                            <Button x:Name="DecrementServingsBtn"
+                                    Text="-"
+                                    Clicked="OnDecrementServings"
+                                    WidthRequest="28" HeightRequest="28"
+                                    Padding="0"
+                                    FontSize="14"
+                                    CornerRadius="14"
+                                    BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                                    TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                            <Label x:Name="ServingsLabel" FontSize="13" FontAttributes="Bold" VerticalOptions="Center" />
+                            <Button x:Name="IncrementServingsBtn"
+                                    Text="+"
+                                    Clicked="OnIncrementServings"
+                                    WidthRequest="28" HeightRequest="28"
+                                    Padding="0"
+                                    FontSize="14"
+                                    CornerRadius="14"
+                                    BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                                    TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                            <Label x:Name="OriginalServingsLabel"
+                                   FontSize="11" TextColor="Gray"
+                                   VerticalOptions="Center"
+                                   IsVisible="False" />
                         </HorizontalStackLayout>
-                        <HorizontalStackLayout x:Name="StepCountContainer" Spacing="4">
+                        <HorizontalStackLayout x:Name="StepCountContainer" Spacing="4" VerticalOptions="Center">
                             <Label Text="Steps:" FontSize="13" TextColor="Gray" />
                             <Label x:Name="StepCountLabel" FontSize="13" FontAttributes="Bold" />
                         </HorizontalStackLayout>
@@ -134,6 +156,16 @@
                            FontSize="14"
                            TextColor="{AppThemeBinding Light=#424242, Dark=#BDBDBD}" />
                 </VerticalStackLayout>
+
+                <!-- Add to Shopping List -->
+                <Button x:Name="AddToListButton"
+                        Text="Add to Shopping List"
+                        Clicked="OnAddToShoppingListClicked"
+                        Margin="15,10"
+                        BackgroundColor="{AppThemeBinding Light=#1976D2, Dark=#90CAF9}"
+                        TextColor="{AppThemeBinding Light=White, Dark=Black}"
+                        CornerRadius="8"
+                        FontAttributes="Bold" />
 
                 <!-- Bottom spacing -->
                 <BoxView HeightRequest="20" BackgroundColor="Transparent" />

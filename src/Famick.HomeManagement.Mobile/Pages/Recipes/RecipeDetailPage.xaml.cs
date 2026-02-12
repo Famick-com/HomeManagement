@@ -8,6 +8,7 @@ public partial class RecipeDetailPage : ContentPage
 {
     private readonly ShoppingApiClient _apiClient;
     private RecipeDetail? _recipe;
+    private int _scaledServings;
 
     public string RecipeId { get; set; } = string.Empty;
 
@@ -37,19 +38,22 @@ public partial class RecipeDetailPage : ContentPage
         {
             var result = await _apiClient.GetRecipeAsync(id);
 
-            MainThread.BeginInvokeOnMainThread(() =>
+            if (result.Success && result.Data != null)
             {
-                if (result.Success && result.Data != null)
+                _recipe = result.Data;
+                _scaledServings = _recipe.Servings;
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    _recipe = result.Data;
                     RenderRecipe();
                     ShowContentView();
-                }
-                else
-                {
-                    ShowError(result.ErrorMessage ?? "Failed to load recipe");
-                }
-            });
+                });
+                await LoadImagesAsync();
+            }
+            else
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                    ShowError(result.ErrorMessage ?? "Failed to load recipe"));
+            }
         }
         catch (Exception ex)
         {
@@ -63,19 +67,11 @@ public partial class RecipeDetailPage : ContentPage
 
         TitleLabel.Text = _recipe.Name;
         RecipeNameLabel.Text = _recipe.Name;
-        ServingsLabel.Text = _recipe.Servings.ToString();
+        UpdateServingsDisplay();
         StepCountLabel.Text = _recipe.Steps.Count.ToString();
 
-        // Primary image
-        if (!string.IsNullOrEmpty(_recipe.PrimaryImageUrl))
-        {
-            PrimaryImage.Source = _recipe.PrimaryImageUrl;
-            ImageContainer.IsVisible = true;
-        }
-        else
-        {
-            ImageContainer.IsVisible = false;
-        }
+        // Primary image (loaded asynchronously via LoadImagesAsync)
+        ImageContainer.IsVisible = !string.IsNullOrEmpty(_recipe.PrimaryImageUrl);
 
         // Source
         if (!string.IsNullOrEmpty(_recipe.Source))
@@ -109,6 +105,80 @@ public partial class RecipeDetailPage : ContentPage
             NotesSection.IsVisible = true;
             NotesDivider.IsVisible = true;
         }
+    }
+
+    private async Task LoadImagesAsync()
+    {
+        if (_recipe == null) return;
+
+        // Load primary image
+        var primaryUrl = _recipe.PrimaryImageUrl;
+        if (!string.IsNullOrEmpty(primaryUrl))
+        {
+            var imageSource = await _apiClient.LoadImageAsync(primaryUrl);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (imageSource != null)
+                {
+                    PrimaryImage.Source = imageSource;
+                    ImageContainer.IsVisible = true;
+                }
+                else
+                {
+                    ImageContainer.IsVisible = false;
+                }
+            });
+        }
+
+        // Load step images
+        if (_recipe.Steps.Count > 0)
+        {
+            foreach (var step in _recipe.Steps)
+            {
+                if (string.IsNullOrEmpty(step.DisplayImageUrl) || !string.IsNullOrEmpty(step.ImageExternalUrl))
+                    continue;
+
+                var stepImage = await _apiClient.LoadImageAsync(step.DisplayImageUrl);
+                if (stepImage != null)
+                {
+                    // Store loaded image for re-render
+                    step.LoadedImageSource = stepImage;
+                }
+            }
+            MainThread.BeginInvokeOnMainThread(RenderSteps);
+        }
+    }
+
+    private void UpdateServingsDisplay()
+    {
+        if (_recipe == null) return;
+        ServingsLabel.Text = _scaledServings.ToString();
+
+        var isScaled = _scaledServings != _recipe.Servings;
+        OriginalServingsLabel.IsVisible = isScaled;
+        if (isScaled)
+            OriginalServingsLabel.Text = $"(original: {_recipe.Servings})";
+    }
+
+    private decimal GetScaleFactor()
+    {
+        if (_recipe == null || _recipe.Servings <= 0) return 1m;
+        return (decimal)_scaledServings / _recipe.Servings;
+    }
+
+    private void OnDecrementServings(object? sender, EventArgs e)
+    {
+        if (_scaledServings <= 1) return;
+        _scaledServings--;
+        UpdateServingsDisplay();
+        RenderSteps();
+    }
+
+    private void OnIncrementServings(object? sender, EventArgs e)
+    {
+        _scaledServings++;
+        UpdateServingsDisplay();
+        RenderSteps();
     }
 
     private void RenderSteps()
@@ -156,8 +226,10 @@ public partial class RecipeDetailPage : ContentPage
             FontAttributes = FontAttributes.Bold
         });
 
-        // Step image
-        if (!string.IsNullOrEmpty(step.DisplayImageUrl))
+        // Step image — use pre-loaded source for auth'd URLs, or external URL directly
+        var stepImageSource = step.LoadedImageSource
+            ?? (!string.IsNullOrEmpty(step.ImageExternalUrl) ? ImageSource.FromUri(new Uri(step.ImageExternalUrl)) : null);
+        if (stepImageSource != null)
         {
             var imgBorder = new Border
             {
@@ -166,7 +238,7 @@ public partial class RecipeDetailPage : ContentPage
                 Stroke = Colors.Transparent,
                 Content = new Image
                 {
-                    Source = step.DisplayImageUrl,
+                    Source = stepImageSource,
                     Aspect = Aspect.AspectFill,
                     HeightRequest = 150
                 }
@@ -198,11 +270,15 @@ public partial class RecipeDetailPage : ContentPage
                 TextColor = Colors.Gray
             });
 
+            var scaleFactor = GetScaleFactor();
+            var isScaled = _recipe != null && _scaledServings != _recipe.Servings;
+
             foreach (var ingredient in step.Ingredients.OrderBy(ing => ing.SortOrder))
             {
+                var text = FormatIngredient(ingredient, scaleFactor, isScaled);
                 layout.Children.Add(new Label
                 {
-                    Text = $"  \u2022 {ingredient.DisplayText}",
+                    Text = $"  \u2022 {text}",
                     FontSize = 13,
                     TextColor = Application.Current?.RequestedTheme == AppTheme.Dark
                         ? Color.FromArgb("#BDBDBD") : Color.FromArgb("#555555")
@@ -232,6 +308,21 @@ public partial class RecipeDetailPage : ContentPage
 
         card.Content = layout;
         return card;
+    }
+
+    private static string FormatIngredient(RecipeIngredient ingredient, decimal scaleFactor, bool isScaled)
+    {
+        if (!isScaled || ingredient.Amount <= 0)
+            return ingredient.DisplayText;
+
+        var scaledAmount = ingredient.Amount * scaleFactor;
+        var parts = new List<string>();
+        parts.Add(scaledAmount.ToString("G"));
+        if (!string.IsNullOrEmpty(ingredient.QuantityUnitName)) parts.Add(ingredient.QuantityUnitName);
+        parts.Add(ingredient.ProductName);
+        if (!string.IsNullOrEmpty(ingredient.Note)) parts.Add($"({ingredient.Note})");
+        parts.Add($"(was {ingredient.Amount:G})");
+        return string.Join(" ", parts);
     }
 
     private void RenderNestedRecipes()
@@ -311,12 +402,105 @@ public partial class RecipeDetailPage : ContentPage
     {
         if (_recipe == null) return;
 
-        await Share.Default.RequestAsync(new ShareTextRequest
+        try
         {
-            Title = _recipe.Name,
-            Text = $"Check out this recipe: {_recipe.Name}",
-            Uri = _recipe.Source
-        });
+            var result = await _apiClient.GenerateRecipeShareAsync(_recipe.Id);
+            if (result.Success && result.Data != null)
+            {
+                // ShareUrl from API may be relative — ensure it's absolute
+                var shareUrl = result.Data.ShareUrl;
+                if (!shareUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    shareUrl = $"{_apiClient.BaseUrl}{shareUrl}";
+
+                await Share.Default.RequestAsync(new ShareTextRequest
+                {
+                    Title = _recipe.Name,
+                    Text = $"Check out this recipe: {_recipe.Name}",
+                    Uri = shareUrl
+                });
+            }
+            else
+            {
+                await DisplayAlertAsync("Error", result.ErrorMessage ?? "Failed to generate share link", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Error", $"Failed to share: {ex.Message}", "OK");
+        }
+    }
+
+    private async void OnAddToShoppingListClicked(object? sender, EventArgs e)
+    {
+        if (_recipe == null) return;
+
+        AddToListButton.IsEnabled = false;
+        try
+        {
+            // Fetch fulfillment and shopping lists in parallel
+            var fulfillmentTask = _apiClient.GetRecipeFulfillmentAsync(_recipe.Id, _scaledServings);
+            var listsTask = _apiClient.GetShoppingListsAsync();
+            await Task.WhenAll(fulfillmentTask, listsTask);
+
+            var fulfillmentResult = fulfillmentTask.Result;
+            var listsResult = listsTask.Result;
+
+            if (!fulfillmentResult.Success || fulfillmentResult.Data == null)
+            {
+                await DisplayAlertAsync("Error", fulfillmentResult.ErrorMessage ?? "Failed to load ingredients", "OK");
+                return;
+            }
+
+            if (!listsResult.Success || listsResult.Data == null || listsResult.Data.Count == 0)
+            {
+                await DisplayAlertAsync("No Lists", "Create a shopping list first.", "OK");
+                return;
+            }
+
+            // Show fulfillment summary
+            var items = fulfillmentResult.Data.Ingredients;
+            var missingCount = items.Count(i => !i.IsSufficient);
+            var totalCount = items.Count;
+
+            var proceed = await DisplayAlertAsync(
+                "Add to Shopping List",
+                $"{totalCount} ingredients ({missingCount} missing, {totalCount - missingCount} in stock).\nAdd missing items to a shopping list?",
+                "Choose List", "Cancel");
+
+            if (!proceed) return;
+
+            // Pick shopping list
+            var lists = listsResult.Data;
+            var listNames = lists.Select(l => l.Name).ToArray();
+            var selectedName = await DisplayActionSheetAsync("Select Shopping List", "Cancel", null, listNames);
+
+            if (string.IsNullOrEmpty(selectedName) || selectedName == "Cancel") return;
+
+            var selectedList = lists.First(l => l.Name == selectedName);
+
+            var addResult = await _apiClient.AddRecipeToShoppingListAsync(_recipe.Id, new AddToShoppingListRequest
+            {
+                ShoppingListId = selectedList.Id,
+                Servings = _scaledServings != _recipe.Servings ? _scaledServings : null
+            });
+
+            if (addResult.Success)
+            {
+                await DisplayAlertAsync("Success", $"Ingredients added to {selectedName}.", "OK");
+            }
+            else
+            {
+                await DisplayAlertAsync("Error", addResult.ErrorMessage ?? "Failed to add to list", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Error", $"Failed: {ex.Message}", "OK");
+        }
+        finally
+        {
+            AddToListButton.IsEnabled = true;
+        }
     }
 
     private async void OnRetryClicked(object? sender, EventArgs e)

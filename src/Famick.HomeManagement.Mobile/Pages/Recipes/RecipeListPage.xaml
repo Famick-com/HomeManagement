@@ -100,7 +100,7 @@
                                             StrokeShape="RoundRectangle 8"
                                             Stroke="Transparent"
                                             BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#3A3A3A}">
-                                        <Image Source="{Binding PrimaryImageUrl}"
+                                        <Image Source="{Binding ThumbnailSource}"
                                                Aspect="AspectFill"
                                                WidthRequest="60"
                                                HeightRequest="60" />

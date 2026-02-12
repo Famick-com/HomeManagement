@@ -1,8 +1,10 @@
+using System.ComponentModel;
+
 namespace Famick.HomeManagement.Mobile.Models;
 
 #region Recipe Response DTOs
 
-public class RecipeSummary
+public class RecipeSummary : INotifyPropertyChanged
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -12,6 +14,24 @@ public class RecipeSummary
     public int StepCount { get; set; }
     public int NestedRecipeCount { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    private ImageSource? _thumbnailSource;
+
+    /// <summary>
+    /// Pre-loaded thumbnail for authenticated image URLs. Bind to this in XAML.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ImageSource? ThumbnailSource
+    {
+        get => _thumbnailSource;
+        set
+        {
+            _thumbnailSource = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ThumbnailSource)));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
 
 public class RecipeDetail
@@ -50,6 +70,12 @@ public class RecipeStep
     public string DisplayImageUrl => !string.IsNullOrEmpty(ImageExternalUrl) ? ImageExternalUrl
         : !string.IsNullOrEmpty(ImageUrl) ? ImageUrl : string.Empty;
     public string DisplayTitle => !string.IsNullOrEmpty(Title) ? Title : $"Step {StepOrder}";
+
+    /// <summary>
+    /// Pre-loaded image source for authenticated image URLs. Set by mobile pages after downloading.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ImageSource? LoadedImageSource { get; set; }
 }
 
 public class RecipeIngredient
@@ -93,6 +119,12 @@ public class RecipeImage
     public string DisplayUrl => !string.IsNullOrEmpty(ExternalUrl) ? ExternalUrl : Url;
     public string ThumbnailDisplayUrl => !string.IsNullOrEmpty(ExternalThumbnailUrl)
         ? ExternalThumbnailUrl : DisplayUrl;
+
+    /// <summary>
+    /// Pre-loaded image source for authenticated image URLs. Set by mobile pages after downloading.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public ImageSource? LoadedImageSource { get; set; }
 }
 
 public class NestedRecipe
@@ -110,6 +142,24 @@ public class RecipeShareToken
     public bool IsRevoked { get; set; }
     public string ShareUrl { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+public class RecipeFulfillment
+{
+    public Guid RecipeId { get; set; }
+    public string RecipeName { get; set; } = string.Empty;
+    public bool CanBeMade { get; set; }
+    public List<RecipeFulfillmentItem> Ingredients { get; set; } = new();
+}
+
+public class RecipeFulfillmentItem
+{
+    public Guid ProductId { get; set; }
+    public string ProductName { get; set; } = string.Empty;
+    public decimal RequiredAmount { get; set; }
+    public decimal AvailableAmount { get; set; }
+    public string? QuantityUnitName { get; set; }
+    public bool IsSufficient { get; set; }
 }
 
 #endregion
@@ -161,6 +211,12 @@ public class CreateRecipeIngredientRequest
 public class ReorderStepsRequest
 {
     public List<Guid> StepIds { get; set; } = new();
+}
+
+public class AddToShoppingListRequest
+{
+    public Guid ShoppingListId { get; set; }
+    public int? Servings { get; set; }
 }
 
 #endregion
