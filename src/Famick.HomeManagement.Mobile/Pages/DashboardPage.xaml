@@ -32,13 +32,14 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
                 <!-- Loading Indicator (overlays content) -->
                 <ActivityIndicator x:Name="LoadingIndicator"
                                    Grid.Row="0"
-                                   Grid.RowSpan="6"
+                                   Grid.RowSpan="7"
                                    IsRunning="False"
                                    IsVisible="False"
                                    VerticalOptions="Center"
@@ -307,8 +308,50 @@
                     </Border>
                 </Grid>
 
-                <!-- Quick Actions Section -->
+                <!-- Upcoming Events Widget -->
                 <Border Grid.Row="3"
+                        x:Name="UpcomingEventsSection"
+                        IsVisible="False"
+                        Padding="15"
+                        StrokeShape="RoundRectangle 12"
+                        Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark=#2A2A2A}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnUpcomingEventsTapped" />
+                    </Border.GestureRecognizers>
+                    <Border.Shadow>
+                        <Shadow Brush="{AppThemeBinding Light=#40000000, Dark=#20000000}"
+                                Offset="0,2"
+                                Radius="8"
+                                Opacity="0.15" />
+                    </Border.Shadow>
+                    <VerticalStackLayout Spacing="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Label Text="Upcoming Events"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                            <Label Grid.Column="1"
+                                   Text="View All ›"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light=#518751, Dark=#6B9E6B}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                        <VerticalStackLayout x:Name="UpcomingEventsList" Spacing="6" />
+                        <Label x:Name="NoEventsLabel"
+                               Text="No upcoming events"
+                               FontSize="13"
+                               TextColor="Gray"
+                               IsVisible="False" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Quick Actions Section -->
+                <Border Grid.Row="4"
                         Padding="20"
                         StrokeShape="RoundRectangle 12"
                         Stroke="Transparent"
@@ -353,7 +396,7 @@
                 </Border>
 
                 <!-- Overdue Chores Alert (conditionally visible) -->
-                <Border Grid.Row="4"
+                <Border Grid.Row="5"
                         x:Name="OverdueChoresAlert"
                         IsVisible="False"
                         Padding="15"
@@ -399,7 +442,7 @@
 
                 <!-- Error Message -->
                 <Border x:Name="ErrorAlert"
-                        Grid.Row="5"
+                        Grid.Row="6"
                         IsVisible="False"
                         Padding="15"
                         StrokeShape="RoundRectangle 10"

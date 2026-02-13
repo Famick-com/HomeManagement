@@ -1,4 +1,5 @@
 using Famick.HomeManagement.Mobile.Models;
+using Famick.HomeManagement.Mobile.Pages.Calendar;
 using Famick.HomeManagement.Mobile.Pages.Wizard;
 using Famick.HomeManagement.Mobile.Services;
 
@@ -15,6 +16,7 @@ public partial class DashboardPage : ContentPage
     private StockStatisticsDto? _stockStatistics;
     private int _overdueChoresCount;
     private int _dueThisWeekCount;
+    private List<CalendarOccurrence> _upcomingEvents = new();
     private bool _wizardRedirectAttempted;
 
     public DashboardPage(
@@ -165,7 +167,8 @@ public partial class DashboardPage : ContentPage
             await Task.WhenAll(
                 LoadShoppingDashboardAsync(),
                 LoadStockStatisticsAsync(),
-                LoadChoresDashboardAsync()
+                LoadChoresDashboardAsync(),
+                LoadUpcomingEventsAsync()
             );
 
             UpdateUI();
@@ -267,6 +270,9 @@ public partial class DashboardPage : ContentPage
                 ExpiringSubtitleLabel.Text = "items expiring";
             }
 
+            // Upcoming events
+            RenderUpcomingEvents();
+
             // Chores
             var totalChoresDue = _overdueChoresCount + _dueThisWeekCount;
             ChoresCountLabel.Text = totalChoresDue.ToString();
@@ -298,6 +304,128 @@ public partial class DashboardPage : ContentPage
                 }
             }
         });
+    }
+
+    private async Task LoadUpcomingEventsAsync()
+    {
+        try
+        {
+            var result = await _apiClient.GetUpcomingEventsAsync(7);
+            if (result.Success && result.Data != null)
+            {
+                _upcomingEvents = result.Data.Take(5).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Dashboard] Error loading upcoming events: {ex.Message}");
+        }
+    }
+
+    private void RenderUpcomingEvents()
+    {
+        UpcomingEventsList.Children.Clear();
+        UpcomingEventsSection.IsVisible = true;
+
+        if (_upcomingEvents.Count == 0)
+        {
+            NoEventsLabel.IsVisible = true;
+            return;
+        }
+
+        NoEventsLabel.IsVisible = false;
+
+        foreach (var evt in _upcomingEvents)
+        {
+            var startLocal = evt.StartTimeUtc.ToLocalTime();
+            var eventColor = !string.IsNullOrEmpty(evt.Color) ? evt.Color
+                : (evt.IsExternal ? "#9E9E9E" : "#518751");
+
+            var card = new Border
+            {
+                Padding = new Thickness(10, 8),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 8 },
+                Stroke = Colors.Transparent,
+                BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark
+                    ? Color.FromArgb("#333333") : Color.FromArgb("#F5F5F5")
+            };
+
+            var grid = new Grid
+            {
+                ColumnSpacing = 10,
+                ColumnDefinitions = new ColumnDefinitionCollection
+                {
+                    new ColumnDefinition(new GridLength(3)),
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)
+                }
+            };
+
+            // Color bar
+            var colorBar = new BoxView
+            {
+                Color = Color.FromArgb(eventColor),
+                CornerRadius = 1,
+                VerticalOptions = LayoutOptions.Fill
+            };
+            grid.Children.Add(colorBar);
+
+            // Title
+            var titleLabel = new Label
+            {
+                Text = evt.Title,
+                FontSize = 14,
+                LineBreakMode = LineBreakMode.TailTruncation,
+                MaxLines = 1,
+                VerticalOptions = LayoutOptions.Center,
+                TextColor = Application.Current?.RequestedTheme == AppTheme.Dark
+                    ? Colors.White : Colors.Black
+            };
+            Grid.SetColumn(titleLabel, 1);
+            grid.Children.Add(titleLabel);
+
+            // Time
+            var timeText = evt.IsAllDay ? "All Day"
+                : startLocal.Date == DateTime.Today ? startLocal.ToString("h:mm tt")
+                : startLocal.ToString("MMM d, h:mm tt");
+
+            var timeLabel = new Label
+            {
+                Text = timeText,
+                FontSize = 12,
+                TextColor = Colors.Gray,
+                VerticalOptions = LayoutOptions.Center
+            };
+            Grid.SetColumn(timeLabel, 2);
+            grid.Children.Add(timeLabel);
+
+            card.Content = grid;
+
+            // Tap to navigate
+            if (!evt.IsExternal)
+            {
+                var tapGesture = new TapGestureRecognizer();
+                var eventId = evt.EventId;
+                var originalStart = evt.OriginalStartTimeUtc;
+                tapGesture.Tapped += async (_, _) =>
+                {
+                    await Shell.Current.GoToAsync(nameof(CalendarEventDetailPage),
+                        new Dictionary<string, object>
+                        {
+                            { "EventId", eventId.ToString() },
+                            { "OriginalStartTimeUtc", originalStart?.ToString("O") ?? "" }
+                        });
+                };
+                card.GestureRecognizers.Add(tapGesture);
+            }
+
+            UpcomingEventsList.Children.Add(card);
+        }
+    }
+
+    private async void OnUpcomingEventsTapped(object? sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("//CalendarPage");
     }
 
     private void ShowLoading(bool isLoading)

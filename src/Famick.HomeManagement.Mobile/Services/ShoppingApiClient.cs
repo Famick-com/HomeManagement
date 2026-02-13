@@ -2774,4 +2774,161 @@ public class ShoppingApiClient
     }
 
     #endregion
+
+    #region Calendar APIs
+
+    public async Task<ApiResult<List<CalendarOccurrence>>> GetCalendarEventsAsync(
+        DateTime startDate, DateTime endDate, bool includeExternal = true)
+    {
+        try
+        {
+            var startUtc = startDate.ToUniversalTime().ToString("O");
+            var endUtc = endDate.ToUniversalTime().ToString("O");
+            var response = await _httpClient.GetAsync(
+                $"api/v1/calendar/events?startDate={startUtc}&endDate={endUtc}&includeExternalEvents={includeExternal}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<CalendarOccurrence>>();
+                return result != null
+                    ? ApiResult<List<CalendarOccurrence>>.Ok(result)
+                    : ApiResult<List<CalendarOccurrence>>.Ok(new List<CalendarOccurrence>());
+            }
+            return ApiResult<List<CalendarOccurrence>>.Fail("Failed to load calendar events");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<CalendarOccurrence>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<CalendarOccurrence>>> GetUpcomingEventsAsync(int days = 7)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/calendar/upcoming?days={days}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<CalendarOccurrence>>();
+                return result != null
+                    ? ApiResult<List<CalendarOccurrence>>.Ok(result)
+                    : ApiResult<List<CalendarOccurrence>>.Ok(new List<CalendarOccurrence>());
+            }
+            return ApiResult<List<CalendarOccurrence>>.Fail("Failed to load upcoming events");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<CalendarOccurrence>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<CalendarEventDetail>> GetCalendarEventAsync(Guid id)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/calendar/events/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CalendarEventDetail>();
+                return result != null
+                    ? ApiResult<CalendarEventDetail>.Ok(result)
+                    : ApiResult<CalendarEventDetail>.Fail("Invalid response");
+            }
+            return ApiResult<CalendarEventDetail>.Fail("Failed to load event");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<CalendarEventDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<CalendarEventDetail>> CreateCalendarEventAsync(CreateCalendarEventMobileRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/calendar/events", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CalendarEventDetail>();
+                return result != null
+                    ? ApiResult<CalendarEventDetail>.Ok(result)
+                    : ApiResult<CalendarEventDetail>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<CalendarEventDetail>.Fail(ParseErrorMessage(error) ?? "Failed to create event");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<CalendarEventDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<CalendarEventDetail>> UpdateCalendarEventAsync(Guid id, UpdateCalendarEventMobileRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/calendar/events/{id}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CalendarEventDetail>();
+                return result != null
+                    ? ApiResult<CalendarEventDetail>.Ok(result)
+                    : ApiResult<CalendarEventDetail>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<CalendarEventDetail>.Fail(ParseErrorMessage(error) ?? "Failed to update event");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<CalendarEventDetail>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteCalendarEventAsync(Guid id, DeleteCalendarEventMobileRequest? request = null)
+    {
+        try
+        {
+            HttpResponseMessage response;
+            if (request != null)
+            {
+                var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/calendar/events/{id}")
+                {
+                    Content = JsonContent.Create(request)
+                };
+                response = await _httpClient.SendAsync(httpRequest);
+            }
+            else
+            {
+                response = await _httpClient.DeleteAsync($"api/v1/calendar/events/{id}");
+            }
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete event");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<HouseholdMember>>> GetCalendarMembersAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/users");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<HouseholdMember>>();
+                return result != null
+                    ? ApiResult<List<HouseholdMember>>.Ok(result)
+                    : ApiResult<List<HouseholdMember>>.Ok(new List<HouseholdMember>());
+            }
+            return ApiResult<List<HouseholdMember>>.Fail("Failed to load members");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<HouseholdMember>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

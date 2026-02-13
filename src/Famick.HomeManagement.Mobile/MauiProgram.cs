@@ -1,5 +1,6 @@
 using CommunityToolkit.Maui;
 using Famick.HomeManagement.Mobile.Pages;
+using Famick.HomeManagement.Mobile.Pages.Calendar;
 using Famick.HomeManagement.Mobile.Pages.Onboarding;
 using Famick.HomeManagement.Mobile.Pages.Recipes;
 using Famick.HomeManagement.Mobile.Pages.Wizard;
@@ -150,6 +151,11 @@ public static class MauiProgram
         builder.Services.AddTransient<ChildProductSelectionPage>();
         builder.Services.AddTransient<InventorySessionPage>();
         builder.Services.AddTransient<StockOverviewPage>();
+
+        // Calendar Pages
+        builder.Services.AddTransient<CalendarPage>();
+        builder.Services.AddTransient<CalendarEventDetailPage>();
+        builder.Services.AddTransient<CreateEditEventPage>();
 
         // Recipe Pages
         builder.Services.AddTransient<RecipeListPage>();
