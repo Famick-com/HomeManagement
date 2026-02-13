@@ -364,7 +364,7 @@ public partial class DashboardPage : ContentPage
             // Color bar
             var colorBar = new BoxView
             {
-                Color = Color.FromArgb(eventColor),
+                Color = SafeParseColor(eventColor),
                 CornerRadius = 1,
                 VerticalOptions = LayoutOptions.Fill
             };
@@ -510,6 +510,40 @@ public partial class DashboardPage : ContentPage
     private async void OnQuickConsumeClicked(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(QuickConsumePage));
+    }
+
+    private static Color SafeParseColor(string colorValue)
+    {
+        if (string.IsNullOrEmpty(colorValue))
+            return Color.FromArgb("#518751");
+
+        // Hex color
+        if (colorValue[0] == '#')
+        {
+            try { return Color.FromArgb(colorValue); }
+            catch { return Color.FromArgb("#518751"); }
+        }
+
+        // Named CSS color
+        return colorValue.ToLowerInvariant() switch
+        {
+            "red" => Color.FromArgb("#F44336"),
+            "blue" => Color.FromArgb("#2196F3"),
+            "green" => Color.FromArgb("#4CAF50"),
+            "yellow" => Color.FromArgb("#FFEB3B"),
+            "orange" => Color.FromArgb("#FF9800"),
+            "purple" => Color.FromArgb("#9C27B0"),
+            "pink" => Color.FromArgb("#E91E63"),
+            "teal" => Color.FromArgb("#009688"),
+            "cyan" => Color.FromArgb("#00BCD4"),
+            "brown" => Color.FromArgb("#795548"),
+            "gray" or "grey" => Color.FromArgb("#9E9E9E"),
+            "indigo" => Color.FromArgb("#3F51B5"),
+            "amber" => Color.FromArgb("#FFC107"),
+            "black" => Color.FromArgb("#000000"),
+            "white" => Color.FromArgb("#FFFFFF"),
+            _ => Color.FromArgb("#518751") // fallback green
+        };
     }
 
     private async void OnWizardBannerTapped(object? sender, EventArgs e)
