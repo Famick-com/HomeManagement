@@ -249,6 +249,9 @@ builder.Services.AddHttpClient();
 // Add notification background service
 builder.Services.AddHostedService<NotificationBackgroundService>();
 
+// Add external calendar sync background service
+builder.Services.AddHostedService<ExternalCalendarSyncBackgroundService>();
+
 // Build the application
 var app = builder.Build();
 
