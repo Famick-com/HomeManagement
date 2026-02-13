@@ -60,6 +60,20 @@ public partial class CreateEditEventPage : ContentPage
 
             ShowLoading(false);
         }
+        else
+        {
+            // Auto-add the current user as Involved when creating a new event
+            var currentUser = _allMembers.FirstOrDefault(m => m.IsCurrentUser);
+            if (currentUser != null)
+            {
+                _selectedMembers.Add(new CalendarMemberRequest
+                {
+                    UserId = currentUser.Id,
+                    ParticipationType = 1 // Involved
+                });
+                RenderMembers();
+            }
+        }
     }
 
     private void PopulateForm()

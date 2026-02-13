@@ -17,6 +17,8 @@ public class CalendarOccurrence
     public bool IsExternal { get; set; }
     public DateTime? OriginalStartTimeUtc { get; set; }
     public List<CalendarEventMember> Members { get; set; } = new();
+    public string? OwnerDisplayName { get; set; }
+    public string? OwnerProfileImageUrl { get; set; }
 
     /// <summary>
     /// Local start time for display.
@@ -60,6 +62,7 @@ public class CalendarEventMember
     public Guid UserId { get; set; }
     public string UserDisplayName { get; set; } = string.Empty;
     public int ParticipationType { get; set; } // 1=Involved, 2=Aware
+    public string? ProfileImageUrl { get; set; }
 }
 
 /// <summary>
@@ -119,14 +122,11 @@ public class CalendarMemberRequest
 }
 
 /// <summary>
-/// Household member for member picker.
+/// Household member for member picker. Maps to CalendarMemberItem from the API.
 /// </summary>
 public class HouseholdMember
 {
     public Guid Id { get; set; }
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-
-    public string DisplayName => $"{FirstName} {LastName}".Trim();
+    public string DisplayName { get; set; } = string.Empty;
+    public bool IsCurrentUser { get; set; }
 }

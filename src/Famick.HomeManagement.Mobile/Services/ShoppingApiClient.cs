@@ -2887,19 +2887,18 @@ public class ShoppingApiClient
     {
         try
         {
-            HttpResponseMessage response;
+            var url = $"api/v1/calendar/events/{id}";
             if (request != null)
             {
-                var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"api/v1/calendar/events/{id}")
-                {
-                    Content = JsonContent.Create(request)
-                };
-                response = await _httpClient.SendAsync(httpRequest);
+                var queryParams = new List<string>();
+                if (request.EditScope.HasValue)
+                    queryParams.Add($"editScope={request.EditScope.Value}");
+                if (request.OccurrenceStartTimeUtc.HasValue)
+                    queryParams.Add($"occurrenceStartTimeUtc={request.OccurrenceStartTimeUtc.Value.ToString("O")}");
+                if (queryParams.Count > 0)
+                    url += "?" + string.Join("&", queryParams);
             }
-            else
-            {
-                response = await _httpClient.DeleteAsync($"api/v1/calendar/events/{id}");
-            }
+            var response = await _httpClient.DeleteAsync(url);
             return response.IsSuccessStatusCode
                 ? ApiResult<bool>.Ok(true)
                 : ApiResult<bool>.Fail("Failed to delete event");
@@ -2914,7 +2913,7 @@ public class ShoppingApiClient
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/v1/users");
+            var response = await _httpClient.GetAsync("api/v1/calendar/members");
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<List<HouseholdMember>>();
