@@ -252,6 +252,9 @@ builder.Services.AddHostedService<NotificationBackgroundService>();
 // Add external calendar sync background service
 builder.Services.AddHostedService<ExternalCalendarSyncBackgroundService>();
 
+// Add calendar reminder background service (5-minute polling)
+builder.Services.AddHostedService<CalendarReminderBackgroundService>();
+
 // Build the application
 var app = builder.Build();
 
