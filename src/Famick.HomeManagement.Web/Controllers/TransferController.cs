@@ -31,6 +31,15 @@ public class TransferController : ApiControllerBase
     }
 
     /// <summary>
+    /// Simple availability check. Returns 200 on self-hosted to indicate
+    /// the transfer feature exists. No DB access, no feature flag check.
+    /// Used by the UI to decide whether to show the Transfer to Cloud section.
+    /// </summary>
+    [HttpGet("available")]
+    [ProducesResponseType(200)]
+    public IActionResult GetAvailable() => Ok();
+
+    /// <summary>
     /// Authenticate against the cloud API and create a transfer session.
     /// </summary>
     [HttpPost("authenticate")]

@@ -45,6 +45,20 @@ public class TransferControllerTests
         return controller;
     }
 
+    #region Availability Tests
+
+    [Fact]
+    public void GetAvailable_AlwaysReturns200()
+    {
+        var controller = CreateController();
+
+        var result = controller.GetAvailable();
+
+        result.Should().BeOfType<OkResult>();
+    }
+
+    #endregion
+
     #region Feature Flag Tests
 
     [Fact]
