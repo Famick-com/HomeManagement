@@ -18,6 +18,7 @@ using Famick.HomeManagement.Infrastructure.Services;
 using Famick.HomeManagement.Core;
 using Famick.HomeManagement.Core.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+using Microsoft.EntityFrameworkCore;
 
 // Handle CLI commands before starting web host
 if (args.Length >= 1 && args[0] == "admin-cli")
@@ -246,6 +247,17 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddHttpClient();
 
+// Register Transfer to Cloud services
+builder.Services.AddDbContext<Famick.HomeManagement.Web.Data.TransferDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHttpClient("CloudApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["TransferToCloud:CloudUrl"] ?? "https://app.famick.com");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddSingleton<Famick.HomeManagement.Web.Services.ICloudTransferService,
+    Famick.HomeManagement.Web.Services.CloudTransferService>();
+
 // Add notification background service
 builder.Services.AddHostedService<NotificationBackgroundService>();
 
@@ -259,6 +271,13 @@ builder.Services.AddHostedService<CalendarReminderBackgroundService>();
 var app = builder.Build();
 
 await app.ConfigureInfrastructure(builder.Configuration);
+
+// Auto-migrate transfer tracking tables
+using (var migrationScope = app.Services.CreateScope())
+{
+    var transferDb = migrationScope.ServiceProvider.GetRequiredService<Famick.HomeManagement.Web.Data.TransferDbContext>();
+    await transferDb.Database.MigrateAsync();
+}
 
 
 // Configure the HTTP request pipeline
