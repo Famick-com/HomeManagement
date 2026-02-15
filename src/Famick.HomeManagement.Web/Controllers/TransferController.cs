@@ -71,9 +71,6 @@ public class TransferController : ApiControllerBase
     [ProducesResponseType(401)]
     public async Task<IActionResult> GetSession(CancellationToken ct)
     {
-        if (!_featureManager.IsEnabled(FeatureNames.TransferToCloud))
-            return ErrorResponse("Transfer to Cloud is not enabled", 403);
-
         var info = await _transferService.GetSessionInfoAsync(ct);
         return ApiResponse(info);
     }

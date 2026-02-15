@@ -72,15 +72,16 @@ public class TransferControllerTests
     }
 
     [Fact]
-    public async Task GetSession_WhenFeatureDisabled_Returns403()
+    public async Task GetSession_WhenFeatureDisabled_StillReturns200()
     {
         _mockFeatureManager.Setup(x => x.IsEnabled(FeatureNames.TransferToCloud)).Returns(false);
+        _mockTransferService.Setup(x => x.GetSessionInfoAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TransferSessionInfo { HasIncompleteSession = false });
         var controller = CreateController();
 
         var result = await controller.GetSession(CancellationToken.None);
 
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(403);
+        result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
