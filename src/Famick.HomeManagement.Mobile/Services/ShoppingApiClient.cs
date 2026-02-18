@@ -2930,4 +2930,866 @@ public class ShoppingApiClient
     }
 
     #endregion
+
+    #region Contacts API
+
+    // --- Contact Groups ---
+
+    public async Task<ApiResult<PagedContactResult<ContactGroupSummaryDto>>> GetContactGroupsAsync(
+        string? searchTerm = null, int? contactType = null, int page = 1, int pageSize = 25)
+    {
+        try
+        {
+            var parameters = new List<string> { $"isGroup=true", $"page={page}", $"pageSize={pageSize}" };
+            if (!string.IsNullOrEmpty(searchTerm)) parameters.Add($"searchTerm={Uri.EscapeDataString(searchTerm)}");
+            if (contactType.HasValue) parameters.Add($"contactType={contactType.Value}");
+            var query = "api/v1/contacts/groups?" + string.Join("&", parameters);
+
+            var response = await _httpClient.GetAsync(query).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PagedContactResult<ContactGroupSummaryDto>>();
+                return result != null
+                    ? ApiResult<PagedContactResult<ContactGroupSummaryDto>>.Ok(result)
+                    : ApiResult<PagedContactResult<ContactGroupSummaryDto>>.Fail("Invalid response");
+            }
+            return ApiResult<PagedContactResult<ContactGroupSummaryDto>>.Fail("Failed to load contact groups");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<PagedContactResult<ContactGroupSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactDetailDto>> GetContactGroupAsync(Guid groupId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/contacts/groups/{groupId}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactDetailDto>();
+                return result != null
+                    ? ApiResult<ContactDetailDto>.Ok(result)
+                    : ApiResult<ContactDetailDto>.Fail("Invalid response");
+            }
+            return ApiResult<ContactDetailDto>.Fail("Failed to load contact group");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactDetailDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactDetailDto>> GetMyHouseholdAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/contacts/groups/my-household").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactDetailDto>();
+                return result != null
+                    ? ApiResult<ContactDetailDto>.Ok(result)
+                    : ApiResult<ContactDetailDto>.Fail("Invalid response");
+            }
+            return ApiResult<ContactDetailDto>.Fail("Failed to load household");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactDetailDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactGroupSummaryDto>> CreateContactGroupAsync(CreateContactGroupRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/contacts/groups", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactGroupSummaryDto>();
+                return result != null
+                    ? ApiResult<ContactGroupSummaryDto>.Ok(result)
+                    : ApiResult<ContactGroupSummaryDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactGroupSummaryDto>.Fail(ParseErrorMessage(error) ?? "Failed to create group");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactGroupSummaryDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactGroupAsync(Guid groupId, UpdateContactGroupRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/groups/{groupId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update group");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteContactGroupAsync(Guid groupId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/groups/{groupId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete group");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Contacts ---
+
+    public async Task<ApiResult<PagedContactResult<ContactSummaryDto>>> GetContactsAsync(ContactFilterRequest? filter = null)
+    {
+        try
+        {
+            var parameters = new List<string>();
+            if (filter != null)
+            {
+                if (!string.IsNullOrEmpty(filter.SearchTerm)) parameters.Add($"searchTerm={Uri.EscapeDataString(filter.SearchTerm)}");
+                if (filter.ContactType.HasValue) parameters.Add($"contactType={filter.ContactType.Value}");
+                if (filter.ParentContactId.HasValue) parameters.Add($"parentContactId={filter.ParentContactId.Value}");
+                if (filter.IsGroup.HasValue) parameters.Add($"isGroup={filter.IsGroup.Value}");
+                if (filter.IsActive.HasValue) parameters.Add($"isActive={filter.IsActive.Value}");
+                parameters.Add($"sortBy={Uri.EscapeDataString(filter.SortBy)}");
+                parameters.Add($"sortDescending={filter.SortDescending}");
+                parameters.Add($"page={filter.Page}");
+                parameters.Add($"pageSize={filter.PageSize}");
+            }
+            var query = "api/v1/contacts" + (parameters.Count > 0 ? "?" + string.Join("&", parameters) : "");
+
+            var response = await _httpClient.GetAsync(query).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PagedContactResult<ContactSummaryDto>>();
+                return result != null
+                    ? ApiResult<PagedContactResult<ContactSummaryDto>>.Ok(result)
+                    : ApiResult<PagedContactResult<ContactSummaryDto>>.Fail("Invalid response");
+            }
+            return ApiResult<PagedContactResult<ContactSummaryDto>>.Fail("Failed to load contacts");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<PagedContactResult<ContactSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<ContactSummaryDto>>> SearchContactsAsync(string query, int limit = 10)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(
+                $"api/v1/contacts/search?query={Uri.EscapeDataString(query)}&limit={limit}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactSummaryDto>>();
+                return result != null
+                    ? ApiResult<List<ContactSummaryDto>>.Ok(result)
+                    : ApiResult<List<ContactSummaryDto>>.Ok(new List<ContactSummaryDto>());
+            }
+            return ApiResult<List<ContactSummaryDto>>.Fail("Failed to search contacts");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactSummaryDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactDetailDto>> GetContactAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/contacts/{contactId}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactDetailDto>();
+                return result != null
+                    ? ApiResult<ContactDetailDto>.Ok(result)
+                    : ApiResult<ContactDetailDto>.Fail("Invalid response");
+            }
+            return ApiResult<ContactDetailDto>.Fail("Failed to load contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactDetailDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactDetailDto>> GetMyContactAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/contacts/me").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactDetailDto>();
+                return result != null
+                    ? ApiResult<ContactDetailDto>.Ok(result)
+                    : ApiResult<ContactDetailDto>.Fail("Invalid response");
+            }
+            return ApiResult<ContactDetailDto>.Fail("Failed to load my contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactDetailDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactDetailDto>> CreateContactAsync(CreateContactRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/contacts", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactDetailDto>();
+                return result != null
+                    ? ApiResult<ContactDetailDto>.Ok(result)
+                    : ApiResult<ContactDetailDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactDetailDto>.Fail(ParseErrorMessage(error) ?? "Failed to create contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactDetailDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactAsync(Guid contactId, UpdateContactRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/{contactId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteContactAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/{contactId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> MoveContactToGroupAsync(Guid contactId, Guid groupId)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"api/v1/contacts/{contactId}/move-to-group/{groupId}", null).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to move contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Phone Numbers ---
+
+    public async Task<ApiResult<ContactPhoneNumberDto>> AddContactPhoneAsync(Guid contactId, AddPhoneRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/phones", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactPhoneNumberDto>();
+                return result != null
+                    ? ApiResult<ContactPhoneNumberDto>.Ok(result)
+                    : ApiResult<ContactPhoneNumberDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactPhoneNumberDto>.Fail(ParseErrorMessage(error) ?? "Failed to add phone");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactPhoneNumberDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactPhoneAsync(Guid phoneId, AddPhoneRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/phones/{phoneId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update phone");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactPhoneAsync(Guid phoneId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/phones/{phoneId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove phone");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SetPrimaryPhoneAsync(Guid contactId, Guid phoneId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/v1/contacts/{contactId}/phones/{phoneId}/primary", null).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to set primary phone");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Email Addresses ---
+
+    public async Task<ApiResult<ContactEmailAddressDto>> AddContactEmailAsync(Guid contactId, AddEmailRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/emails", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactEmailAddressDto>();
+                return result != null
+                    ? ApiResult<ContactEmailAddressDto>.Ok(result)
+                    : ApiResult<ContactEmailAddressDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactEmailAddressDto>.Fail(ParseErrorMessage(error) ?? "Failed to add email");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactEmailAddressDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactEmailAsync(Guid emailId, AddEmailRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/emails/{emailId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update email");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactEmailAsync(Guid emailId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/emails/{emailId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove email");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SetPrimaryEmailAsync(Guid contactId, Guid emailId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/v1/contacts/{contactId}/emails/{emailId}/primary", null).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to set primary email");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Addresses ---
+
+    public async Task<ApiResult<List<ContactAddressDto>>> GetContactAddressesAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/contacts/{contactId}/addresses").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactAddressDto>>();
+                return result != null
+                    ? ApiResult<List<ContactAddressDto>>.Ok(result)
+                    : ApiResult<List<ContactAddressDto>>.Ok(new List<ContactAddressDto>());
+            }
+            return ApiResult<List<ContactAddressDto>>.Fail("Failed to load addresses");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactAddressDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactAddressDto>> AddContactAddressAsync(Guid contactId, AddContactAddressRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/addresses", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactAddressDto>();
+                return result != null
+                    ? ApiResult<ContactAddressDto>.Ok(result)
+                    : ApiResult<ContactAddressDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactAddressDto>.Fail(ParseErrorMessage(error) ?? "Failed to add address");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactAddressDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactAddressAsync(Guid contactId, Guid addressId, AddContactAddressRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/{contactId}/addresses/{addressId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update address");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactAddressAsync(Guid contactId, Guid addressId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/{contactId}/addresses/{addressId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove address");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> SetPrimaryAddressAsync(Guid contactId, Guid addressId)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/v1/contacts/{contactId}/addresses/{addressId}/primary", null).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to set primary address");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Social Media ---
+
+    public async Task<ApiResult<ContactSocialMediaDto>> AddContactSocialMediaAsync(Guid contactId, AddSocialMediaRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/social-media", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactSocialMediaDto>();
+                return result != null
+                    ? ApiResult<ContactSocialMediaDto>.Ok(result)
+                    : ApiResult<ContactSocialMediaDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactSocialMediaDto>.Fail(ParseErrorMessage(error) ?? "Failed to add social media");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactSocialMediaDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactSocialMediaAsync(Guid socialMediaId, AddSocialMediaRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/social-media/{socialMediaId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update social media");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactSocialMediaAsync(Guid socialMediaId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/social-media/{socialMediaId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove social media");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Relationships ---
+
+    public async Task<ApiResult<List<ContactRelationshipDto>>> GetContactRelationshipsAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/contacts/{contactId}/relationships").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactRelationshipDto>>();
+                return result != null
+                    ? ApiResult<List<ContactRelationshipDto>>.Ok(result)
+                    : ApiResult<List<ContactRelationshipDto>>.Ok(new List<ContactRelationshipDto>());
+            }
+            return ApiResult<List<ContactRelationshipDto>>.Fail("Failed to load relationships");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactRelationshipDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactRelationshipDto>> AddContactRelationshipAsync(Guid contactId, AddRelationshipRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/relationships", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactRelationshipDto>();
+                return result != null
+                    ? ApiResult<ContactRelationshipDto>.Ok(result)
+                    : ApiResult<ContactRelationshipDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactRelationshipDto>.Fail(ParseErrorMessage(error) ?? "Failed to add relationship");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactRelationshipDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactRelationshipAsync(Guid relationshipId, bool removeInverse = true)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync(
+                $"api/v1/contacts/relationships/{relationshipId}?removeInverse={removeInverse}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove relationship");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Tags ---
+
+    public async Task<ApiResult<List<ContactTagDto>>> GetContactTagsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/v1/contacts/tags").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactTagDto>>();
+                return result != null
+                    ? ApiResult<List<ContactTagDto>>.Ok(result)
+                    : ApiResult<List<ContactTagDto>>.Ok(new List<ContactTagDto>());
+            }
+            return ApiResult<List<ContactTagDto>>.Fail("Failed to load tags");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactTagDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactTagDto>> CreateContactTagAsync(CreateContactTagRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/v1/contacts/tags", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactTagDto>();
+                return result != null
+                    ? ApiResult<ContactTagDto>.Ok(result)
+                    : ApiResult<ContactTagDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactTagDto>.Fail(ParseErrorMessage(error) ?? "Failed to create tag");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactTagDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactTagAsync(Guid tagId, UpdateContactTagRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/tags/{tagId}", request).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update tag");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteContactTagAsync(Guid tagId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/tags/{tagId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete tag");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> AddTagToContactAsync(Guid contactId, Guid tagId)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"api/v1/contacts/{contactId}/tags/{tagId}", null).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to add tag");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveTagFromContactAsync(Guid contactId, Guid tagId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/{contactId}/tags/{tagId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove tag");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Sharing ---
+
+    public async Task<ApiResult<List<ContactUserShareDto>>> GetContactSharesAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/contacts/{contactId}/shares").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactUserShareDto>>();
+                return result != null
+                    ? ApiResult<List<ContactUserShareDto>>.Ok(result)
+                    : ApiResult<List<ContactUserShareDto>>.Ok(new List<ContactUserShareDto>());
+            }
+            return ApiResult<List<ContactUserShareDto>>.Fail("Failed to load shares");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactUserShareDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<ContactUserShareDto>> ShareContactAsync(Guid contactId, ShareContactRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/contacts/{contactId}/shares", request).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ContactUserShareDto>();
+                return result != null
+                    ? ApiResult<ContactUserShareDto>.Ok(result)
+                    : ApiResult<ContactUserShareDto>.Fail("Invalid response");
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<ContactUserShareDto>.Fail(ParseErrorMessage(error) ?? "Failed to share contact");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<ContactUserShareDto>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> UpdateContactShareAsync(Guid shareId, bool canEdit)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"api/v1/contacts/shares/{shareId}", new { canEdit }).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to update share");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> RemoveContactShareAsync(Guid shareId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/shares/{shareId}").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to remove share");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Profile Image ---
+
+    public async Task<ApiResult<bool>> UploadContactProfileImageAsync(Guid contactId, Stream imageStream, string fileName)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            using var streamContent = new StreamContent(imageStream);
+            streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/" +
+                System.IO.Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant());
+            content.Add(streamContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync($"api/v1/contacts/{contactId}/profile-image", content).ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to upload profile image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<bool>> DeleteContactProfileImageAsync(Guid contactId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"api/v1/contacts/{contactId}/profile-image").ConfigureAwait(false);
+            return response.IsSuccessStatusCode
+                ? ApiResult<bool>.Ok(true)
+                : ApiResult<bool>.Fail("Failed to delete profile image");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<bool>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    // --- Audit Log ---
+
+    public async Task<ApiResult<List<ContactAuditLogDto>>> GetContactAuditLogAsync(Guid contactId, int? limit = null)
+    {
+        try
+        {
+            var query = $"api/v1/contacts/{contactId}/audit-log";
+            if (limit.HasValue) query += $"?limit={limit.Value}";
+
+            var response = await _httpClient.GetAsync(query).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<ContactAuditLogDto>>();
+                return result != null
+                    ? ApiResult<List<ContactAuditLogDto>>.Ok(result)
+                    : ApiResult<List<ContactAuditLogDto>>.Ok(new List<ContactAuditLogDto>());
+            }
+            return ApiResult<List<ContactAuditLogDto>>.Fail("Failed to load audit log");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<ContactAuditLogDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

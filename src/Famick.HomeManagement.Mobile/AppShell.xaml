@@ -7,6 +7,7 @@
     xmlns:pages="clr-namespace:Famick.HomeManagement.Mobile.Pages"
     xmlns:recipes="clr-namespace:Famick.HomeManagement.Mobile.Pages.Recipes"
     xmlns:calendar="clr-namespace:Famick.HomeManagement.Mobile.Pages.Calendar"
+    xmlns:contacts="clr-namespace:Famick.HomeManagement.Mobile.Pages.Contacts"
     FlyoutBehavior="Flyout"
     ios:NavigationPage.IsNavigationBarTranslucent="True">
 
@@ -53,6 +54,13 @@
             Title="Dashboard"
             ContentTemplate="{DataTemplate pages:DashboardPage}"
             Route="DashboardPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Contacts">
+        <ShellContent
+            Title="Contacts"
+            ContentTemplate="{DataTemplate contacts:ContactGroupsPage}"
+            Route="ContactGroupsPage" />
     </FlyoutItem>
 
     <FlyoutItem Title="Calendar">
