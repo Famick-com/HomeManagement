@@ -49,6 +49,13 @@
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 		<MauiImage Update="Resources\Images\famick_logo.svg" BaseSize="300,120" />
 		<MauiImage Update="Resources\Images\pencil.svg" BaseSize="22,22" TintColor="#007AFF" />
+		<MauiImage Update="Resources\Images\tab_home.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\tab_shopping.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\tab_contacts.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\tab_calendar.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\tab_inventory.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\flyout_stock.svg" BaseSize="24,24" />
+		<MauiImage Update="Resources\Images\flyout_recipes.svg" BaseSize="24,24" />
 		
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />

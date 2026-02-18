@@ -48,50 +48,53 @@
         </Grid>
     </Shell.FlyoutHeader>
 
-    <!-- Main Content -->
-    <FlyoutItem Title="Dashboard">
-        <ShellContent
-            Title="Dashboard"
-            ContentTemplate="{DataTemplate pages:DashboardPage}"
-            Route="DashboardPage" />
+    <!-- Primary tabs: appear in BOTH flyout AND bottom tab bar -->
+    <FlyoutItem FlyoutDisplayOptions="AsMultipleItems">
+        <Tab Title="Home" Icon="tab_home">
+            <ShellContent
+                Title="Home"
+                ContentTemplate="{DataTemplate pages:DashboardPage}"
+                Route="DashboardPage" />
+        </Tab>
+
+        <Tab Title="Shopping" Icon="tab_shopping">
+            <ShellContent
+                Title="Shopping"
+                ContentTemplate="{DataTemplate pages:ListSelectionPage}"
+                Route="ListSelectionPage" />
+        </Tab>
+
+        <Tab Title="Contacts" Icon="tab_contacts">
+            <ShellContent
+                Title="Contacts"
+                ContentTemplate="{DataTemplate contacts:ContactGroupsPage}"
+                Route="ContactGroupsPage" />
+        </Tab>
+
+        <Tab Title="Calendar" Icon="tab_calendar">
+            <ShellContent
+                Title="Calendar"
+                ContentTemplate="{DataTemplate calendar:CalendarPage}"
+                Route="CalendarPage" />
+        </Tab>
+
+        <Tab Title="Inventory" Icon="tab_inventory">
+            <ShellContent
+                Title="Inventory"
+                ContentTemplate="{DataTemplate pages:InventorySessionPage}"
+                Route="InventorySessionPage" />
+        </Tab>
     </FlyoutItem>
 
-    <FlyoutItem Title="Contacts">
-        <ShellContent
-            Title="Contacts"
-            ContentTemplate="{DataTemplate contacts:ContactGroupsPage}"
-            Route="ContactGroupsPage" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Calendar">
-        <ShellContent
-            Title="Calendar"
-            ContentTemplate="{DataTemplate calendar:CalendarPage}"
-            Route="CalendarPage" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Shopping Lists">
-        <ShellContent
-            Title="Shopping Lists"
-            ContentTemplate="{DataTemplate pages:ListSelectionPage}"
-            Route="ListSelectionPage" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Take Inventory">
-        <ShellContent
-            Title="Take Inventory"
-            ContentTemplate="{DataTemplate pages:InventorySessionPage}"
-            Route="InventorySessionPage" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="Stock Overview">
+    <!-- Flyout-only items (no bottom tab) -->
+    <FlyoutItem Title="Stock Overview" Icon="flyout_stock">
         <ShellContent
             Title="Stock Overview"
             ContentTemplate="{DataTemplate pages:StockOverviewPage}"
             Route="StockOverviewPage" />
     </FlyoutItem>
 
-    <FlyoutItem Title="Recipes">
+    <FlyoutItem Title="Recipes" Icon="flyout_recipes">
         <ShellContent
             Title="Recipes"
             ContentTemplate="{DataTemplate recipes:RecipeListPage}"
