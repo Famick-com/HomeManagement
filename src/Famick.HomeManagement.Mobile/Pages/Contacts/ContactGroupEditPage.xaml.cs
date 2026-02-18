@@ -12,6 +12,9 @@ public partial class ContactGroupEditPage : ContentPage
     private List<ContactTagDto> _allTags = new();
     private readonly HashSet<Guid> _selectedTagIds = new();
     private bool _isEditMode;
+    private CancellationTokenSource? _addressSearchCts;
+    private Guid? _selectedAddressId;
+    private bool _suppressAddressSearch;
 
     public string GroupId
     {
@@ -128,6 +131,99 @@ public partial class ContactGroupEditPage : ContentPage
         PhoneField.IsVisible = isBusiness && !_isEditMode;
     }
 
+    private async void OnAddressLine1TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_suppressAddressSearch) return;
+
+        // If user is typing after selecting an address, clear the selection
+        if (_selectedAddressId.HasValue)
+        {
+            _selectedAddressId = null;
+            SelectedAddressLabel.IsVisible = false;
+            SetAddressFieldsReadOnly(false);
+            ClearAddressFieldsExceptLine1();
+        }
+
+        _addressSearchCts?.Cancel();
+
+        var query = e.NewTextValue?.Trim();
+        if (string.IsNullOrEmpty(query) || query.Length < 2)
+        {
+            AddressSearchResultsView.IsVisible = false;
+            AddressSearchResultsView.ItemsSource = null;
+            return;
+        }
+
+        _addressSearchCts = new CancellationTokenSource();
+        var token = _addressSearchCts.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+            if (token.IsCancellationRequested) return;
+
+            var result = await _apiClient.SearchAddressesAsync(query, 10);
+            if (token.IsCancellationRequested) return;
+
+            if (result.Success && result.Data != null && result.Data.Count > 0)
+            {
+                AddressSearchResultsView.ItemsSource = result.Data;
+                AddressSearchResultsView.IsVisible = true;
+            }
+            else
+            {
+                AddressSearchResultsView.IsVisible = false;
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Debounce cancelled, expected
+        }
+    }
+
+    private void OnAddressSearchResultSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not AddressDto address) return;
+
+        _suppressAddressSearch = true;
+        _selectedAddressId = address.Id;
+
+        AddressLine1Entry.Text = address.AddressLine1;
+        AddressLine2Entry.Text = address.AddressLine2;
+        CityEntry.Text = address.City;
+        StateEntry.Text = address.StateProvince;
+        PostalEntry.Text = address.PostalCode;
+        CountryEntry.Text = address.Country;
+
+        _suppressAddressSearch = false;
+
+        SelectedAddressLabel.IsVisible = true;
+        AddressSearchResultsView.IsVisible = false;
+
+        SetAddressFieldsReadOnly(true);
+        AddressLine1Entry.IsReadOnly = true;
+    }
+
+    private void ClearAddressFieldsExceptLine1()
+    {
+        _suppressAddressSearch = true;
+        AddressLine2Entry.Text = string.Empty;
+        CityEntry.Text = string.Empty;
+        StateEntry.Text = string.Empty;
+        PostalEntry.Text = string.Empty;
+        CountryEntry.Text = string.Empty;
+        _suppressAddressSearch = false;
+    }
+
+    private void SetAddressFieldsReadOnly(bool readOnly)
+    {
+        AddressLine2Entry.IsReadOnly = readOnly;
+        CityEntry.IsReadOnly = readOnly;
+        StateEntry.IsReadOnly = readOnly;
+        PostalEntry.IsReadOnly = readOnly;
+        CountryEntry.IsReadOnly = readOnly;
+    }
+
     private async void OnSaveClicked(object? sender, EventArgs e)
     {
         var name = GroupNameEntry.Text?.Trim();
@@ -200,6 +296,7 @@ public partial class ContactGroupEditPage : ContentPage
                 {
                     await _apiClient.AddContactAddressAsync(groupId, new AddContactAddressRequest
                     {
+                        AddressId = _selectedAddressId,
                         AddressLine1 = AddressLine1Entry.Text?.Trim(),
                         AddressLine2 = AddressLine2Entry.Text?.Trim(),
                         City = CityEntry.Text?.Trim(),

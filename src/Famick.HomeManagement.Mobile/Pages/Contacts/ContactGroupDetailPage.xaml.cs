@@ -278,13 +278,14 @@ public partial class ContactGroupDetailPage : ContentPage
     private async void OnAddAddressClicked(object? sender, EventArgs e)
     {
         if (_group == null) return;
-        var popup = new AddAddressPopup();
+        var popup = new AddAddressPopup(_apiClient);
         var popupResult = await this.ShowPopupAsync<AddAddressResult>(popup, PopupOptions.Empty, CancellationToken.None);
         if (popupResult.WasDismissedByTappingOutsideOfPopup || popupResult.Result is null) return;
         var result = popupResult.Result;
 
         var apiResult = await _apiClient.AddContactAddressAsync(_group.Id, new AddContactAddressRequest
         {
+            AddressId = result.AddressId,
             AddressLine1 = result.AddressLine1,
             AddressLine2 = result.AddressLine2,
             City = result.City,

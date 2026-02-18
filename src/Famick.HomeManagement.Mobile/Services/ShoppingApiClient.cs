@@ -3440,6 +3440,54 @@ public class ShoppingApiClient
         }
     }
 
+    // --- Address Search ---
+
+    public async Task<ApiResult<List<AddressDto>>> SearchAddressesAsync(string query, int limit = 10)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(
+                $"api/v1/addresses/search?query={Uri.EscapeDataString(query)}&limit={limit}").ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<AddressDto>>(content, options);
+                return result != null
+                    ? ApiResult<List<AddressDto>>.Ok(result)
+                    : ApiResult<List<AddressDto>>.Ok(new List<AddressDto>());
+            }
+            return ApiResult<List<AddressDto>>.Ok(new List<AddressDto>());
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<AddressDto>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiResult<List<NormalizedAddressResult>>> NormalizeSuggestionsAsync(NormalizeAddressRequest request, int limit = 5)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"api/v1/addresses/normalize/suggestions?limit={limit}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<List<NormalizedAddressResult>>(content, options);
+                return result != null
+                    ? ApiResult<List<NormalizedAddressResult>>.Ok(result)
+                    : ApiResult<List<NormalizedAddressResult>>.Ok(new List<NormalizedAddressResult>());
+            }
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<List<NormalizedAddressResult>>.Fail(ParseErrorMessage(error) ?? "Address verification failed");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<List<NormalizedAddressResult>>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
     // --- Social Media ---
 
     public async Task<ApiResult<ContactSocialMediaDto>> AddContactSocialMediaAsync(Guid contactId, AddSocialMediaRequest request)

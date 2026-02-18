@@ -634,7 +634,7 @@ public sealed record AddEmailResult(string Email, int Tag, bool IsPrimary, strin
 public sealed record AddAddressResult(
     string? AddressLine1, string? AddressLine2, string? City,
     string? StateProvince, string? PostalCode, string? Country,
-    int Tag, bool IsPrimary);
+    int Tag, bool IsPrimary, Guid? AddressId = null);
 public sealed record AddSocialMediaResult(int Service, string Username, string? ProfileUrl);
 public sealed record AddRelationshipResult(Guid TargetContactId, string TargetContactName, int RelationshipType, string? CustomLabel, bool CreateInverse);
 public sealed record MoveToGroupResult(Guid GroupId, string GroupName);
