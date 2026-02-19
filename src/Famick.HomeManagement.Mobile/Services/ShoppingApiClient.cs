@@ -791,6 +791,41 @@ public class ShoppingApiClient
 
     #endregion
 
+    #region Setup APIs
+
+    /// <summary>
+    /// Get the setup status including whether legal consent is required.
+    /// </summary>
+    public async Task<ApiResult<SetupStatusResponse>> GetSetupStatusAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("api/setup/status");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<SetupStatusResponse>(content, options);
+                return result != null
+                    ? ApiResult<SetupStatusResponse>.Ok(result)
+                    : ApiResult<SetupStatusResponse>.Fail("Invalid response");
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            return ApiResult<SetupStatusResponse>.Fail(ParseErrorMessage(error) ?? "Failed to get setup status");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<SetupStatusResponse>.Fail($"Connection error: {ex.Message}");
+        }
+    }
+
+    #endregion
+
     #region Registration APIs
 
     /// <summary>

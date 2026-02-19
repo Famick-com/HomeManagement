@@ -14,6 +14,8 @@ public partial class CreatePasswordPage : ContentPage
     private readonly string _email;
     private readonly string _householdName;
     private readonly List<Button> _oauthButtons = new();
+    private bool _requireLegalConsent;
+    private bool _consentChecked;
 
     public CreatePasswordPage(
         ShoppingApiClient apiClient,
@@ -44,7 +46,26 @@ public partial class CreatePasswordPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        await LoadSetupStatusAsync();
         await LoadAuthConfigurationAsync();
+    }
+
+    private async Task LoadSetupStatusAsync()
+    {
+        try
+        {
+            var result = await _apiClient.GetSetupStatusAsync();
+            if (result.Success && result.Data != null)
+            {
+                _requireLegalConsent = result.Data.RequireLegalConsent;
+                ConsentSection.IsVisible = _requireLegalConsent;
+                UpdateCreateAccountButtonState();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load setup status: {ex.Message}");
+        }
     }
 
     private async Task LoadAuthConfigurationAsync()
@@ -138,8 +159,51 @@ public partial class CreatePasswordPage : ContentPage
         return button;
     }
 
+    private void OnConsentCheckedChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        _consentChecked = e.Value;
+        UpdateCreateAccountButtonState();
+    }
+
+    private void UpdateCreateAccountButtonState()
+    {
+        // If consent is required but not checked, disable buttons
+        if (_requireLegalConsent && !_consentChecked)
+        {
+            CreateAccountButton.IsEnabled = false;
+            foreach (var button in _oauthButtons)
+            {
+                button.IsEnabled = false;
+            }
+        }
+        else
+        {
+            CreateAccountButton.IsEnabled = true;
+            foreach (var button in _oauthButtons)
+            {
+                button.IsEnabled = true;
+            }
+        }
+    }
+
+    private async void OnTermsTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.OpenAsync(new Uri("https://famick.com/terms"));
+    }
+
+    private async void OnPrivacyTapped(object? sender, TappedEventArgs e)
+    {
+        await Launcher.OpenAsync(new Uri("https://famick.com/privacy"));
+    }
+
     private async Task OnProviderButtonClicked(ExternalAuthProvider provider)
     {
+        if (_requireLegalConsent && !_consentChecked)
+        {
+            ShowError("Please accept the Terms of Service and Privacy Policy");
+            return;
+        }
+
         SetLoading(true);
         HideError();
 
@@ -186,6 +250,12 @@ public partial class CreatePasswordPage : ContentPage
 
     private async void OnCreateAccountClicked(object? sender, EventArgs e)
     {
+        if (_requireLegalConsent && !_consentChecked)
+        {
+            ShowError("Please accept the Terms of Service and Privacy Policy");
+            return;
+        }
+
         // Validate inputs
         var firstName = FirstNameEntry.Text?.Trim();
         var lastName = LastNameEntry.Text?.Trim();

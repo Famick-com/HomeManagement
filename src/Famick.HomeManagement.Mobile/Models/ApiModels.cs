@@ -21,6 +21,7 @@ public class LoginResponse
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
     public bool MustChangePassword { get; set; }
+    public bool MustAcceptTerms { get; set; }
     public TenantInfo? Tenant { get; set; }
 }
 
@@ -579,6 +580,19 @@ public class ConsumeStockRequest
     public decimal? Amount { get; set; }
     public bool Spoiled { get; set; }
     public Guid? RecipeId { get; set; }
+}
+
+#endregion
+
+#region Setup Models
+
+/// <summary>
+/// Response from the setup status endpoint.
+/// </summary>
+public class SetupStatusResponse
+{
+    public bool RequiresSetup { get; set; }
+    public bool RequireLegalConsent { get; set; }
 }
 
 #endregion
