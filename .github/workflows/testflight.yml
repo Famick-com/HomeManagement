@@ -97,6 +97,15 @@ jobs:
           DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
             "${{ env.WIDGET_DIR }}/build.sh" --release
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build iOS app
         run: |
           dotnet publish "${{ env.MOBILE_PROJECT }}" \
@@ -105,7 +114,8 @@ jobs:
             -r ios-arm64 \
             /p:CodesignKey="Apple Distribution" \
             /p:CodesignProvision="Famick Home AppStore" \
-            /p:ApplicationVersion="${{ steps.build-number.outputs.number }}"
+            /p:ApplicationDisplayVersion="${{ steps.version.outputs.version }}" \
+            /p:ApplicationVersion="${{ steps.build-number.outputs.number }}"            
 
       - name: Find IPA
         id: find-ipa

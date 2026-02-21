@@ -10,6 +10,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
+ARG BUILD_VERSION=0.0.0
+
 # Copy shared library project files first (for layer caching)
 COPY homemanagement-shared/src/Famick.HomeManagement.Shared/Famick.HomeManagement.Shared.csproj homemanagement-shared/src/Famick.HomeManagement.Shared/
 COPY homemanagement-shared/src/Famick.HomeManagement.Domain/Famick.HomeManagement.Domain.csproj homemanagement-shared/src/Famick.HomeManagement.Domain/
@@ -30,11 +32,13 @@ COPY homemanagement/src/ homemanagement/src/
 
 # Build the application
 WORKDIR /src/homemanagement/src/Famick.HomeManagement.Web
-RUN dotnet build -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build -c $BUILD_CONFIGURATION -o /app/build \
+    /p:Version=$BUILD_VERSION /p:InformationalVersion=$BUILD_VERSION
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c $BUILD_CONFIGURATION -o /app/publish \
+    /p:UseAppHost=false /p:Version=$BUILD_VERSION /p:InformationalVersion=$BUILD_VERSION
 
 FROM base AS final
 WORKDIR /app
