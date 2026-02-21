@@ -141,8 +141,8 @@ jobs:
           API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          # Write API key to expected location
-          KEY_DIR="$RUNNER_TEMP/private_keys"
+          # Write API key to one of altool's default search paths
+          KEY_DIR="$HOME/.private_keys"
           mkdir -p "$KEY_DIR"
           echo "$API_KEY" > "$KEY_DIR/AuthKey_${API_KEY_ID}.p8"
 
@@ -150,8 +150,7 @@ jobs:
             --type ios \
             --file "${{ steps.find-ipa.outputs.path }}" \
             --apiKey "$API_KEY_ID" \
-            --apiIssuer "$API_ISSUER_ID" \
-            --private-key-dir "$KEY_DIR"
+            --apiIssuer "$API_ISSUER_ID"
 
       - name: Cleanup
         if: always()
@@ -161,7 +160,7 @@ jobs:
             security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
           fi
           # Delete API key
-          rm -rf "$RUNNER_TEMP/private_keys" 2>/dev/null || true
+          rm -rf "$HOME/.private_keys" 2>/dev/null || true
           # Delete provisioning profiles
           rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision" 2>/dev/null || true
           rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/widget.mobileprovision" 2>/dev/null || true
