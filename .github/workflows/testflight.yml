@@ -94,17 +94,21 @@ jobs:
         id: version
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+            FULL_VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            echo "version=0.0.0" >> "$GITHUB_OUTPUT"
+            FULL_VERSION="0.0.0"
           fi
+          # iOS requires X.Y.Z only — strip any prerelease suffix (e.g. 1.0.0-beta10 → 1.0.0)
+          IOS_VERSION="${FULL_VERSION%%-*}"
+          echo "full=$FULL_VERSION" >> "$GITHUB_OUTPUT"
+          echo "ios=$IOS_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build widget extension
         run: |
           WIDGET_PROVISIONING_PROFILE="Famick Widget AppStore" \
           CODE_SIGN_IDENTITY="Apple Distribution" \
           DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
-          MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+          MARKETING_VERSION="${{ steps.version.outputs.ios }}" \
           CURRENT_PROJECT_VERSION="${{ steps.build-number.outputs.number }}" \
             "${{ env.WIDGET_DIR }}/build.sh" --release
 
@@ -117,7 +121,7 @@ jobs:
             /p:CodesignKey="Apple Distribution" \
             /p:CodesignProvision="Famick Home AppStore" \
             /p:EnableCodeSigning=true \
-            /p:ApplicationDisplayVersion="${{ steps.version.outputs.version }}" \
+            /p:ApplicationDisplayVersion="${{ steps.version.outputs.ios }}" \
             /p:ApplicationVersion="${{ steps.build-number.outputs.number }}"
 
       - name: Find IPA
