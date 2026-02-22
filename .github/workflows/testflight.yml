@@ -129,20 +129,59 @@ jobs:
           echo "path=$IPA_PATH" >> "$GITHUB_OUTPUT"
           echo "IPA found: $IPA_PATH ($(du -h "$IPA_PATH" | cut -f1))"
 
-      - name: Inspect IPA entitlements
+      - name: Inspect IPA contents
         run: |
           TEMP_DIR=$(mktemp -d)
           unzip -q "${{ steps.find-ipa.outputs.path }}" -d "$TEMP_DIR"
-          APP_PATH=$(find "$TEMP_DIR/Payload" -name "*.app" -type d | head -1)
-          echo "=== Code Signature ==="
-          codesign -dvvv "$APP_PATH" 2>&1 || true
+          APP_PATH=$(find "$TEMP_DIR/Payload" -name "*.app" -type d -maxdepth 2 | head -1)
+
+          echo "=== IPA directory structure ==="
+          find "$TEMP_DIR/Payload" -maxdepth 4 -type d
           echo ""
-          echo "=== Embedded Entitlements ==="
+
+          echo "=== Main app entitlements ==="
           codesign -d --entitlements - "$APP_PATH" 2>&1 || true
           echo ""
-          echo "=== Provisioning Profile ==="
-          security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null | head -60 || echo "No embedded.mobileprovision found"
+
+          echo "=== Main app embedded.mobileprovision ==="
+          if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
+            echo "FOUND"
+          else
+            echo "MISSING"
+          fi
+          echo ""
+
+          echo "=== PlugIns directory ==="
+          if [ -d "$APP_PATH/PlugIns" ]; then
+            ls -la "$APP_PATH/PlugIns/"
+            for appex in "$APP_PATH/PlugIns"/*.appex; do
+              echo ""
+              echo "--- $appex entitlements ---"
+              codesign -d --entitlements - "$appex" 2>&1 || true
+              echo ""
+              echo "--- $appex embedded.mobileprovision ---"
+              if [ -f "$appex/embedded.mobileprovision" ]; then
+                echo "FOUND"
+              else
+                echo "MISSING"
+              fi
+            done
+          else
+            echo "NO PlugIns directory found"
+          fi
+          echo ""
+
+          echo "=== Validate with altool ==="
+          xcrun altool --validate-app \
+            --type ios \
+            --file "${{ steps.find-ipa.outputs.path }}" \
+            --apiKey "$API_KEY_ID" \
+            --apiIssuer "$API_ISSUER_ID" 2>&1 || true
+
           rm -rf "$TEMP_DIR"
+        env:
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
