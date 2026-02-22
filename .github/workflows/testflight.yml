@@ -90,13 +90,6 @@ jobs:
             security cms -D -i "$f" 2>/dev/null | grep -A1 '<key>Name</key>' | tail -1 || true
           done
 
-      - name: Build widget extension
-        run: |
-          WIDGET_PROVISIONING_PROFILE="Famick Widget AppStore" \
-          CODE_SIGN_IDENTITY="Apple Distribution" \
-          DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
-            "${{ env.WIDGET_DIR }}/build.sh" --release
-
       - name: Extract version from tag
         id: version
         run: |
@@ -105,6 +98,15 @@ jobs:
           else
             echo "version=0.0.0" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build widget extension
+        run: |
+          WIDGET_PROVISIONING_PROFILE="Famick Widget AppStore" \
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          DEVELOPMENT_TEAM="${{ env.TEAM_ID }}" \
+          MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+          CURRENT_PROJECT_VERSION="${{ steps.build-number.outputs.number }}" \
+            "${{ env.WIDGET_DIR }}/build.sh" --release
 
       - name: Build iOS app
         run: |
@@ -128,60 +130,6 @@ jobs:
           fi
           echo "path=$IPA_PATH" >> "$GITHUB_OUTPUT"
           echo "IPA found: $IPA_PATH ($(du -h "$IPA_PATH" | cut -f1))"
-
-      - name: Inspect IPA contents
-        run: |
-          TEMP_DIR=$(mktemp -d)
-          unzip -q "${{ steps.find-ipa.outputs.path }}" -d "$TEMP_DIR"
-          APP_PATH=$(find "$TEMP_DIR/Payload" -name "*.app" -type d -maxdepth 2 | head -1)
-
-          echo "=== IPA directory structure ==="
-          find "$TEMP_DIR/Payload" -maxdepth 4 -type d
-          echo ""
-
-          echo "=== Main app entitlements ==="
-          codesign -d --entitlements - "$APP_PATH" 2>&1 || true
-          echo ""
-
-          echo "=== Main app embedded.mobileprovision ==="
-          if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
-            echo "FOUND"
-          else
-            echo "MISSING"
-          fi
-          echo ""
-
-          echo "=== PlugIns directory ==="
-          if [ -d "$APP_PATH/PlugIns" ]; then
-            ls -la "$APP_PATH/PlugIns/"
-            for appex in "$APP_PATH/PlugIns"/*.appex; do
-              echo ""
-              echo "--- $appex entitlements ---"
-              codesign -d --entitlements - "$appex" 2>&1 || true
-              echo ""
-              echo "--- $appex embedded.mobileprovision ---"
-              if [ -f "$appex/embedded.mobileprovision" ]; then
-                echo "FOUND"
-              else
-                echo "MISSING"
-              fi
-            done
-          else
-            echo "NO PlugIns directory found"
-          fi
-          echo ""
-
-          echo "=== Validate with altool ==="
-          xcrun altool --validate-app \
-            --type ios \
-            --file "${{ steps.find-ipa.outputs.path }}" \
-            --apiKey "$API_KEY_ID" \
-            --apiIssuer "$API_ISSUER_ID" 2>&1 || true
-
-          rm -rf "$TEMP_DIR"
-        env:
-          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4

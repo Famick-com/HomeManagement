@@ -11,6 +11,8 @@
 #   DEVELOPMENT_TEAM                 - Apple Team ID (default: 7A6WPZLCK9)
 #   CODE_SIGN_IDENTITY               - Signing identity (default: Apple Distribution)
 #   WIDGET_PROVISIONING_PROFILE      - Provisioning profile name
+#   MARKETING_VERSION                - CFBundleShortVersionString (default: 1.0)
+#   CURRENT_PROJECT_VERSION          - CFBundleVersion / build number (default: 1)
 
 set -e
 
@@ -65,10 +67,17 @@ if [ "$RELEASE_MODE" = true ]; then
         SIGNING_ARGS+=(PROVISIONING_PROFILE_SPECIFIER="$WIDGET_PROVISIONING_PROFILE")
     fi
 
+    # Version overrides
+    VERSION_ARGS=()
+    [ -n "$MARKETING_VERSION" ] && VERSION_ARGS+=(MARKETING_VERSION="$MARKETING_VERSION")
+    [ -n "$CURRENT_PROJECT_VERSION" ] && VERSION_ARGS+=(CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION")
+
     echo "Building for iOS device (distribution)..."
     echo "  Team ID: $TEAM_ID"
     echo "  Sign identity: $SIGN_IDENTITY"
     [ -n "$WIDGET_PROVISIONING_PROFILE" ] && echo "  Profile: $WIDGET_PROVISIONING_PROFILE"
+    [ -n "$MARKETING_VERSION" ] && echo "  Version: $MARKETING_VERSION"
+    [ -n "$CURRENT_PROJECT_VERSION" ] && echo "  Build: $CURRENT_PROJECT_VERSION"
 
     xcodebuild -project "$PROJECT_DIR" \
         -scheme "QuickConsumeWidgetExtensionExtension" \
@@ -76,6 +85,7 @@ if [ "$RELEASE_MODE" = true ]; then
         -sdk iphoneos \
         BUILD_DIR="$BUILD_DIR" \
         "${SIGNING_ARGS[@]}" \
+        "${VERSION_ARGS[@]}" \
         clean build
 
     echo "=== Distribution Build Complete ==="
