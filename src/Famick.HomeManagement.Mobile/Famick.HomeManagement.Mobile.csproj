@@ -37,6 +37,12 @@
 		<BuildIpa>true</BuildIpa>
 	</PropertyGroup>
 
+	<!-- Release Android builds: produce AAB for Play Store upload.
+	     Pass signing properties at build time: /p:AndroidKeyStore=true /p:AndroidSigningKeyStore="..." etc. -->
+	<PropertyGroup Condition="'$(Configuration)' == 'Release' AND $(TargetFramework.Contains('-android'))">
+		<AndroidPackageFormat>aab</AndroidPackageFormat>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg"

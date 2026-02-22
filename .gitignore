@@ -334,6 +334,10 @@ xcuserdata/
 src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/XReleases/
 src/Famick.HomeManagement.Mobile/Platforms/iOS/WidgetExtension/QuickConsumeWidgetHost/
 
-# TestFlight build environment
+# Build environment
 scripts/.env
 .build-number
+
+# Android signing
+*.keystore
+*.jks
